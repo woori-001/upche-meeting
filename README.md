@@ -58,3 +58,4 @@ const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzOJPyFSlGlG3HB
 - 깃허브 페이지는 누구나 열 수 있지만, 데이터는 **로그인해야만** 서버가 내려줍니다(로그인 유지 6시간).
 - 시트의 `고객키` 칸에는 재접수 판정용으로 연락처 앞 7자리 + 가린 이름만 저장됩니다.
 - 구글시트 자체의 공유 범위는 관리자만으로 두세요.
+

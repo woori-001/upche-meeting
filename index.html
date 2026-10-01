@@ -339,16 +339,14 @@ table.t.sm{font-size:13px}.t.sm th,.t.sm td{padding:7px 8px}
 .me-a .icon:hover{background:var(--soft);color:var(--pri-d)}
 .me-a .icon.out:hover{background:var(--up-w);color:var(--up)}
 /* 업체회의 / 유통마진 전환 */
-.mode{display:grid;grid-template-columns:1fr 1fr;background:#eef1f6;border-radius:12px;padding:4px;margin:0 0 18px;position:relative}
-.mode button{position:relative;z-index:1;border:0;background:none;border-radius:9px;padding:8px 0;font-size:13.5px;font-weight:600;color:var(--sub);cursor:pointer;transition:color .2s}
-.mode::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:9px;background:#fff;box-shadow:0 1px 4px rgba(20,30,50,.12);transition:transform .25s ease}
-.mode button.on{color:var(--text)}
+.mode{display:grid;grid-template-columns:1fr 1fr;background:var(--pri);border-radius:12px;padding:4px;margin:0 0 18px;position:relative}
+.mode button{position:relative;z-index:1;border:0;background:none;border-radius:9px;padding:8px 0;font-size:13.5px;font-weight:600;color:rgba(255,255,255,.82);cursor:pointer;transition:color .2s}
+.mode::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:9px;background:#fff;box-shadow:0 1px 4px rgba(20,30,50,.18);transition:transform .25s ease}
+.mode button.on{color:var(--pri-d)}
 body.mode-margin .mode::before{transform:translateX(100%)}
 /* 유통마진 모드: 네이비 사이드바 */
 body.mode-margin #side{background:#13254a;border-right-color:#13254a;color:#fff}
 body.mode-margin .side-bottom{background:#13254a;border-top-color:rgba(255,255,255,.1)}
-body.mode-margin .mode{background:rgba(255,255,255,.1)}
-body.mode-margin .mode button{color:rgba(255,255,255,.65)}
 body.mode-margin .mode button.on{color:#13254a}
 body.mode-margin .space:hover{background:rgba(255,255,255,.07)}
 body.mode-margin .space.on{background:rgba(255,255,255,.13)}

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>업체회의 누적분석</title>
-<!-- 업체회의 누적분석 Ver8.0 · 화면은 깃허브(woori-001/upche-meeting), 데이터는 구글시트(Apps Script) -->
+<!-- 업체회의 누적분석 Ver8.1 · 화면은 깃허브(woori-001/upche-meeting), 데이터는 구글시트(Apps Script) -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 :root{
@@ -21,7 +21,7 @@ html,body{margin:0}
 body{background:var(--bg);color:var(--text);font:14px/1.55 "Pretendard Variable",Pretendard,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
 button,input,select{font:inherit;color:inherit;letter-spacing:inherit}
 a{color:inherit}
-.app{display:grid;grid-template-columns:216px minmax(0,1fr);min-height:100vh}
+.app{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh}
 
 /* ---------- 사이드바 ---------- */
 #side{position:sticky;top:0;height:100vh;overflow:hidden;background:var(--surface);border-right:1px solid var(--line);padding:0;display:flex;flex-direction:column}
@@ -330,18 +330,106 @@ table.t.sm{font-size:13px}.t.sm th,.t.sm td{padding:7px 8px}
 .lset{margin-top:8px;font-size:12.5px;color:var(--sub)}.lset summary{cursor:pointer}
 .lurl{display:flex;gap:6px;margin-top:6px}.lurl input{flex:1;min-width:0;font-size:12px}
 .pwf{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.me{flex-wrap:wrap}.me-n{display:flex;flex-direction:column;line-height:1.3;font-weight:600;color:var(--text)}.me-n small{font-weight:400;color:var(--sub);font-size:11px}
-.me-a{margin-left:auto;display:flex;gap:6px}
-button.link{border:0;background:none;padding:2px 4px;font-size:11.5px;color:var(--sub);cursor:pointer;border-radius:6px}button.link:hover{background:var(--soft);color:var(--pri-d)}
+.me{flex-wrap:nowrap;gap:10px;padding:6px 4px;word-break:normal}
+.me .avatar{width:32px;height:32px;font-size:13px}
+.me-n{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3;font-weight:600;font-size:13px;color:var(--text)}
+.me-n b,.me-n small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.me-n b{font-weight:600}.me-n small{font-weight:400;color:var(--sub);font-size:11.5px}
+.me-a{flex:none;display:flex;gap:2px}
+.me-a .icon{width:30px;height:30px;padding:0;border-radius:8px}
+.me-a .icon:hover{background:var(--soft);color:var(--pri-d)}
+.me-a .icon.out:hover{background:var(--up-w);color:var(--up)}
+/* 업체회의 / 유통마진 전환 */
+.mode{display:grid;grid-template-columns:1fr 1fr;background:#eef1f6;border-radius:12px;padding:4px;margin:0 0 18px;position:relative}
+.mode button{position:relative;z-index:1;border:0;background:none;border-radius:9px;padding:8px 0;font-size:13.5px;font-weight:600;color:var(--sub);cursor:pointer;transition:color .2s}
+.mode::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:9px;background:#fff;box-shadow:0 1px 4px rgba(20,30,50,.12);transition:transform .25s ease}
+.mode button.on{color:var(--text)}
+body.mode-margin .mode::before{transform:translateX(100%)}
+/* 유통마진 모드: 네이비 사이드바 */
+body.mode-margin #side{background:#13254a;border-right-color:#13254a;color:#fff}
+body.mode-margin .side-bottom{background:#13254a;border-top-color:rgba(255,255,255,.1)}
+body.mode-margin .mode{background:rgba(255,255,255,.1)}
+body.mode-margin .mode button{color:rgba(255,255,255,.65)}
+body.mode-margin .mode button.on{color:#13254a}
+body.mode-margin .space:hover{background:rgba(255,255,255,.07)}
+body.mode-margin .space.on{background:rgba(255,255,255,.13)}
+body.mode-margin .stxt b,body.mode-margin .space.on .stxt b{color:#fff}
+body.mode-margin .stxt small{color:rgba(255,255,255,.55)}
+body.mode-margin .sico.mg{background:rgba(255,255,255,.1);color:#9cc0ff}
+body.mode-margin .space.on .sico.mg{background:#4c82f7;color:#fff}
+body.mode-margin .side-hr{border-top-color:rgba(255,255,255,.1)}
+body.mode-margin .side-cal,body.mode-margin .side-info{background:rgba(255,255,255,.06)}
+body.mode-margin .side-info span,body.mode-margin .side-info .note{color:rgba(255,255,255,.55)}
+body.mode-margin .side-info b,body.mode-margin .side-info .note .nf{color:#fff}
+body.mode-margin .side-info .note{border-top-color:rgba(255,255,255,.1)}
+body.mode-margin .mp-h b,body.mode-margin .mp-m{color:#fff}
+body.mode-margin .mp-h .icon{color:rgba(255,255,255,.6)}body.mode-margin .mp-h .icon:hover{background:rgba(255,255,255,.1);color:#fff}
+body.mode-margin .mp-m:hover:not([disabled]){background:rgba(255,255,255,.1)}
+body.mode-margin .mp-m.on{background:#4c82f7}
+body.mode-margin .mp-m[disabled]{color:rgba(255,255,255,.22)}
+body.mode-margin .side-help{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1)}
+body.mode-margin .side-help summary{color:#fff}body.mode-margin .side-help summary svg{color:#9cc0ff}
+body.mode-margin .side-help[open] summary{background:rgba(255,255,255,.06);border-bottom-color:rgba(255,255,255,.1)}
+body.mode-margin .hi+.hi{border-top-color:rgba(255,255,255,.1)}
+body.mode-margin .hi b{color:#fff}body.mode-margin .hi p{color:rgba(255,255,255,.6)}
+body.mode-margin .hi p.f{background:rgba(255,255,255,.1);color:#fff}
+body.mode-margin .me-n{color:#fff}body.mode-margin .me-n small{color:rgba(255,255,255,.55)}
+body.mode-margin .me .avatar{background:#4c82f7;color:#fff}
+body.mode-margin .me-a .icon{color:rgba(255,255,255,.6)}
+body.mode-margin .me-a .icon:hover{background:rgba(255,255,255,.1);color:#fff}
+body.mode-margin .me-a .icon.out:hover{background:rgba(229,72,77,.25);color:#fff}
+body.mode-margin #side *{scrollbar-color:rgba(255,255,255,.3) transparent}
+/* 유통마진 본문 */
+.kpis.mk{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi.accent{background:linear-gradient(135deg,#13254a,#25427a);color:#fff}
+.kpi.accent .kt,.kpi.accent .kv{color:#fff}.kpi.accent .ks{color:rgba(255,255,255,.7)}
+.kpi.accent .chip{background:rgba(255,255,255,.15);color:#fff}
+.chip.good{background:var(--green-w);color:var(--green)}.chip.badc2{background:var(--up-w);color:var(--up)}
+.tag.mtag{background:#fff4e0;color:#b76e00}.tag.mtag.hq{background:var(--violet-w);color:var(--violet)}
+.badge.orange{background:#fff4e0;color:#b76e00}
+.t.mt td.nm{font-weight:600}
+.t tr.tfoot td{background:#f8f9fb;font-weight:700;border-top:1px solid var(--line)}
+.t td.c2{line-height:1.35}.t td.c2 small{display:block;color:var(--sub);font-size:11.5px;font-weight:400}
+.t td.c2.wide{white-space:normal;min-width:220px;max-width:340px}
+.t td.memo{min-width:200px;white-space:normal}
+.t td.memo textarea{width:100%;min-height:32px;resize:vertical;font:inherit;font-size:12.5px;border:1px solid var(--line2);border-radius:8px;padding:6px 8px;outline:0;background:#fff}
+.t td.memo textarea:focus{border-color:var(--pri)}.t td.memo textarea.saved{border-color:#9bd8bd}
+.t td.memo small{display:block;color:var(--dim);font-size:11px;margin-top:2px}
+th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
+button.lnk{border:0;background:none;color:var(--up);font-weight:700;cursor:pointer;text-decoration:underline;padding:0;font-variant-numeric:tabular-nums}
+.mfilter{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.mfilter .field input{width:220px}.field.sel{padding:0 8px;color:var(--text);font-weight:500;outline:0}
+.trend-bar{margin-bottom:16px}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}.charts .wide{grid-column:1/-1}
+.charts h2,.card>h2{font-size:17px;margin:0 0 12px;display:flex;align-items:center;gap:10px}
+.charts .lg{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--sub)}.charts .lg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.chartbox{position:relative;height:260px}
+.more{text-align:center;margin-top:12px}
+.mbox.wide{max-width:760px;position:relative}.mbox .x{position:absolute;top:14px;right:14px}
+.upm{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:16px}
+.upm label{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px}
+.upm input{font:inherit;border:1px solid var(--line2);border-radius:10px;padding:8px 10px;outline:0}.upm input:focus{border-color:var(--pri)}
+.upm input[type=text]{flex:1;min-width:200px}
+.drops{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.drop{border:2px dashed var(--line2);border-radius:14px;padding:18px 16px;cursor:pointer;display:flex;flex-direction:column;gap:6px;align-items:flex-start;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--pri);background:var(--pri-w)}
+.drop.ok{border-style:solid;border-color:#9bd8bd;background:var(--green-w)}
+.drop b{font-size:14.5px}.drop small{color:var(--sub);font-size:12px;word-break:break-all}.drop.ok small{color:var(--green);font-weight:600}
+.prev{margin-top:16px;border-radius:14px;background:var(--soft);padding:16px}
+.prev h4{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:8px}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:6px}
+.pgrid div{background:#fff;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column}.pgrid span{font-size:12px;color:var(--sub)}.pgrid b{font-size:16px}
+.top-r .del:hover{border-color:var(--up);color:var(--up)}
 
 /* 반응형 */
-@media (max-width:1280px){.kpis{grid-template-columns:1fr}}
+@media (max-width:1280px){.kpis{grid-template-columns:1fr}.kpis.mk{grid-template-columns:1fr 1fr}}
+@media (max-width:760px){.charts,.drops,.pgrid{grid-template-columns:1fr}.kpis.mk{grid-template-columns:1fr}}
 @media (max-width:1024px){.board{grid-template-columns:1fr}.col-b{max-height:320px}}
 @media (max-width:860px){
   .app{grid-template-columns:minmax(0,1fr)}
   #side{position:static;height:auto;flex-direction:column;padding:14px 16px;border-right:0;border-bottom:1px solid var(--line)}
   .spaces{flex-direction:row;overflow:auto}.space{flex:1;min-width:0}
-  .side-sec,.side-info,.side-actions,.me,.side-hr,.side-bottom{display:none!important}
+  .side-sec,.side-info,.side-actions,.side-hr,.side-cal,.side-help{display:none!important}
+  .side-bottom{border-top:0;padding:8px 0 0}.side-top{padding:0}.side-mid{padding:0}.mode{margin-bottom:10px}
   .brand img{width:110px}
   .brand{padding-bottom:6px}
   #main{padding:18px 16px 50px}
@@ -569,19 +657,23 @@ const LOGO_B64 = [
 "cFi1lPdARJqK1Wr9+JMPt2zZqipqIbQESjQt0qpV66J+HGNKUlJiMBhg7EqkSjLGVIsaExNT5ivY7fYqVZPjYuPM2hhbLGoZEnn+",
 "P1VnWze4m6NFAAAAAElFTkSuQmCC"
 ].join("");
+const LOGO_W_B64 = [
+"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"
+].join("");
 window.__logoLoaded = true;
 document.addEventListener("DOMContentLoaded", () => { const l = document.getElementById("loginLogo"); if (l) l.src = "data:image/png;base64," + LOGO_B64; });
 </script>
 <script>
 "use strict";
 // ============================================================
-// 업체회의 누적분석 Ver8.0 (화면: 깃허브 / 데이터: 구글시트 + Apps Script)
+// 업체회의 누적분석 Ver8.1 (화면: 깃허브 / 데이터: 구글시트 + Apps Script)
 // - 접수 데이터(전체정산관리 엑셀)를 월별로 구글시트 탭(접수_YYYY-MM)에 누적 저장
 // - 협력점정보(원장)는 "협력점정보" 탭에 저장
 // - 한 화면: 요약 / 신규 / 이탈 / 증감 / 품질
 // ============================================================
 
-const APP_VER = "8.0";
+const APP_VER = "8.1";
 
 // ---------- 규칙 상수 (인수인계서 참조) ----------
 // 분석 제외 유형(신규가입이 아닌 접수): 상품명+상품옵션에 아래 단어가 있으면 제외
@@ -894,6 +986,7 @@ async function pool(items, k, fn) {
 
 // ---------- 상태 ----------
 const S = {
+  mode: (() => { try { return localStorage.getItem("upche_mode") === "margin" ? "margin" : "meet"; } catch (e) { return "meet"; } })(),   // 업체회의 | 유통마진
   months: {},          // { "2026-09": {units:[...], file, at, rawRows} }
   master: null,        // { file, at, rows:[...] }
   seg: "협력점",
@@ -1052,6 +1145,10 @@ const IC = {
   cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
   box: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/>',
   export: '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>',
+  key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2"/><path d="m16 7 3 3"/><path d="m19 4 2 2"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+  chart: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+  trend: '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
   info: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
 };
 const ic = (k, s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
@@ -1193,11 +1290,15 @@ function render() {
     const keep = [...document.querySelectorAll("#main .tw")].map(el => [el.scrollTop, el.scrollLeft]);
     const wy = window.scrollY, sy = (document.querySelector(".side-mid") || {}).scrollTop || 0, helpEl = document.querySelector(".side-help");
     if (helpEl) S.helpOpen = helpEl.open;
-    $("#side").innerHTML = sideHtml();
-    $("#main").innerHTML = D && D.months.length ? mainHtml() : emptyHtml();
+    const mg = S.mode === "margin";
+    document.body.classList.toggle("mode-margin", mg);
+    if (mg && !MS.loaded && !MS.loading && lsGet(LS_KEY.token)) setTimeout(() => mgLoad(), 0);
+    $("#side").innerHTML = mg ? mgSideHtml() : sideHtml();
+    $("#main").innerHTML = mg ? mgMainHtml() : D && D.months.length ? mainHtml() : emptyHtml();
     document.querySelectorAll("#main .tw").forEach((el, i) => { if (keep[i]) { el.scrollTop = keep[i][0]; el.scrollLeft = keep[i][1]; } });
     window.scrollTo(0, wy); const smid = document.querySelector(".side-mid"); if (smid) smid.scrollTop = sy;
-    bindMain();
+    bindCommon();
+    if (mg) mgBind(); else bindMain();
   } catch (e) { window.__showErr ? window.__showErr(e.message + " @ " + String(e.stack || "").split("\n")[1]) : alert(e.message); throw e; }
 }
 function sideHtml() {
@@ -1206,7 +1307,7 @@ function sideHtml() {
   const hasMaster = S.master && S.master.rows.length;
   let file = "", at = "";
   if (hasMaster && S.master.note) { const i = S.master.note.lastIndexOf(" · "); file = i > 0 ? S.master.note.slice(0, i) : S.master.note; at = i > 0 ? S.master.note.slice(i + 3) : ""; }
-  return `<div class="side-top"><div class="brand">${typeof LOGO_B64 === "string" && LOGO_B64.length > 100 ? `<img src="data:image/png;base64,${LOGO_B64}" alt="WAVENET">` : `<b class="logo-t">WAVENET</b>`}</div></div>
+  return `<div class="side-top"><div class="brand">${typeof LOGO_B64 === "string" && LOGO_B64.length > 100 ? `<img src="data:image/png;base64,${LOGO_B64}" alt="WAVENET">` : `<b class="logo-t">WAVENET</b>`}</div>${modeSwitchHtml()}</div>
     <div class="side-mid"><nav class="spaces">${["협력점", "판매점", "제휴"].map(s => `<button class="space${S.seg === s ? " on" : ""}" data-seg="${s}">
       <span class="sico ${SEG_META[s].tone}">${ic(SEG_META[s].icon)}</span><span class="stxt"><b>${s}</b><small>등록 ${fmtN(cnt(s))}곳</small></span></button>`).join("")}</nav>
     <hr class="side-hr">
@@ -1226,11 +1327,13 @@ function sideHtml() {
         <div class="hi"><i class="c-red"></i><div><b>주의</b><p>평균보다 1.5배 이상 나쁜 칸<br>(접수 20건 이상)</p></div></div>
       </div></details>
     </div>
-    <div class="side-bottom">
-      ${ms.length ? `<button class="ghost del" id="bDel">${ic("trash")}월 데이터 삭제</button>` : ""}
-      ${S.user ? `<hr class="side-hr"><div class="me"><span class="avatar">${esc(S.user.name[0])}</span><span class="me-n">${esc(S.user.name)}<small>${esc(S.user.id)}</small></span>
-        <span class="me-a"><button class="link" id="bPw">비밀번호</button><button class="link" id="bLogout">로그아웃</button></span></div>` : ""}
-    </div>`;
+    <div class="side-bottom">${meHtml()}</div>`;
+}
+// 사이드바 맨 아래 접속 계정: 아바타 | 이름·아이디 | 비밀번호·로그아웃 아이콘
+function meHtml() {
+  if (!S.user) return "";
+  return `<div class="me"><span class="avatar">${esc(S.user.name[0])}</span><span class="me-n"><b>${esc(S.user.name)}</b><small>${esc(S.user.id)}</small></span>
+    <span class="me-a"><button class="icon" id="bPw" title="비밀번호 변경" aria-label="비밀번호 변경">${ic("key")}</button><button class="icon out" id="bLogout" title="로그아웃" aria-label="로그아웃">${ic("logout")}</button></span></div>`;
 }
 // 사이드바 년·월 달력 (데이터가 있는 달만 선택)
 function sideCalendarHtml(M) {
@@ -1266,7 +1369,7 @@ function headerHtml(M) {
     <div><h1>${esc(S.seg)} 현황</h1><p class="sub">${M.replace("-", "년 ")}월 · 접수일 기준 · 자점·상부점 제외</p></div>
     <div class="top-r">
       <label class="field">${ic("search")}<input id="search" type="search" placeholder="업체명 검색" value="${esc(S.search)}"></label>
-      <button class="ghost" id="bExcel">${ic("export")}엑셀로 저장</button>
+      <button class="ghost del" id="bDel">${ic("trash")}월 데이터 삭제</button>
       <button class="soft" id="bMaster">${ic("file")}협력점정보 올리기</button>
       <button class="primary" id="bData">${ic("upload")}접수 데이터 올리기</button>
     </div></div>`;
@@ -1471,7 +1574,7 @@ function bindMain() {
     if (k === "telco") derive();
     render();
   });
-  document.querySelectorAll(".space").forEach(b => b.onclick = () => { S.seg = b.dataset.seg; render(); });
+  document.querySelectorAll(".space[data-seg]").forEach(b => b.onclick = () => { S.seg = b.dataset.seg; render(); });
   const sm = $("#selMonth"); if (sm) sm.onchange = () => { S.month = sm.value; render(); };
   // 검색: 한글 조합 중에는 다시 그리지 않고, 입력이 0.25초 멈추면 한 번만 검색
   const se = $("#search");
@@ -1514,7 +1617,17 @@ function bindMain() {
   const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
   on("#bData", () => $("#fData").click()); on("#bData2", () => $("#fData").click());
   on("#bMaster", () => $("#fMaster").click()); on("#bMaster2", () => $("#fMaster").click());
-  on("#bExcel", onExcel); on("#bDel", onDeleteMonth); on("#bPw", openPwModal); on("#bLogout", logout);
+  on("#bDel", onDeleteMonth);
+}
+// 두 메뉴 공통: 전환 버튼, 비밀번호, 로그아웃
+function bindCommon() {
+  document.querySelectorAll(".mode button").forEach(b => b.onclick = () => {
+    if (S.mode === b.dataset.mode) return;
+    S.mode = b.dataset.mode; lsSet("upche_mode", S.mode === "margin" ? "margin" : null);
+    closeDetail(); render(); window.scrollTo(0, 0);
+  });
+  const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
+  on("#bPw", openPwModal); on("#bLogout", logout);
 }
 
 function dataNameOf(masterName) {
@@ -1600,10 +1713,6 @@ async function onMasterFile(files) {
     toast(`협력점정보 갱신: ${fmtN(S.master.rows.length)}행 (새로 추가 ${added}곳)`);
   } catch (e) { toast(`<b>오류</b> ${esc(e.message)}`, 0); } finally { busy(false); }
 }
-function download(name, blob) {
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
-  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-}
 async function onDeleteMonth() {
   const ms = Object.keys(S.months).sort();
   if (!ms.length) return;
@@ -1622,163 +1731,657 @@ async function onDeleteMonth() {
     if (sel.length) toast(`${sel.map(monthLabel).join(", ")} 삭제했습니다.`);
   };
 }
-// ---------- 엑셀로 저장 (서식 유지, ExcelJS) ----------
+// ---------- 외부 스크립트 불러오기 ----------
 function loadScript(src) {
   return new Promise((res, rej) => { const x = document.createElement("script"); x.src = src; x.onload = res; x.onerror = rej; document.head.appendChild(x); });
 }
-async function loadExcelJS() {
-  if (window.ExcelJS) return;
-  try { await loadScript("https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"); }
-  catch (e) { await loadScript("https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"); }
-  if (!window.ExcelJS) throw new Error("엑셀 저장 라이브러리를 불러오지 못했어요 (회사망에서 cdnjs / jsdelivr 주소가 막혔는지 확인해 주세요)");
-}
-const XC = { head: "FFF3F5F9", grp: "FFE9EEF6", cur: "FFE6EEFF", curText: "FF2F5FD0", line: "FFDFE3EA", flag: "FFFFF3F3", bad: "FFFFD9D9", badText: "FFC62828", up: "FFE5484D", down: "FF3B6FE0", sub: "FF7D8697", title: "FF1C2230" };
-const xFill = (argb) => ({ type: "pattern", pattern: "solid", fgColor: { argb } });
-const xBorder = { top: { style: "thin", color: { argb: XC.line } }, bottom: { style: "thin", color: { argb: XC.line } }, left: { style: "thin", color: { argb: XC.line } }, right: { style: "thin", color: { argb: XC.line } } };
-function xTitle(ws, text, sub, width) {
-  ws.addRow([text]).font = { bold: true, size: 14, color: { argb: XC.title } };
-  if (sub) ws.addRow([sub]).font = { size: 10, color: { argb: XC.sub } };
-  ws.addRow([]);
-}
-function xHeader(ws, rows, merges, curCols) {
-  const start = ws.rowCount + 1;
-  rows.forEach(r => { const row = ws.addRow(r); row.height = 20; row.eachCell({ includeEmpty: true }, c => {
-    c.font = { bold: true, size: 10 }; c.fill = xFill(XC.head); c.border = xBorder; c.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-  }); });
-  merges.forEach(([r1, c1, r2, c2]) => ws.mergeCells(start + r1, c1, start + r2, c2));
-  (curCols || []).forEach(c => { for (let i = 0; i < rows.length; i++) { const x = ws.getCell(start + i, c); x.fill = xFill(XC.cur); x.font = { bold: true, size: 10, color: { argb: XC.curText } }; } });
-  return start + rows.length; // 데이터 시작 행
-}
-function xRow(ws, vals, opt = {}) {
-  const row = ws.addRow(vals);
-  row.eachCell({ includeEmpty: true }, (c, i) => {
-    c.border = xBorder; c.font = { size: 10, bold: !!opt.bold && i === 1 };
-    if (i > 1) c.alignment = { horizontal: "right" };
-    if (opt.fill) c.fill = xFill(opt.fill);
-  });
-  if (opt.sub) { row.outlineLevel = 1; row.hidden = true; row.getCell(1).font = { size: 10, color: { argb: XC.sub } }; row.getCell(1).alignment = { indent: 2 }; }
-  return row;
-}
-const pctFmt = "0.0%";
-async function onExcel() {
-  if (!D || !D.months.length) return;
-  busy(true, "엑셀 파일 만드는 중...");
-  try {
-    await loadExcelJS();
-    const M = S.month, seg = S.seg, wb = new ExcelJS.Workbook();
-    wb.creator = "업체회의 누적분석";
-    const tag = `${seg} · ${M.replace("-", "년 ")}월 기준 · 접수일 기준 · 자점·상부점 제외`;
+// =====================================================================
+// 유통마진 계산 (기존 유통마진 앱의 계산 규칙을 그대로 옮김)
+// =====================================================================
+// =====================================================================
+// 유통마진 계산 — 원본 "유통사업부 유통마진" 앱의 코드를 그대로 옮김 (조건·계산식 동일)
+// =====================================================================
+const MG = (() => {
+// ════════════════════════════════════════════════════════════════
+// 분석 기준
+// ════════════════════════════════════════════════════════════════
+// 1) 이관건: 상부점이 "숫자." 로 시작하면 자체 코드건 → 제외 (그 외 상부점은 모두 이관건)
+const isCodeShop = shop => /^\d+\./.test(shop);
+// 2) 자점: 아래 협력점은 제외하지 않고 "자점마진"을 차감해 반영
+const JAJEOM = new Set(['0.영업정산','1.시흥영업팀','2.천안영업팀','3.부천영업팀(미사용)','4.우신기술사업부','5.상권사업부','6.우성영업사업부','7.유통사업부','8.우신영업사업부','9.모바일유통사업부']);
+// 자점에서 상담하는 협력점 (와이즐리·크레소티) → 자점과 동일하게 자점마진 반영
+const JAJEOM_CONSULT = ['와이즐리', '크레소티'];
+const isJajeom = partner => JAJEOM.has(partner) || JAJEOM_CONSULT.some(k => partner.includes(k));
+// 본점인센: 본점이 협력점에 인터넷 1건당 지급하는 인센티브 → 유통마진에서 차감 (협력점명에 키워드가 들어가면 적용)
+//   새 업체는 여기에 { keyword: '업체명 일부', perInternet: 금액 } 한 줄 추가
+const HQ_INCENTIVE = [
+  { keyword: '옆커폰', perInternet: 30000 },
+];
+const hqRuleOf = partner => HQ_INCENTIVE.find(h => partner.includes(h.keyword));
+const isHq = partner => !!hqRuleOf(String(partner||''));
+// 3) 자점마진: 인터넷·모바일 1건당 10만원, SKYLIFE 모바일 5만원 (TV·부가상품·렌탈은 미반영)
+const JA_MARGIN_INTERNET = 100000, JA_MARGIN_MOBILE = 100000, JA_MARGIN_SKYLIFE_MOBILE = 50000;
+// 4) 상품 제외 키워드
+const EXCL_PRODUCT = ['정산관련', '추가지급'];
+// 5) 저마진 기준
+const LOW_MARGIN = 10000;
 
-    // 1) 요약
-    {
-      const ws = wb.addWorksheet("요약", { views: [{ showGridLines: false }] });
-      ws.columns = [{ width: 22 }, { width: 16 }, { width: 18 }, { width: 14 }];
-      xTitle(ws, `업체회의 요약 — ${seg}`, tag);
-      const ps = segPartners(), base = prevMonths(M, 3);
-      xHeader(ws, [["항목", "기준월", `직전 ${base.length}개월 평균`, "증감률"]], []);
-      for (const g of ALLG) {
-        const cur = ps.reduce((a, p) => a + sumCells(p.dataName, [M], [g]).n, 0);
-        const avg = base.length ? ps.reduce((a, p) => a + sumCells(p.dataName, base, [g]).n, 0) / base.length : null;
-        const r = xRow(ws, [`${G_LABEL[g]} 접수(건)`, cur, avg == null ? "-" : Math.round(avg * 10) / 10, avg ? (cur - avg) / avg : "-"]);
-        if (avg) { r.getCell(4).numFmt = pctFmt; r.getCell(4).font = { size: 10, bold: true, color: { argb: cur >= avg ? XC.up : XC.down } }; }
+const isInternet = p => p.includes('인터넷') && !p.includes('인터넷전화');
+function jaMarginOf(p) {
+  if (p === '모바일_SKYLIFE') return JA_MARGIN_SKYLIFE_MOBILE;
+  if (p.startsWith('모바일_')) return JA_MARGIN_MOBILE;
+  if (isInternet(p)) return JA_MARGIN_INTERNET;
+  return 0;
+}
+function carrierOf(p) {
+  const [a, b] = p.split('_');
+  if (a === '모바일') return (b || '모바일') + ' 모바일';
+  if (a === '유선기타') return '유선기타';
+  return { 'LG U+':'LG', 'HelloVision':'HV' }[a] || a;
+}
+const WIRED_ETC = '유선기타';
+const isWiredEtc = p => p.startsWith('유선기타');
+function baseCarrier(p) {
+  const [a, b] = p.split('_');
+  const m = { 'LG U+':'LG', 'HelloVision':'HV', 'LG':'LG' };
+  return a === '모바일' ? (m[b] || b || '모바일') : (m[a] || a);
+}
+// 건의 구분: 유선기타는 별도 카테고리, 그 외는 통신사 (모바일만 있으면 "모바일", 렌탈은 "렌탈")
+function categoryOf(prods) {
+  if (prods.some(isWiredEtc)) return WIRED_ETC;
+  if (prods.every(p => p.startsWith('렌탈'))) return '렌탈';
+  if (prods.every(p => p.startsWith('모바일_'))) return '모바일';
+  const main = prods.find(isInternet) || prods.find(p => !p.startsWith('모바일_')) || prods[0];
+  return baseCarrier(main);
+}
+const CATEGORY_ORDER = ['LG','SKB','SKYLIFE','HV','KT','SKT','모바일','렌탈',WIRED_ETC];
+// 분석 대상 행 (상부정산 파일 기준)
+function isTarget(r) {
+  const shop = String(r['상부점']||'').trim(), p = String(r['상품명']||'').trim();
+  if (String(r['정산종류']||'').trim() !== '일반') return false;
+  if (String(r['개통상태']||'').trim() !== '개통완료') return false;
+  if (!shop || isCodeShop(shop)) return false;
+  if (EXCL_PRODUCT.some(k => p.includes(k))) return false;
+  if (p.startsWith('모바일_') && String(r['가입서비스']||'').includes('(기기)')) return false;   // 모바일 (기기) 제외, (유심)만
+  return true;
+}
+// 금액(수수료) = 약정금액(기본수수료) + 번들수수료 + 동판수수료 − (할인탭 + 미비서류 + 기타)  — 상부정산·전체정산 동일
+//   할인탭·미비서류·기타: 양수면 차감, 음수면 추가 (그대로 빼면 음수는 더해짐)
+//   사은품·물류·쿠폰·선납·수납: 고객에게 가는 돈이라 무시
+const ADJ_COLS = ['차감내역_할인탭', '차감내역_미비서류', '차감내역_기타'];
+const n = v => { const x=parseFloat(String(v??'0').replace(/,/g,'')); return isNaN(x)?0:x; };
+const amountOf = r => r ? n(r['약정금액']) + n(r['번들수수료']) + n(r['동판수수료']) - ADJ_COLS.reduce((s,c) => s + n(r[c]), 0) : 0;
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const maskPhone = p => { const d = String(p||'').replace(/\D/g,''); return d.length >= 4 ? '***-****-' + d.slice(-4) : (d ? '***' : ''); };
+// 고객키: 이름+연락처 해시 (시트에 연락처 원문을 남기지 않기 위함)
+function hashKey(str) {
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (h2 >>> 0).toString(16).padStart(8,'0') + (h1 >>> 0).toString(16).padStart(8,'0');
+}
+const sortCategories = arr => arr.slice().sort((a,b) => {
+  const ia = CATEGORY_ORDER.indexOf(a.category), ib = CATEGORY_ORDER.indexOf(b.category);
+  return (ia<0?50:ia) - (ib<0?50:ib) || a.category.localeCompare(b.category);
+});
+// ── 파일 → 2차원 표(grid) ────────────────────────────────────────
+// 1) 전산에서 내려받은 HTML 표 형식 .xls (EUC-KR / UTF-8)
+// 2) 엑셀에서 다시 저장한 진짜 엑셀(.xlsx / .xls) · CSV
+function parseFile(bytes) {
+  const isZip = bytes[0]===0x50 && bytes[1]===0x4B;                                   // xlsx
+  const isOle = bytes[0]===0xD0 && bytes[1]===0xCF && bytes[2]===0x11 && bytes[3]===0xE0; // 구버전 xls
+  if (!isZip && !isOle) {
+    for (const enc of ['euc-kr', 'utf-8']) {
+      const text = new TextDecoder(enc).decode(bytes);
+      if (/<table/i.test(text) && text.includes('정산종류')) return gridToRows(htmlToGrid(text));
+    }
+  }
+  if (typeof XLSX === 'undefined') throw new Error('엑셀 라이브러리를 불러오지 못했습니다. 인터넷 연결 후 새로고침하세요.');
+  const wb = XLSX.read(bytes, { type:'array', codepage:949 });
+  for (const name of wb.SheetNames) {
+    const grid = sheetToGrid(wb.Sheets[name]);
+    if (grid.some(r => r.some(c => String(c).trim() === '정산종류'))) return gridToRows(grid);
+  }
+  throw new Error("'정산종류' 열을 찾을 수 없습니다. 상부정산/전체정산 원본 파일인지 확인하세요.");
+}
+
+function htmlToGrid(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const table = Array.from(doc.querySelectorAll('table')).find(t => t.textContent.includes('정산종류'));
+  if (!table) throw new Error('테이블 없음');
+  const grid = [];
+  Array.from(table.querySelectorAll('tr')).forEach((tr, ri) => {
+    if (!grid[ri]) grid[ri] = [];
+    let ci = 0;
+    Array.from(tr.querySelectorAll('th,td')).forEach(cell => {
+      while (grid[ri][ci] !== undefined) ci++;
+      const text = cell.textContent.trim();
+      const cs = parseInt(cell.getAttribute('colspan')||'1');
+      const rs = parseInt(cell.getAttribute('rowspan')||'1');
+      for (let r=0;r<rs;r++) {
+        if (!grid[ri+r]) grid[ri+r]=[];
+        for (let c=0;c<cs;c++) grid[ri+r][ci+c]=text;
       }
-      const all = { n: 0, C: 0, RE: 0, H: 0, O: 0, EX: 0 }; let active = 0;
-      for (const p of ps) { const o = sumCells(p.dataName, [M], ALLG); for (const k in all) all[k] += o[k]; if (o.n + o.EX) active++; }
-      const rt = rates(all);
-      xRow(ws, ["접수 업체(곳)", active, `등록 ${D.registered.filter(x => x.seg === seg).length}곳 중`, ""]);
-      [["취소율(재접수 제외)", rt.cancel], ["단순 취소율", rt.cancelRaw], ["해지율", rt.term], ["신규가입 비율", rt.fresh]].forEach(([k, v]) => { const r = xRow(ws, [k, v ?? "-", "", ""]); if (v != null) r.getCell(2).numFmt = pctFmt; });
+      ci += cs;
+    });
+  });
+  return grid;
+}
+
+function sheetToGrid(ws) {
+  const grid = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'', blankrows:false })
+    .map(r => r.map(v => typeof v === 'string' ? v.trim() : v));
+  // 병합 셀은 HTML colspan/rowspan 과 같게 값을 채워 넣음 (2줄 헤더 처리용)
+  const origin = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']).s : { r:0, c:0 };
+  (ws['!merges'] || []).forEach(m => {
+    const v = (grid[m.s.r - origin.r] || [])[m.s.c - origin.c];
+    for (let r=m.s.r; r<=m.e.r; r++) for (let c=m.s.c; c<=m.e.c; c++) {
+      const rr = r - origin.r, cc = c - origin.c;
+      if (!grid[rr]) grid[rr] = [];
+      grid[rr][cc] = v;
     }
-    // 2) 신규 · 재거래 · 이탈
-    {
-      const ws = wb.addWorksheet("신규·재거래·이탈", { views: [{ showGridLines: false }] });
-      ws.columns = [{ width: 32 }, { width: 10 }, { width: 14 }, { width: 14 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 }];
-      xTitle(ws, `신규 · 재거래 · 이탈 — ${seg}`, tag);
-      const nw = calcNew(M);
-      ws.addRow([`신규 (원장 등록일 기준 최근 ${S.newRange}개월) ${nw.count}곳 · 신규 업체 접수 ${nw.sum}건`]).font = { bold: true, size: 11 };
-      xHeader(ws, [["업체", "등급", "등록일", "", "유선", "무선", "렌탈", "합계"]], []);
-      nw.rows.forEach(r => xRow(ws, [r.x.name, r.x.grade, r.x.reg, "", r.o.W, r.o.M, r.o.R, r.t]));
-      if (!nw.rows.length) xRow(ws, ["해당 없음", "", "", "", "", "", "", ""]);
-      ws.addRow([]);
-      const back = calcBack(M);
-      ws.addRow([`재거래 (전월 접수 없다가 이번 달 다시 접수) ${back.length}곳`]).font = { bold: true, size: 11 };
-      xHeader(ws, [["업체", "등급", "이전 마지막 접수", "", "", "", "", "기준월 접수"]], []);
-      back.forEach(r => xRow(ws, [r.p.dataName, r.p.grade, monthLabel(r.last), "", "", "", "", r.cur]));
-      if (!back.length) xRow(ws, ["해당 없음", "", "", "", "", "", "", ""]);
-      ws.addRow([]);
-      const ch = calcChurn(M);
-      ws.addRow([`이탈 (최근 ${S.churn}개월 접수 없음) ${ch.out.length}곳`]).font = { bold: true, size: 11 };
-      xHeader(ws, [["업체", "등급", "등록일", "마지막 접수", "공백(개월)", "유선 월평균", "무선 월평균", "렌탈 월평균"]], []);
-      ch.out.forEach(r => xRow(ws, [r.x.name, r.x.grade, r.x.reg, monthLabel(r.last), r.gap, Math.round(r.o.W * 10) / 10, Math.round(r.o.M * 10) / 10, Math.round(r.o.R * 10) / 10]));
-      if (!ch.out.length) xRow(ws, ["해당 없음", "", "", "", "", "", "", ""]);
-      if (ch.never.length) { ws.addRow([]); ws.addRow([`보유 기간 내 접수 이력 없음 ${ch.never.length}곳: ${ch.never.map(x => x.name).join(", ")}`]).font = { size: 10, color: { argb: XC.sub } }; }
+  });
+  return grid;
+}
+
+// ── grid → 행 객체 (헤더 1줄/2줄 자동 인식) ───────────────────────
+function gridToRows(grid) {
+  const hi = grid.findIndex(r => (r||[]).some(c => String(c).trim() === '정산종류'));
+  if (hi < 0) throw new Error("'정산종류' 열을 찾을 수 없습니다.");
+  const h1 = grid[hi].map(v => String(v ?? '').trim());
+  const jtCol = h1.indexOf('정산종류');
+  const next = (grid[hi+1] || []).map(v => String(v ?? '').trim());
+  // 다음 줄의 '정산종류' 칸이 비었거나 같은 제목이면 → 2줄 헤더 (차감내역_물류 등)
+  const twoRow = next.length && (next[jtCol] === '' || next[jtCol] === '정산종류');
+  const h2 = twoRow ? next : [];
+  const width = Math.max(h1.length, h2.length);
+  const cols = Array.from({length:width}, (_,i) => {
+    const v1=h1[i]||'', v2=h2[i]||'';
+    if (!v1&&!v2) return '__'+i;
+    if (!v2||v1===v2) return v1;
+    if (!v1) return v2;
+    return v1+'_'+v2;
+  });
+
+  const result = [];
+  for (let ri = hi + (twoRow?2:1); ri < grid.length; ri++) {
+    const row = grid[ri]||[];
+    const obj = {};
+    cols.forEach((c,i) => { obj[c] = row[i]!==undefined && row[i]!==null ? row[i] : ''; });
+    const jt = String(obj['정산종류']||'').trim();
+    if (!jt || jt==='현재 화면 정산 합계' || jt==='정산종류') continue;
+    result.push(obj);
+  }
+  return result;
+}
+// ── 계산 ─────────────────────────────────────────────────────────
+// 상부정산 행과 전체정산 행은 고객명·연락처·상품명·옵션·접수일·최초등록일로 1:1 매칭
+const rowKey = r => ['고객명','명의자연락처','상품명','상품옵션','접수일','최초등록일'].map(c => String(r[c]??'').trim()).join('\u0001');
+
+function analyze(sRows, jRows, month) {
+  const jMap = new Map();
+  jRows.forEach(r => { const k = rowKey(r); if (!jMap.has(k)) jMap.set(k, []); jMap.get(k).push(r); });
+  const custMap = new Map();
+  let unmatched = 0;
+  sRows.forEach(r => {
+    const k = rowKey(r), list = jMap.get(k);
+    const j = list && list.length ? list.shift() : null;   // 같은 키가 여러 개면 순서대로 짝지음
+    if (!isTarget(r)) return;
+    if (!j) unmatched++;
+    const p = String(r['상품명']||'').trim(), partner = String(r['협력점']||'').trim();
+    const name = String(r['고객명']||'').trim(), phone = String(r['명의자연락처']||'').trim();
+    // 1건 = 이름+연락처+상부점 (+유선기타는 별도 카테고리). 상부점이 다르면 각각 별도 건
+    const shop = String(r['상부점']||'').trim();
+    const ck = [name, phone.replace(/\D/g,''), shop, isWiredEtc(p) ? WIRED_ETC : ''].join('|');
+    let c = custMap.get(ck);
+    if (!c) {
+      c = { key: hashKey(ck), name, phone: maskPhone(phone), partner, ja: isJajeom(partner),
+            shops: new Set(), carriers: new Set(), prods: [], rawProds: [], upper:0, jaMargin:0, hqIncentive:0, total:0 };
+      custMap.set(ck, c);
     }
-    // 3) 접수 증감 (업체별 월별 유선/무선/렌탈 + 통신사 그룹 행)
-    {
-      const G = calcGrow(M), nb = G.base.length;
-      const ws = wb.addWorksheet("접수 증감", { views: [{ state: "frozen", xSplit: 1, ySplit: 5, showGridLines: false }], properties: { outlineProperties: { summaryBelow: false } } });
-      xTitle(ws, `업체별 접수 증감 — ${seg}`, `${tag} · 직전 ${nb}개월 평균과 비교 · 왼쪽 [+]를 누르면 통신사별 행이 펼쳐져요`);
-      const h1 = ["업체"], h2 = [""], merges = [[0, 1, 1, 1]], cur = [];
-      let c = 2;
-      G.show.forEach(m => { h1.push(monthLabel(m) + (m === M ? " (기준월)" : ""), "", ""); h2.push("유선", "무선", "렌탈"); merges.push([0, c, 0, c + 2]); if (m === M) cur.push(c, c + 1, c + 2); c += 3; });
-      if (nb) { h1.push(`직전 ${nb}개월 평균`, "", "", "증감률", "", ""); h2.push("유선", "무선", "렌탈", "유선", "무선", "렌탈"); merges.push([0, c, 0, c + 2], [0, c + 3, 0, c + 5]); }
-      xHeader(ws, [h1, h2], merges, cur);
-      ws.getColumn(1).width = 34; for (let i = 2; i <= h1.length; i++) ws.getColumn(i).width = 8.5;
-      const put = (name, vals, avg, curv, sub) => {
-        const v = [name]; vals.forEach(x => ALLG.forEach(g => v.push(x[g] || 0)));
-        if (nb) { ALLG.forEach(g => v.push(avg[g] == null ? 0 : Math.round(avg[g] * 10) / 10)); ALLG.forEach(g => v.push(avg[g] ? (curv[g] - avg[g]) / avg[g] : (curv[g] ? "신규발생" : "-"))); }
-        const r = xRow(ws, v, { sub, bold: !sub });
-        cur.forEach(ci => { r.getCell(ci).fill = xFill(XC.cur); r.getCell(ci).font = { size: 10, bold: true }; });
-        if (nb) ALLG.forEach((g, i) => { const cell = r.getCell(h1.length - 2 + i); if (typeof cell.value === "number") { cell.numFmt = "▲0.0%;▼0.0%;0.0%"; cell.font = { size: 10, bold: true, color: { argb: cell.value > 0 ? XC.up : cell.value < 0 ? XC.down : XC.sub } }; } });
-      };
-      for (const r of G.rows) {
-        put(`${r.p.dataName}${r.p.grade ? ` (${r.p.grade})` : ""}`, r.vals, r.avg, r.cur, false);
-        for (const t of telcoRows(r.p.dataName, [...G.base, M])) {
-          const vals = G.show.map(m => { const o = {}; for (const g of ALLG) o[g] = sumCellsT(r.p.dataName, t, [m], [g]).n; return o; });
-          const avg = {}; for (const g of ALLG) avg[g] = nb ? sumCellsT(r.p.dataName, t, G.base, [g]).n / nb : null;
-          put(t, vals, avg, vals[vals.length - 1], true);
-        }
-      }
-    }
-    // 4) 취소 · 해지 · 신규가입 (주의 표시 + 통신사 그룹 행)
-    {
-      const Q = calcQuality(M), a = Q.avg;
-      const ws = wb.addWorksheet("취소·해지", { views: [{ state: "frozen", xSplit: 1, ySplit: 5, showGridLines: false }], properties: { outlineProperties: { summaryBelow: false } } });
-      const label = Q.ms.length > 1 ? `${monthLabel(Q.ms[0])}~${monthLabel(Q.ms[Q.ms.length - 1])}` : monthLabel(M);
-      xTitle(ws, `취소율 · 해지율 · 신규가입 비율 — ${seg}`, `${label} 접수분 · 평균 취소율 ${fmtR(a.ALL.cancel)} · 평균 해지율 ${fmtR(a.ALL.term)} · 빨간 배경 = 주의(평균보다 크게 나쁨) · 왼쪽 [+]로 통신사별 행`);
-      const h1 = ["업체", "접수 건수", "", "", "취소율", "", "", "해지율", "", "", "신규가입 비율", "제외 건수", "주의"];
-      const h2 = ["", "유선", "무선", "렌탈", "유선", "무선", "렌탈", "유선", "무선", "렌탈", "", "", ""];
-      xHeader(ws, [h1, h2], [[0, 1, 1, 1], [0, 2, 0, 4], [0, 5, 0, 7], [0, 8, 0, 10], [0, 11, 1, 11], [0, 12, 1, 12], [0, 13, 1, 13]]);
-      ws.getColumn(1).width = 34; for (let i = 2; i <= 13; i++) ws.getColumn(i).width = i === 11 ? 12 : 9;
-      const put = (name, by, all, bad, flag, sub) => {
-        const v = [name]; const rt = {}; ALLG.forEach(g => rt[g] = rates(by[g])); const ra = rates(all);
-        ALLG.forEach(g => v.push(by[g].n || 0));
-        ALLG.forEach(g => v.push(by[g].n ? rt[g].cancel : "-"));
-        ALLG.forEach(g => v.push(by[g].O + by[g].H ? rt[g].term : "-"));
-        v.push(all.n + all.EX ? ra.fresh : "-", all.EX || 0, flag ? "주의" : "");
-        const r = xRow(ws, v, { sub, bold: !sub, fill: flag ? XC.flag : null });
-        for (let i = 5; i <= 11; i++) if (typeof r.getCell(i).value === "number") r.getCell(i).numFmt = pctFmt;
-        if (bad) {
-          const map = { cW: 5, cM: 6, cR: 7, tW: 8, tM: 9, tR: 10, f: 11 };
-          for (const k in map) if (bad[k]) { const x = r.getCell(map[k]); x.fill = xFill(XC.bad); x.font = { size: 10, bold: true, color: { argb: XC.badText } }; }
-        }
-        if (flag) { const x = r.getCell(13); x.font = { size: 10, bold: true, color: { argb: XC.badText } }; x.alignment = { horizontal: "center" }; }
-      };
-      for (const r of Q.rows) {
-        put(`${r.p.dataName}${r.p.grade ? ` (${r.p.grade})` : ""}`, r.by, r.all, r.bad, r.flag, false);
-        for (const t of telcoRows(r.p.dataName, Q.ms)) {
-          const by = {}; for (const g of ALLG) by[g] = sumCellsT(r.p.dataName, t, Q.ms, [g]);
-          put(t, by, sumCellsT(r.p.dataName, t, Q.ms, ALLG), null, false, true);
-        }
-      }
-      ws.addRow([]);
-      ["취소율 = (개통 전 취소 − 60일 안에 같은 고객이 다시 접수한 건) ÷ 접수", "해지율 = 개통 후 해지 ÷ (개통 + 해지)", "신규가입 비율 = 신규 ÷ (신규 + 약정갱신·재약정·업셀링/전환·부가서비스·명의변경·이전설치)", "유선은 고객 1명의 접수 1번(인터넷 회선 기준)을 1건으로 셉니다."]
-        .forEach(t => ws.addRow([t]).font = { size: 9, color: { argb: XC.sub } });
-    }
-    wb.eachSheet(ws => { ws.pageSetup = { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9, margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } }; });
-    const buf = await wb.xlsx.writeBuffer();
-    download(`업체회의_${seg}_${M.replace("-", "")}.xlsx`, new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
-    toast("엑셀 파일을 저장했어요. 다운로드 폴더를 확인해 주세요.", 5000);
-  } catch (e) { toast(`<b>오류</b> ${esc(e.message)}`, 0); } finally { busy(false); }
+    const up = amountOf(r), tot = amountOf(j), jm = isJajeom(partner) ? jaMarginOf(p) : 0;   // 자점마진은 행의 협력점 기준
+    const hr = hqRuleOf(partner), hq = hr && isInternet(p) ? hr.perInternet : 0;   // 본점인센: 인터넷 1건당
+    c.upper += up; c.total += tot; c.jaMargin += jm; c.hqIncentive += hq;
+    c.shops.add(String(r['상부점']||'').trim()); c.carriers.add(carrierOf(p));
+    c.prods.push(p + (up||tot ? '' : '(0원)')); c.rawProds.push(p);
+  });
+  const customers = [...custMap.values()].map(c => ({
+    key:c.key, name:c.name, phone:c.phone, partner:c.partner, ja:c.ja,
+    upperShop:[...c.shops].join(', '), carrier:[...c.carriers].join(', '), products:c.prods.join(' + '), category:categoryOf(c.rawProds),
+    upper:Math.round(c.upper), jaMargin:Math.round(c.jaMargin), hqIncentive:Math.round(c.hqIncentive), total:Math.round(c.total),
+    margin:Math.round(c.upper - c.jaMargin - c.hqIncentive - c.total),
+  }));
+  return buildResult(month, customers, unmatched);
+}
+
+function buildResult(month, customers, unmatched) {
+  const sum = (arr, k) => arr.reduce((s,x) => s + x[k], 0);
+  const summary = {
+    customers: customers.length, extCustomers: customers.filter(c=>!c.ja).length, jaCustomers: customers.filter(c=>c.ja).length,
+    upper: sum(customers,'upper'), jaMargin: sum(customers,'jaMargin'), hqIncentive: sum(customers,'hqIncentive'), total: sum(customers,'total'), margin: sum(customers,'margin'),
+    lowCount: customers.filter(c => c.margin < LOW_MARGIN).length, negCount: customers.filter(c => c.margin < 0).length,
+  };
+  summary.perCustomer = summary.customers ? Math.round(summary.margin / summary.customers) : 0;
+  const pm = new Map();
+  customers.forEach(c => {
+    let p = pm.get(c.partner);
+    if (!p) { p = { partner:c.partner, ja:c.ja, customers:0, upper:0, jaMargin:0, hqIncentive:0, total:0, margin:0, lowCount:0, negCount:0 }; pm.set(c.partner, p); }
+    p.customers++; p.upper += c.upper; p.jaMargin += c.jaMargin; p.hqIncentive += c.hqIncentive; p.total += c.total; p.margin += c.margin;
+    if (c.margin < LOW_MARGIN) p.lowCount++;
+    if (c.margin < 0) p.negCount++;
+  });
+  const partners = [...pm.values()].sort((a,b) => b.margin/b.customers - a.margin/a.customers || b.margin - a.margin);
+  const cm = new Map();
+  customers.forEach(c => {
+    let x = cm.get(c.category);
+    if (!x) { x = { category:c.category, customers:0, upper:0, jaMargin:0, hqIncentive:0, total:0, margin:0, lowCount:0, negCount:0 }; cm.set(c.category, x); }
+    x.customers++; x.upper += c.upper; x.jaMargin += c.jaMargin; x.hqIncentive += c.hqIncentive; x.total += c.total; x.margin += c.margin;
+    if (c.margin < LOW_MARGIN) x.lowCount++;
+    if (c.margin < 0) x.negCount++;
+  });
+  const categories = sortCategories([...cm.values()]);
+  const lows = customers.filter(c => c.margin < LOW_MARGIN).sort((a,b) => a.margin - b.margin).map(c => ({ ...c, month }));
+  return { month, summary, partners, categories, lows, customers, unmatched };
+}
+  return { analyze, parseFile, isJajeom, isHq, hqRuleOf, HQ_INCENTIVE, JA_MARGIN_INTERNET, JA_MARGIN_MOBILE, JA_MARGIN_SKYLIFE_MOBILE,
+           LOW_MARGIN, WIRED_ETC, CATEGORY_ORDER, sortCategories, JAJEOM_CONSULT };
+})();
+
+// =====================================================================
+// 유통마진 메뉴 (화면) — 계산은 MG(원본 그대로), 저장은 구글시트(마진_* 탭)
+// =====================================================================
+const MS = {
+  loaded: false, loading: false,
+  db: { summaries: [], partners: [], categories: [], lows: [] },
+  month: null, mpYear: 0,
+  view: "month",                        // month | trend
+  partnerSort: { key: "perCustomer", asc: false },
+  low: { f: "low", q: "", p: "" },
+  trendRange: 12, pivot: "margin", showAll: false,
+  up: { s: null, j: null, sName: "", jName: "", month: "", calc: null },
+  charts: {},
+};
+const wonF = (v) => Math.round(v || 0).toLocaleString("ko-KR");
+const wonM = (v) => { const a = Math.abs(v || 0); if (a >= 1e8) return (v / 1e8).toFixed(2) + "억"; if (a >= 1e6) return (v / 1e6).toFixed(1) + "백만"; return wonF(v) + "원"; };
+const mLabel = (m) => m ? `${m.slice(0, 4)}년 ${+m.slice(5, 7)}월` : "";
+const mMonths = () => MS.db.summaries.map(s => s.month).sort();
+const prevOf = (m) => addMonths(m, -1);
+function mData(m) {
+  const summary = MS.db.summaries.find(s => s.month === m);
+  if (!summary) return null;
+  return { month: m, summary, partners: MS.db.partners.filter(p => p.month === m), lows: MS.db.lows.filter(l => l.month === m),
+    categories: MG.sortCategories(MS.db.categories.filter(c => c.month === m)) };
+}
+const jaTag = (ja) => ja ? `<span class="tag mtag">자점마진</span>` : "";
+const hqTag = (p) => MG.isHq(p) ? `<span class="tag mtag hq">본점인센</span>` : "";
+
+async function mgLoad(force) {
+  if (MS.loading || (MS.loaded && !force)) return;
+  MS.loading = true; busy(true, "유통마진 데이터 불러오는 중...");
+  try {
+    MS.db = await gs("marginList");
+    MS.loaded = true;
+    const ms = mMonths();
+    if (!MS.month || !ms.includes(MS.month)) MS.month = ms[ms.length - 1] || null;
+  } catch (e) { if (!e.auth) toast(`<b>유통마진 불러오기 오류</b> ${esc(e.message)}`, 0); }
+  finally { MS.loading = false; busy(false); render(); }
+}
+
+// ---------- 사이드바 ----------
+function modeSwitchHtml() {
+  return `<div class="mode" role="tablist"><button class="${S.mode !== "margin" ? "on" : ""}" data-mode="meet">업체회의</button><button class="${S.mode === "margin" ? "on" : ""}" data-mode="margin">유통마진</button></div>`;
+}
+function mgSideHtml() {
+  const ms = mMonths();
+  const last = MS.db.summaries.slice().sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)))[0];
+  const nav = [["month", "chart", "월별 대시보드", "협력점·구분별 마진"], ["trend", "trend", "추이 분석", "월별 흐름·협력점×월"]];
+  return `<div class="side-top"><div class="brand"><img src="data:image/png;base64,${LOGO_W_B64}" alt="WAVENET"></div>${modeSwitchHtml()}</div>
+    <div class="side-mid">
+      <nav class="spaces">${nav.map(([v, i, t, d]) => `<button class="space${MS.view === v ? " on" : ""}" data-mview="${v}"><span class="sico mg">${ic(i)}</span><span class="stxt"><b>${t}</b><small>${d}</small></span></button>`).join("")}</nav>
+      <hr class="side-hr">
+      ${ms.length && MS.view === "month" ? mgCalendarHtml() : ""}
+      <div class="side-info">
+        <div><span>저장된 월</span><b>${ms.length ? `${monthLabel(ms[0])} ~ ${monthLabel(ms[ms.length - 1])}` : "없음"}</b></div>
+        <div><span>개월 수</span><b>${ms.length}개월</b></div>
+        ${last ? `<div class="note"><span class="nf">마지막 저장 · ${esc(last.savedBy || "")}</span><span>${esc(last.savedAt || "")}</span></div>` : ""}
+      </div>
+      <details class="side-help"><summary>${ic("info", 14)}분석 기준<span class="chev">▾</span></summary>
+        <div class="hl">
+          <div class="hi"><i class="c-blue"></i><div><b>대상</b><p>순수 이관건만<br>상부점이 "숫자."로 시작하면 제외</p></div></div>
+          <div class="hi"><i class="c-green"></i><div><b>포함 조건</b><p>정산종류 일반 · 개통완료<br>정산관련·추가지급 제외 · 모바일 (기기) 제외</p></div></div>
+          <div class="hi"><i class="c-orange"></i><div><b>금액</b><p class="f">약정 + 번들 + 동판 − (할인탭 + 미비서류 + 기타)</p><p>사은품·물류·쿠폰·선납·수납은 무시</p></div></div>
+          <div class="hi"><i class="c-violet"></i><div><b>유통마진</b><p class="f">상부정산 − 자점마진 − 본점인센 − 전체정산</p></div></div>
+          <div class="hi"><i class="c-blue"></i><div><b>자점마진</b><p>자점·와이즐리·크레소티<br>인터넷·모바일 ${wonF(MG.JA_MARGIN_INTERNET)}원 · SKYLIFE 모바일 ${wonF(MG.JA_MARGIN_SKYLIFE_MOBILE)}원</p></div></div>
+          <div class="hi"><i class="c-violet"></i><div><b>본점인센</b><p>${MG.HQ_INCENTIVE.map(h => `${esc(h.keyword)} 인터넷 1건 ${wonF(h.perInternet)}원`).join("<br>")}</p></div></div>
+          <div class="hi"><i class="c-green"></i><div><b>1건 기준</b><p>이름 + 연락처 + 상부점<br>유선기타는 별도 1건</p></div></div>
+          <div class="hi"><i class="c-red"></i><div><b>저마진 · 역마진</b><p>1건 마진 1만원 미만 · 0원 미만</p></div></div>
+        </div></details>
+    </div>
+    <div class="side-bottom">${meHtml()}</div>`;
+}
+function mgCalendarHtml() {
+  const ms = mMonths(), M = MS.month || ms[ms.length - 1];
+  const y = MS.mpYear || +M.slice(0, 4);
+  const years = ms.map(m => +m.slice(0, 4)), minY = Math.min(...years), maxY = Math.max(...years);
+  const cells = Array.from({ length: 12 }, (_, i) => { const m = `${y}-${String(i + 1).padStart(2, "0")}`;
+    return `<button class="mp-m${m === M ? " on" : ""}" data-mm="${m}" ${ms.includes(m) ? "" : "disabled"}>${i + 1}월</button>`; }).join("");
+  return `<div class="side-cal"><div class="mp-h"><button class="icon" id="mgPrev" ${y <= minY ? "disabled" : ""}>‹</button><b>${y}년</b><button class="icon" id="mgNext" ${y >= maxY ? "disabled" : ""}>›</button></div><div class="mp-g">${cells}</div></div>`;
+}
+
+// ---------- 본문 ----------
+function mgMainHtml() {
+  if (!MS.loaded) return `<div class="empty card"><h2>유통마진 데이터를 불러오는 중이에요</h2></div>`;
+  const ms = mMonths();
+  const head = (title, sub, extra) => `<div class="top"><div><h1>${title}</h1><p class="sub">${sub}</p></div><div class="top-r">${extra}<button class="primary" id="mgUp">${ic("upload")}정산 파일 올리기</button></div></div>`;
+  if (!ms.length) return head("유통마진", "순수 이관건 · 상부정산 − 자점마진 − 본점인센 − 전체정산", "") +
+    `<div class="empty card"><h2>저장된 유통마진이 없어요</h2><p class="sub">[정산 파일 올리기]에서 상부정산·전체정산 파일을 올려 계산한 뒤 저장해 주세요.</p></div>`;
+  if (MS.view === "trend") return head("유통마진 추이", "저장된 월 전체 흐름", `<button class="ghost" id="mgXlsAll">${ic("export")}전체 월 엑셀</button>`) + mgTrendHtml();
+  const d = mData(MS.month), s = d.summary;
+  return head(`${mLabel(MS.month)} 유통마진`, `${s.savedAt ? "저장 " + esc(s.savedAt) : ""}${s.savedBy ? " · " + esc(s.savedBy) : ""}${s.memo ? " · " + esc(s.memo) : ""}`,
+    `<button class="ghost" id="mgDel">${ic("trash")}이 월 삭제</button><button class="ghost" id="mgXls">${ic("export")}엑셀</button>`) + mgMonthHtml(d);
+}
+function deltaM(cur, prev, opt = {}) {
+  if (prev == null) return `<span class="chip">전월 없음</span>`;
+  const d = cur - prev; if (!d) return `<span class="chip">전월과 같음</span>`;
+  const good = (d > 0) !== !!opt.inverse;
+  const txt = opt.count ? (d > 0 ? "+" : "") + d.toLocaleString() + (opt.unit || "명") : (d > 0 ? "+" : "−") + (opt.won ? wonF(Math.abs(d)) + "원" : wonM(Math.abs(d)));
+  return `<span class="chip ${good ? "good" : "badc2"}">전월 ${txt}</span>`;
+}
+function mgMonthHtml(d) {
+  const s = d.summary, pv = mData(prevOf(d.month)), p = pv ? pv.summary : null;
+  const kpi = `<div class="kpis mk">
+    <div class="kpi"><div class="kt">유통 고객수</div><div class="kv">${s.customers.toLocaleString()}<small>명</small></div>
+      <div class="ks">${deltaM(s.customers, p && p.customers, { count: true })}</div><div class="ks"><span>외부 ${s.extCustomers.toLocaleString()} · 자점 ${s.jaCustomers.toLocaleString()}</span></div></div>
+    <div class="kpi accent"><div class="kt">총 유통마진</div><div class="kv ${s.margin >= 0 ? "" : "bad"}">${wonM(s.margin)}</div>
+      <div class="ks">${deltaM(s.margin, p && p.margin)}</div><div class="ks"><span>${wonF(s.margin)}원 · 자점마진 ${wonM(s.jaMargin)}${s.hqIncentive ? ` · 본점인센 ${wonM(s.hqIncentive)}` : ""} 차감</span></div></div>
+    <div class="kpi"><div class="kt">고객당 마진</div><div class="kv">${wonF(s.perCustomer)}<small>원</small></div>
+      <div class="ks">${deltaM(s.perCustomer, p && p.perCustomer, { won: true })}</div><div class="ks"><span>1만원 미만 고객 ${s.lowCount.toLocaleString()}명</span></div></div>
+    <div class="kpi"><div class="kt">역마진 고객</div><div class="kv ${s.negCount ? "bad" : ""}">${s.negCount.toLocaleString()}<small>명</small></div>
+      <div class="ks">${deltaM(s.negCount, p && p.negCount, { count: true, inverse: true })}</div><div class="ks"><span>유통마진 0원 미만</span></div></div>
+  </div>`;
+  const cat = d.categories.length ? `<section class="card"><div class="card-h"><div><h2>구분별 유통마진</h2><p class="sub">유선기타는 별도 구분</p></div></div>
+    <div class="tw"><table class="t mt">${mgCatTable(d.categories)}</table></div></section>` : "";
+  const memoN = d.partners.filter(x => x.memo).length;
+  const part = `<section class="card"><div class="card-h"><div><h2>협력점별 유통마진</h2><p class="sub">${d.partners.length}개 협력점 · 메모 ${memoN}건 · 머리글을 누르면 정렬 · 1만원 미만 숫자를 누르면 아래 목록이 그 협력점으로 걸러져요</p></div></div>
+    <div class="tw"><table class="t mt">${mgPartnerTable(d.partners)}</table></div></section>`;
+  const todo = d.lows.filter(l => !l.reason).length, negN = d.lows.filter(l => l.margin < 0).length;
+  const lowF = MS.low;
+  const low = `<section class="card" id="mgLowCard"><div class="card-h"><div><h2>1만원 미만 · 역마진 고객</h2><p class="sub">${d.lows.length}명 (역마진 <b class="bad">${negN}</b>) · 사유 작성 ${d.lows.length - todo} / <b class="bad">미작성 ${todo}</b> · 사유는 칸 밖을 누르면 저장</p></div>
+      <div class="hbtns">${pill("mgLowF", lowF.f, [["low", "전체"], ["neg", "역마진"], ["todo", "사유 미작성"]])}</div></div>
+    <div class="mfilter"><label class="field">${ic("search")}<input id="mgLowQ" type="search" placeholder="고객명·협력점·상부점·상품 검색" value="${esc(lowF.q)}"></label>
+      <select id="mgLowP" class="field sel"><option value="">전체 협력점</option>${[...new Set(d.lows.map(l => l.partner))].sort().map(x => `<option ${lowF.p === x ? "selected" : ""}>${esc(x)}</option>`).join("")}</select>
+      <span class="sub" id="mgLowN"></span></div>
+    <div class="tw" id="mgLowT"></div></section>`;
+  const chart = `<section class="card"><div class="card-h"><div><h2>협력점별 고객당 마진</h2><p class="sub">상위 15개</p></div></div><div class="chartbox" style="height:440px"><canvas id="mgPartnerChart"></canvas></div></section>`;
+  return kpi + cat + part + low + chart;
+}
+function mgCatTable(cats) {
+  const t = cats.reduce((a, c) => { ["customers", "upper", "jaMargin", "hqIncentive", "total", "margin", "lowCount", "negCount"].forEach(k => a[k] += (c[k] || 0)); return a; }, { customers: 0, upper: 0, jaMargin: 0, hqIncentive: 0, total: 0, margin: 0, lowCount: 0, negCount: 0 });
+  const row = (c, foot) => `<tr${foot ? ' class="tfoot"' : ""}><td class="nm">${foot ? "합계" : esc(c.category) + (c.category === MG.WIRED_ETC ? ' <span class="tag">별도</span>' : "")}</td>
+    <td class="n">${c.customers.toLocaleString()}</td><td class="n">${wonF(c.upper)}</td><td class="n dim">${c.jaMargin ? wonF(c.jaMargin) : "-"}</td><td class="n dim">${c.hqIncentive ? wonF(c.hqIncentive) : "-"}</td>
+    <td class="n">${wonF(c.total)}</td><td class="n b ${c.margin < 0 ? "bad" : ""}">${wonF(c.margin)}</td><td class="n">${c.customers ? wonF(c.margin / c.customers) : "-"}</td>
+    <td class="n ${c.lowCount ? "warnt" : "dim"}">${c.lowCount || "-"}</td><td class="n ${c.negCount ? "bad" : "dim"}">${c.negCount || "-"}</td></tr>`;
+  return `<thead><tr><th>구분</th><th class="n">건수</th><th class="n">상부정산</th><th class="n">자점마진</th><th class="n">본점인센</th><th class="n">전체정산</th><th class="n">유통마진</th><th class="n">건당 마진</th><th class="n">1만원 미만</th><th class="n">역마진</th></tr></thead>
+    <tbody>${cats.map(c => row(c)).join("")}${row(t, true)}</tbody>`;
+}
+function mgPartnerTable(partners) {
+  const rows = partners.map(p => ({ ...p, perCustomer: p.customers ? p.margin / p.customers : 0 }));
+  const { key, asc } = MS.partnerSort;
+  rows.sort((a, b) => (key === "partner" ? a.partner.localeCompare(b.partner) : (a[key] - b[key]) || (a.margin - b.margin)) * (asc ? 1 : -1));
+  const cols = [["partner", "협력점"], ["customers", "고객수"], ["upper", "상부정산"], ["jaMargin", "자점마진"], ["hqIncentive", "본점인센"], ["total", "전체정산"], ["margin", "유통마진"], ["perCustomer", "고객당 마진"], ["lowCount", "1만원 미만"], ["negCount", "역마진"]];
+  const t = rows.reduce((a, p) => { ["customers", "upper", "jaMargin", "hqIncentive", "total", "margin", "lowCount", "negCount"].forEach(k => a[k] += (p[k] || 0)); return a; }, { customers: 0, upper: 0, jaMargin: 0, hqIncentive: 0, total: 0, margin: 0, lowCount: 0, negCount: 0 });
+  return `<thead><tr>${cols.map(([k, l], i) => `<th class="sortable${i ? " n" : ""}${key === k ? " on" : ""}" data-msort="${k}">${l}${key === k ? (asc ? " ↑" : " ↓") : ""}</th>`).join("")}<th>메모</th></tr></thead>
+    <tbody>${rows.map(p => `<tr><td class="nm">${esc(p.partner)}${jaTag(p.ja)}${hqTag(p.partner)}</td><td class="n b">${p.customers.toLocaleString()}</td>
+      <td class="n">${wonF(p.upper)}</td><td class="n dim">${p.jaMargin ? wonF(p.jaMargin) : "-"}</td><td class="n dim">${p.hqIncentive ? wonF(p.hqIncentive) : "-"}</td><td class="n">${wonF(p.total)}</td>
+      <td class="n b ${p.margin < 0 ? "bad" : ""}">${wonF(p.margin)}</td><td class="n b ${p.perCustomer < MG.LOW_MARGIN ? "bad" : ""}">${wonF(p.perCustomer)}</td>
+      <td class="n">${p.lowCount ? `<button class="lnk" data-lowp="${esc(p.partner)}">${p.lowCount}</button>` : `<span class="dim">-</span>`}</td>
+      <td class="n ${p.negCount ? "bad" : "dim"}">${p.negCount || "-"}</td>
+      <td class="memo"><textarea rows="1" data-memo="${esc(p.partner)}" placeholder="메모">${esc(p.memo || "")}</textarea>${p.memoBy ? `<small>${esc(p.memoBy)} · ${esc(p.memoAt)}</small>` : ""}</td></tr>`).join("")}
+      <tr class="tfoot"><td class="nm">합계 (${rows.length}개)</td><td class="n">${t.customers.toLocaleString()}</td><td class="n">${wonF(t.upper)}</td><td class="n">${wonF(t.jaMargin)}</td><td class="n">${wonF(t.hqIncentive)}</td><td class="n">${wonF(t.total)}</td>
+      <td class="n b ${t.margin < 0 ? "bad" : ""}">${wonF(t.margin)}</td><td class="n">${t.customers ? wonF(t.margin / t.customers) : "-"}</td><td class="n">${t.lowCount}</td><td class="n">${t.negCount}</td><td></td></tr></tbody>`;
+}
+function mgLowRows(d) {
+  const f = MS.low, q = f.q.trim().toLowerCase();
+  let rows = d.lows.slice().sort((a, b) => a.margin - b.margin);
+  if (f.f === "neg") rows = rows.filter(l => l.margin < 0);
+  if (f.f === "todo") rows = rows.filter(l => !l.reason);
+  if (f.p) rows = rows.filter(l => l.partner === f.p);
+  if (q) rows = rows.filter(l => [l.name, l.partner, l.upperShop, l.category, l.carrier, l.products, l.reason].join(" ").toLowerCase().includes(q));
+  return rows;
+}
+function mgRenderLow() {
+  const d = mData(MS.month), box = $("#mgLowT"); if (!d || !box) return;
+  const rows = mgLowRows(d);
+  $("#mgLowN").textContent = `${rows.length}명 표시`;
+  box.innerHTML = rows.length ? `<table class="t mt"><thead><tr><th>구분</th><th>고객</th><th>협력점 / 상부점</th><th>구분 / 상품</th><th class="n">상부정산</th><th class="n">자점마진</th><th class="n">본점인센</th><th class="n">전체정산</th><th class="n">유통마진</th><th>사유</th></tr></thead>
+    <tbody>${rows.map(l => `<tr><td>${l.margin < 0 ? `<span class="badge red">역마진</span>` : `<span class="badge orange">1만원 미만</span>`}</td>
+      <td class="c2"><b>${esc(l.name)}</b><small>${esc(l.phone)}</small></td>
+      <td class="c2">${esc(l.partner)}${jaTag(l.ja)}${hqTag(l.partner)}<small>${esc(l.upperShop)}</small></td>
+      <td class="c2 wide">${esc(l.category || l.carrier)}${l.category === MG.WIRED_ETC ? "" : ` <span class="dim">${esc(l.carrier)}</span>`}<small>${esc(l.products)}</small></td>
+      <td class="n">${wonF(l.upper)}</td><td class="n dim">${l.jaMargin ? wonF(l.jaMargin) : "-"}</td><td class="n dim">${l.hqIncentive ? wonF(l.hqIncentive) : "-"}</td><td class="n">${wonF(l.total)}</td>
+      <td class="n b ${l.margin < 0 ? "bad" : "warnt"}">${wonF(l.margin)}</td>
+      <td class="memo"><textarea rows="1" data-reason="${esc(l.key)}" placeholder="사유 입력">${esc(l.reason || "")}</textarea>${l.reasonBy ? `<small>${esc(l.reasonBy)} · ${esc(l.reasonAt)}</small>` : ""}</td></tr>`).join("")}</tbody></table>`
+    : `<p class="none">해당 고객이 없어요</p>`;
+  box.querySelectorAll("textarea[data-reason]").forEach(t => t.onchange = () => mgSaveReason(t));
+}
+
+// ---------- 추이 ----------
+function mgTrendHtml() {
+  const all = mMonths(), ms = MS.trendRange ? all.slice(-MS.trendRange) : all;
+  const mt = ms.map(m => ({ month: m, ...mData(m).summary }));
+  const tot = mt.reduce((a, t) => ({ customers: a.customers + t.customers, margin: a.margin + t.margin, lowCount: a.lowCount + t.lowCount, negCount: a.negCount + t.negCount }), { customers: 0, margin: 0, lowCount: 0, negCount: 0 });
+  const metric = MS.pivot;
+  const names = [...new Set(MS.db.partners.filter(p => ms.includes(p.month)).map(p => p.partner))];
+  const val = (m, n) => { const p = MS.db.partners.find(x => x.month === m && x.partner === n); if (!p) return null; return metric === "perCustomer" ? (p.customers ? p.margin / p.customers : 0) : p[metric]; };
+  const totalOf = (n) => { const ps = MS.db.partners.filter(x => ms.includes(x.month) && x.partner === n); const c = ps.reduce((a, p) => a + p.customers, 0), mg = ps.reduce((a, p) => a + p.margin, 0);
+    return metric === "perCustomer" ? (c ? mg / c : 0) : ps.reduce((a, p) => a + p[metric], 0); };
+  names.sort((a, b) => totalOf(b) - totalOf(a));
+  const jaOf = (n) => (MS.db.partners.find(p => p.partner === n) || {}).ja;
+  const fv = (v) => v == null ? "" : (metric === "customers" || metric === "lowCount") ? v.toLocaleString() : wonF(v);
+  const shown = MS.showAll ? names : names.slice(0, 30);
+  return `<div class="trend-bar">${pill("mgRange", MS.trendRange, [[6, "최근 6개월"], [12, "최근 12개월"], [0, "전체"]])}</div>
+    <div class="kpis mk">
+      <div class="kpi"><div class="kt">기간 누적 고객수</div><div class="kv">${tot.customers.toLocaleString()}<small>명</small></div><div class="ks"><span>월평균 ${wonF(tot.customers / ms.length)}명</span></div></div>
+      <div class="kpi accent"><div class="kt">기간 누적 유통마진</div><div class="kv ${tot.margin < 0 ? "bad" : ""}">${wonM(tot.margin)}</div><div class="ks"><span>월평균 ${wonM(tot.margin / ms.length)}</span></div></div>
+      <div class="kpi"><div class="kt">기간 고객당 마진</div><div class="kv">${wonF(tot.customers ? tot.margin / tot.customers : 0)}<small>원</small></div><div class="ks"><span>누적 마진 ÷ 누적 고객</span></div></div>
+      <div class="kpi"><div class="kt">1만원 미만 / 역마진</div><div class="kv">${tot.lowCount.toLocaleString()} / ${tot.negCount.toLocaleString()}<small>명</small></div><div class="ks"><span>${monthLabel(ms[0])} ~ ${monthLabel(ms[ms.length - 1])}</span></div></div>
+    </div>
+    <div class="charts">
+      <section class="card wide"><h2>월별 유통마진</h2><div class="chartbox" style="height:280px"><canvas id="mgT1"></canvas></div></section>
+      <section class="card"><h2>월별 유통 고객수 <span class="lg"><i style="background:var(--pri)"></i>외부 <i style="background:#f59e0b"></i>자점</span></h2><div class="chartbox"><canvas id="mgT2"></canvas></div></section>
+      <section class="card"><h2>월별 고객당 마진</h2><div class="chartbox"><canvas id="mgT3"></canvas></div></section>
+    </div>
+    <section class="card"><div class="card-h"><div><h2>협력점 × 월</h2><p class="sub">${names.length}개 협력점 · 기간 합계 큰 순</p></div>
+      ${pill("mgPivot", metric, [["margin", "유통마진"], ["customers", "고객수"], ["perCustomer", "고객당 마진"], ["lowCount", "1만원 미만"]])}</div>
+      <div class="tw"><table class="t mt"><thead><tr><th class="stick">협력점</th>${ms.map(m => `<th class="n">${monthLabel(m)}</th>`).join("")}<th class="n">${metric === "perCustomer" ? "기간" : "합계"}</th></tr></thead>
+      <tbody>${shown.map(n => `<tr><td class="nm stick">${esc(n)}${jaTag(jaOf(n))}</td>${ms.map(m => { const v = val(m, n); return `<td class="n ${metric === "margin" && v < 0 ? "bad" : ""}">${fv(v)}</td>`; }).join("")}<td class="n b">${fv(totalOf(n))}</td></tr>`).join("")}
+      <tr class="tfoot"><td class="nm stick">전체</td>${mt.map(t => `<td class="n">${fv(metric === "perCustomer" ? t.perCustomer : t[metric])}</td>`).join("")}<td class="n">${fv(metric === "perCustomer" ? (tot.customers ? tot.margin / tot.customers : 0) : mt.reduce((a, t) => a + t[metric], 0))}</td></tr></tbody></table></div>
+      ${names.length > 30 ? `<div class="more"><button class="ghost sm" id="mgShowAll">${MS.showAll ? "접기" : `전체 ${names.length}개 협력점 보기`}</button></div>` : ""}</section>`;
+}
+
+// ---------- 차트 (Chart.js, 필요할 때만 불러옴) ----------
+async function mgCharts() {
+  if (S.mode !== "margin") return;
+  const has = $("#mgPartnerChart") || $("#mgT1");
+  if (!has) return;
+  if (!window.Chart) {
+    try { await loadScript("https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"); }
+    catch (e) { try { await loadScript("https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"); } catch (e2) { return; } }
+  }
+  Object.values(MS.charts).forEach(c => c.destroy()); MS.charts = {};
+  const axis = (v) => { const a = Math.abs(v); return a >= 1e8 ? (v / 1e8).toFixed(1) + "억" : a >= 1e4 ? Math.round(v / 1e4).toLocaleString() + "만" : v; };
+  const base = (horizontal, yFmt = axis, tip = (v) => wonF(v) + "원") => ({ responsive: true, maintainAspectRatio: false, animation: { duration: 300 }, indexAxis: horizontal ? "y" : "x",
+    interaction: { mode: "index", intersect: false },
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${tip(horizontal ? c.parsed.x : c.parsed.y)}` } } },
+    scales: { x: horizontal ? { ticks: { callback: yFmt, color: "#7d8697" }, grid: { color: "rgba(0,0,0,.05)" } } : { ticks: { color: "#7d8697" }, grid: { display: false } },
+      y: horizontal ? { ticks: { color: "#4a5263", autoSkip: false }, grid: { display: false } } : { ticks: { callback: yFmt, color: "#7d8697" }, grid: { color: "rgba(0,0,0,.05)" } } } });
+  const bar = { borderRadius: 5, borderSkipped: "start", maxBarThickness: 36 };
+  const pc = $("#mgPartnerChart");
+  if (pc) {
+    const d = mData(MS.month), per = (p) => p.customers ? Math.round(p.margin / p.customers) : 0;
+    const top = d.partners.slice().sort((a, b) => per(b) - per(a) || b.margin - a.margin).slice(0, 15);
+    MS.charts.p = new Chart(pc, { type: "bar", data: { labels: top.map(p => `${p.partner}${p.ja ? " (자점)" : ""} · ${p.customers}명`),
+      datasets: [{ label: "고객당 마진", data: top.map(per), backgroundColor: top.map(p => per(p) >= 0 ? "#4c82f7" : "#e5484d"), ...bar, maxBarThickness: 22 }] }, options: base(true) });
+  }
+  if ($("#mgT1")) {
+    const all = mMonths(), ms = MS.trendRange ? all.slice(-MS.trendRange) : all, mt = ms.map(m => mData(m).summary), labels = ms.map(m => monthLabel(m));
+    MS.charts.t1 = new Chart($("#mgT1"), { type: "bar", data: { labels, datasets: [{ label: "유통마진", data: mt.map(t => t.margin), backgroundColor: mt.map(t => t.margin >= 0 ? "#4c82f7" : "#e5484d"), ...bar }] }, options: base(false) });
+    const o2 = base(false, (v) => v.toLocaleString(), (v) => v.toLocaleString() + "명"); o2.scales.x.stacked = true; o2.scales.y.stacked = true;
+    MS.charts.t2 = new Chart($("#mgT2"), { type: "bar", data: { labels, datasets: [{ label: "외부", data: mt.map(t => t.extCustomers), backgroundColor: "#4c82f7", ...bar }, { label: "자점", data: mt.map(t => t.jaCustomers), backgroundColor: "#f59e0b", ...bar }] }, options: o2 });
+    MS.charts.t3 = new Chart($("#mgT3"), { type: "line", data: { labels, datasets: [{ label: "고객당 마진", data: mt.map(t => t.perCustomer), borderColor: "#1f9d6b", backgroundColor: "#1f9d6b", borderWidth: 2, pointRadius: 4, pointBorderColor: "#fff", pointBorderWidth: 2, tension: .25 }] },
+      options: base(false, (v) => v.toLocaleString()) });
+  }
+}
+
+// ---------- 업로드 · 계산 · 저장 ----------
+function mgOpenUpload() {
+  const u = MS.up;
+  if (!u.month) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); u.month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }
+  const box = $("#modal");
+  box.innerHTML = `<div class="mbox wide"><button class="icon x" id="mclose">${ic("x", 18)}</button>
+    <h3>정산 파일 올리기</h3><p class="sub">상부정산(수익)과 전체정산(지출) 파일을 올리면 유통마진을 계산해요. 저장 전에 결과를 먼저 보여드려요.</p>
+    <div class="upm"><label>정산 월<input type="month" id="mgMonth" value="${u.month}"></label>
+      <span class="sub" id="mgMonthHint">${mMonths().includes(u.month) ? `<b class="warnt">${mLabel(u.month)}은 이미 저장돼 있어요. 저장하면 덮어써요 (적어둔 사유·메모는 유지)</b>` : "업로드한 원본의 정산 월을 골라주세요"}</span></div>
+    <div class="drops">
+      <div class="drop${u.s ? " ok" : ""}" data-k="s"><span class="badge blue">▲ 수익</span><b>상부정산 파일</b><small>${u.s ? `✓ ${esc(u.sName)} (${u.s.length.toLocaleString()}행)` : "상부정산관리 엑셀 · 눌러서 고르거나 끌어다 놓기"}</small></div>
+      <div class="drop${u.j ? " ok" : ""}" data-k="j"><span class="badge red">▼ 지출</span><b>전체정산 파일</b><small>${u.j ? `✓ ${esc(u.jName)} (${u.j.length.toLocaleString()}행)` : "전체정산관리 엑셀 · 눌러서 고르거나 끌어다 놓기"}</small></div>
+    </div>
+    <input type="file" id="mgFile" accept=".xls,.xlsx,.html,.htm,.csv" hidden>
+    <p class="loginerr" id="mgErr"></p>
+    <div id="mgPreview">${u.calc ? mgPreviewHtml(u.calc) : ""}</div>
+    <div class="mfoot"><button class="ghost" id="mgReset">초기화</button><button class="primary" id="mgCalc" ${u.s && u.j ? "" : "disabled"}>계산하기</button></div></div>`;
+  box.hidden = false;
+  $("#mclose").onclick = () => box.hidden = true;
+  $("#mgMonth").onchange = (e) => { u.month = e.target.value; if (u.calc) u.calc.month = u.month; mgOpenUpload(); };
+  let target = "s";
+  box.querySelectorAll(".drop").forEach(dz => {
+    dz.onclick = () => { target = dz.dataset.k; $("#mgFile").click(); };
+    dz.ondragover = (e) => { e.preventDefault(); e.stopPropagation(); dz.classList.add("over"); };
+    dz.ondragleave = () => dz.classList.remove("over");
+    dz.ondrop = (e) => { e.preventDefault(); e.stopPropagation(); dz.classList.remove("over"); const f = e.dataTransfer.files[0]; if (f) mgReadFile(dz.dataset.k, f); };
+  });
+  $("#mgFile").onchange = (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) mgReadFile(target, f); };
+  $("#mgReset").onclick = () => { MS.up = { s: null, j: null, sName: "", jName: "", month: u.month, calc: null }; mgOpenUpload(); };
+  $("#mgCalc").onclick = mgCalculate;
+  const sv = $("#mgSave"); if (sv) sv.onclick = mgSave;
+}
+async function mgReadFile(k, f) {
+  busy(true, `${f.name} 읽는 중...`);
+  try {
+    const rows = MG.parseFile(new Uint8Array(await f.arrayBuffer()));
+    if (!rows.length) throw new Error("데이터 없음 (조건에 맞는 행이 없습니다)");
+    MS.up[k] = rows; MS.up[k + "Name"] = f.name; MS.up.calc = null;
+  } catch (e) { busy(false); mgOpenUpload(); $("#mgErr").textContent = `파일 오류 (${f.name}): ${e.message}`; return; }
+  busy(false); mgOpenUpload();
+}
+function mgCalculate() {
+  const u = MS.up;
+  try {
+    const r = MG.analyze(u.s, u.j, u.month);
+    if (!r.customers.length) throw new Error("분석 대상(이관건) 데이터가 없어요. 파일을 확인해 주세요.");
+    u.calc = r; mgOpenUpload();
+  } catch (e) { $("#mgErr").textContent = "계산 오류: " + e.message; }
+}
+function mgPreviewHtml(r) {
+  const s = r.summary;
+  return `<div class="prev"><h4>${mLabel(r.month)} 계산 결과 <span class="badge orange">미저장</span></h4>
+    <div class="pgrid"><div><span>유통 고객수</span><b>${s.customers.toLocaleString()}명</b></div><div><span>총 유통마진</span><b>${wonF(s.margin)}원</b></div>
+      <div><span>고객당 마진</span><b>${wonF(s.perCustomer)}원</b></div><div><span>1만원 미만 / 역마진</span><b>${s.lowCount} / <span class="bad">${s.negCount}</span>명</b></div></div>
+    <p class="sub">상부정산 ${wonF(s.upper)} − 자점마진 ${wonF(s.jaMargin)} − 본점인센 ${wonF(s.hqIncentive)} − 전체정산 ${wonF(s.total)} · 협력점 ${r.partners.length}곳${r.unmatched ? ` · 전체정산에서 짝을 못 찾은 행 ${r.unmatched}건은 0원으로 계산` : ""}</p>
+    <div class="upm"><input type="text" id="mgMemo" placeholder="메모 (선택) — 예: 9월 24일 기준, 마감 전"><button class="primary" id="mgSave">${ic("upload")}구글시트에 저장</button></div></div>`;
+}
+async function mgSave() {
+  const r = MS.up.calc; if (!r) return;
+  busy(true, `${mLabel(r.month)} 유통마진 저장 중... (10초 정도 걸릴 수 있어요)`);
+  try {
+    const lows = r.lows.map(({ month, ...l }) => l);
+    const res = await gs("marginSave", r.month, r.summary, r.partners, r.categories, lows, ($("#mgMemo") || {}).value || "");
+    MS.loaded = false; MS.month = r.month; MS.view = "month";
+    $("#modal").hidden = true;
+    const kept = [res.keptReasons ? `사유 ${res.keptReasons}건` : "", res.keptMemos ? `메모 ${res.keptMemos}건` : ""].filter(Boolean).join(", ");
+    toast(`<b>${mLabel(r.month)} 저장 완료</b> 고객 ${r.summary.customers.toLocaleString()}명 · 유통마진 ${wonF(r.summary.margin)}원${kept ? ` (기존 ${kept} 유지)` : ""}`, 8000);
+    MS.up = { s: null, j: null, sName: "", jName: "", month: r.month, calc: null };
+  } catch (e) { toast(`<b>저장 실패</b> ${esc(e.message)}`, 0); }
+  finally { busy(false); }
+  await mgLoad(true);
+}
+async function mgDelete() {
+  const m = MS.month; if (!m) return;
+  const box = $("#modal");
+  box.innerHTML = `<div class="mbox small"><h3>${mLabel(m)} 유통마진 삭제</h3><p class="sub">이 달의 결과와 적어둔 사유·메모가 함께 지워지고 되돌릴 수 없어요.</p>
+    <div class="mfoot"><button class="ghost" id="mclose">취소</button><button class="danger" id="mgDelGo">삭제</button></div></div>`;
+  box.hidden = false; $("#mclose").onclick = () => box.hidden = true;
+  $("#mgDelGo").onclick = async () => {
+    box.hidden = true; busy(true, "삭제 중...");
+    try { await gs("marginDelete", m); toast(`${mLabel(m)} 유통마진을 삭제했어요.`); MS.month = null; }
+    catch (e) { toast(`<b>삭제 실패</b> ${esc(e.message)}`, 0); }
+    finally { busy(false); }
+    await mgLoad(true);
+  };
+}
+async function mgSaveMemo(t) {
+  const partner = t.dataset.memo, memo = t.value.trim();
+  try {
+    const r = await gs("marginPartnerMemo", MS.month, partner, memo);
+    const p = MS.db.partners.find(x => x.month === MS.month && x.partner === partner); if (p) Object.assign(p, { memo, memoBy: r.memoBy, memoAt: r.memoAt });
+    t.classList.add("saved"); toast("협력점 메모를 저장했어요.", 2500);
+  } catch (e) { toast(`<b>메모 저장 실패</b> ${esc(e.message)}`, 0); }
+}
+async function mgSaveReason(t) {
+  const key = t.dataset.reason, reason = t.value.trim();
+  try {
+    const r = await gs("marginReason", MS.month, key, reason);
+    const l = MS.db.lows.find(x => x.month === MS.month && x.key === key); if (l) Object.assign(l, { reason, reasonBy: r.reasonBy, reasonAt: r.reasonAt });
+    t.classList.add("saved"); toast("사유를 저장했어요.", 2500);
+  } catch (e) { toast(`<b>사유 저장 실패</b> ${esc(e.message)}`, 0); }
+}
+
+// ---------- 엑셀 (원본과 같은 시트 구성) ----------
+const mgPartnerAoa = (ps) => [["협력점", "반영", "고객수", "상부정산", "자점마진", "본점인센", "전체정산", "유통마진", "고객당마진", "1만원미만", "역마진", "메모"],
+  ...ps.map(p => [p.partner, [p.ja ? "자점마진반영" : "", MG.isHq(p.partner) ? "본점인센반영" : ""].filter(Boolean).join(", "), p.customers, p.upper, p.jaMargin, p.hqIncentive || 0, p.total, p.margin, p.customers ? Math.round(p.margin / p.customers) : 0, p.lowCount, p.negCount, p.memo || ""])];
+const mgLowAoa = (ls) => [["마진구분", "상품구분", "고객명", "연락처", "협력점", "반영", "상부점", "통신사", "상품", "상부정산", "자점마진", "본점인센", "전체정산", "유통마진", "사유", "사유작성자"],
+  ...ls.map(l => [l.margin < 0 ? "역마진" : "1만원 미만", l.category || "", l.name, l.phone, l.partner, [l.ja ? "자점마진반영" : "", MG.isHq(l.partner) ? "본점인센반영" : ""].filter(Boolean).join(", "), l.upperShop, l.carrier, l.products, l.upper, l.jaMargin, l.hqIncentive || 0, l.total, l.margin, l.reason || "", l.reasonBy || ""])];
+const mgSheet = (aoa, w) => { const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = w.map(x => ({ wch: x })); return ws; };
+function mgExcelMonth() {
+  const d = mData(MS.month); if (!d) return;
+  const s = d.summary, wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, mgSheet([["월", d.month], ["유통 고객수", s.customers], ["외부 협력점 고객", s.extCustomers], ["자점 고객 (자점마진반영)", s.jaCustomers],
+    ["상부정산", s.upper], ["자점마진", s.jaMargin], ["본점인센", s.hqIncentive || 0], ["전체정산", s.total], ["유통마진", s.margin], ["고객당 마진", s.perCustomer], ["1만원 미만 고객", s.lowCount], ["역마진 고객", s.negCount]], [24, 16]), "요약");
+  XLSX.utils.book_append_sheet(wb, mgSheet([["구분", "건수", "상부정산", "자점마진", "본점인센", "전체정산", "유통마진", "건당마진", "1만원미만", "역마진"],
+    ...d.categories.map(c => [c.category, c.customers, c.upper, c.jaMargin, c.hqIncentive || 0, c.total, c.margin, c.customers ? Math.round(c.margin / c.customers) : 0, c.lowCount, c.negCount])], [12, 8, 14, 12, 12, 14, 14, 12, 10, 8]), "구분별");
+  XLSX.utils.book_append_sheet(wb, mgSheet(mgPartnerAoa(d.partners), [26, 18, 8, 14, 12, 12, 14, 14, 12, 10, 8, 40]), "협력점별");
+  XLSX.utils.book_append_sheet(wb, mgSheet(mgLowAoa(d.lows), [10, 10, 10, 16, 24, 18, 24, 12, 40, 12, 10, 10, 12, 12, 40, 10]), "1만원미만_역마진");
+  XLSX.writeFile(wb, `유통마진_${d.month}.xlsx`);
+}
+function mgExcelAll() {
+  const ms = mMonths(); if (!ms.length) return;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, mgSheet([["월", "유통 고객수", "외부 고객", "자점 고객", "상부정산", "자점마진", "본점인센", "전체정산", "유통마진", "고객당 마진", "1만원 미만", "역마진"],
+    ...ms.map(m => { const s = mData(m).summary; return [m, s.customers, s.extCustomers, s.jaCustomers, s.upper, s.jaMargin, s.hqIncentive || 0, s.total, s.margin, s.perCustomer, s.lowCount, s.negCount]; })], [10, 10, 10, 10, 14, 12, 12, 14, 14, 12, 10, 8]), "월별요약");
+  ms.slice().reverse().forEach(m => XLSX.utils.book_append_sheet(wb, mgSheet(mgPartnerAoa(mData(m).partners), [26, 18, 8, 14, 12, 12, 14, 14, 12, 10, 8, 40]), m));
+  XLSX.writeFile(wb, `유통마진_전체_${ms[0]}_${ms[ms.length - 1]}.xlsx`);
+}
+
+// ---------- 이벤트 ----------
+function mgBind() {
+  document.querySelectorAll("[data-mview]").forEach(b => b.onclick = () => { MS.view = b.dataset.mview; render(); });
+  const step = (k) => { MS.mpYear = (MS.mpYear || +(MS.month || "2026").slice(0, 4)) + k; render(); };
+  const pv = $("#mgPrev"), nx = $("#mgNext"); if (pv) pv.onclick = () => step(-1); if (nx) nx.onclick = () => step(1);
+  document.querySelectorAll(".side-cal .mp-m[data-mm]:not([disabled])").forEach(x => x.onclick = () => { MS.month = x.dataset.mm; MS.low.p = ""; render(); });
+  const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
+  on("#mgUp", mgOpenUpload); on("#mgDel", mgDelete); on("#mgXls", mgExcelMonth); on("#mgXlsAll", mgExcelAll);
+  on("#mgShowAll", () => { MS.showAll = !MS.showAll; render(); });
+  document.querySelectorAll("[data-msort]").forEach(h => h.onclick = () => { const k = h.dataset.msort; MS.partnerSort = { key: k, asc: MS.partnerSort.key === k ? !MS.partnerSort.asc : k === "partner" }; render(); });
+  document.querySelectorAll("textarea[data-memo]").forEach(t => t.onchange = () => mgSaveMemo(t));
+  document.querySelectorAll("[data-lowp]").forEach(b => b.onclick = () => { MS.low = { f: "low", q: "", p: b.dataset.lowp }; render(); const c = $("#mgLowCard"); if (c) c.scrollIntoView({ behavior: "smooth", block: "start" }); });
+  const q = $("#mgLowQ"); if (q) q.oninput = () => { MS.low.q = q.value; mgRenderLow(); };
+  const ps = $("#mgLowP"); if (ps) ps.onchange = () => { MS.low.p = ps.value; mgRenderLow(); };
+  document.querySelectorAll('.pills[data-k="mgLowF"] button').forEach(b => b.onclick = () => { MS.low.f = b.dataset.v; render(); });
+  document.querySelectorAll('.pills[data-k="mgRange"] button').forEach(b => b.onclick = () => { MS.trendRange = +b.dataset.v; render(); });
+  document.querySelectorAll('.pills[data-k="mgPivot"] button').forEach(b => b.onclick = () => { MS.pivot = b.dataset.v; render(); });
+  mgRenderLow();
+  mgCharts();
 }
 
 // ---------- 시작 ----------
@@ -1804,7 +2407,7 @@ async function doLogin(e) {
 }
 function logout() {
   lsSet(LS_KEY.token, null); lsSet(LS_KEY.user, null);
-  S.months = {}; S.master = null; S.user = null; derive(); render();
+  S.months = {}; S.master = null; S.user = null; MS.loaded = false; MS.db = { summaries: [], partners: [], categories: [], lows: [] }; derive(); render();
   showLogin("로그아웃했어요.");
 }
 function openPwModal() {
@@ -1860,7 +2463,7 @@ async function init() {
   $("#modal").onclick = (e) => { if (e.target.id === "modal") $("#modal").hidden = true; };
   $("#toast").onclick = (e) => { if (e.target.tagName !== "A") $("#toast").hidden = true; };
   document.addEventListener("dragover", e => e.preventDefault());
-  document.addEventListener("drop", e => { e.preventDefault(); if (lsGet(LS_KEY.token)) onDataFiles([...e.dataTransfer.files]); });
+  document.addEventListener("drop", e => { e.preventDefault(); if (!lsGet(LS_KEY.token)) return; if (S.mode === "margin") mgOpenUpload(); else onDataFiles([...e.dataTransfer.files]); });
   $("#loginForm").onsubmit = doLogin;
   $("#loginUrlSave").onclick = saveUrl;
   derive(); render();

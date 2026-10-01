@@ -38,9 +38,9 @@
 - 로그인한 뒤 화면 왼쪽 아래 **[비밀번호]** 로 각자 바꿀 수 있습니다.
 
 ### 3. 화면 주소 연결
-`index.html` 에서 아래 한 줄의 `__API_URL__` 을 1-4에서 복사한 주소로 바꿉니다.
+`index.html` 의 아래 한 줄에 서버 주소가 들어 있습니다. 서버를 새로 만들어 주소가 바뀌면 이 줄만 고치면 됩니다.
 ```js
-const DEFAULT_API_URL = "__API_URL__";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzOJPyFSlGlG3HBphtLEgiABetEr76R-av4ET736yo-dpnlHNqNA-TLW4HsUJa815jJUg/exec";
 ```
 (깃허브에서 `index.html` → 연필 아이콘 → 검색(Ctrl+F)으로 찾아서 바꾸고 **Commit changes**)
 

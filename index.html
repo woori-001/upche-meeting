@@ -847,8 +847,19 @@ async function api(body) {
     // Content-Type 을 지정하지 않으면 text/plain 으로 보내져서 Apps Script 가 바로 받을 수 있다
     res = await fetch(url, { method: "POST", body: JSON.stringify(body) });
   } catch (e) { throw new Error("서버에 연결하지 못했어요. 인터넷 연결이나 서버 주소를 확인해 주세요."); }
+  // 응답을 글자로 먼저 받고 JSON 으로 해석 (실패하면 실제 받은 내용 일부를 보여준다)
+  const text = await res.text();
   let j;
-  try { j = await res.json(); } catch (e) { throw new Error("서버 응답을 읽지 못했어요. Apps Script를 [액세스: 모든 사용자]로 배포했는지 확인해 주세요."); }
+  try { j = JSON.parse(text); }
+  catch (e) {
+    const m = text.match(/\{[\s\S]*"ok"[\s\S]*\}/);   // 앞뒤에 다른 글이 붙어 와도 JSON 부분만 꺼내 본다
+    try { j = m ? JSON.parse(m[0]) : null; } catch (e2) { j = null; }
+    if (!j) {
+      const plain = text.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      console.error("서버 응답:", res.status, res.url, text.slice(0, 2000));
+      throw new Error(`서버 응답을 읽지 못했어요 (상태 ${res.status}). 받은 내용: ${plain.slice(0, 160) || "(비어 있음)"}`);
+    }
+  }
   if (!j.ok) {
     const msg = String(j.error || "요청 실패");
     const err = new Error(msg.replace(/^AUTH:\s*/, ""));

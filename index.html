@@ -1292,7 +1292,7 @@ function render() {
     if (helpEl) S.helpOpen = helpEl.open;
     const mg = S.mode === "margin";
     document.body.classList.toggle("mode-margin", mg);
-    if (mg && !MS.loaded && !MS.loading && lsGet(LS_KEY.token)) setTimeout(() => mgLoad(), 0);
+    if (mg && !MS.loaded && !MS.loading && !MS.error && lsGet(LS_KEY.token)) setTimeout(() => mgLoad(), 0);
     $("#side").innerHTML = mg ? mgSideHtml() : sideHtml();
     $("#main").innerHTML = mg ? mgMainHtml() : D && D.months.length ? mainHtml() : emptyHtml();
     document.querySelectorAll("#main .tw").forEach((el, i) => { if (keep[i]) { el.scrollTop = keep[i][0]; el.scrollLeft = keep[i][1]; } });
@@ -2018,13 +2018,13 @@ const hqTag = (p) => MG.isHq(p) ? `<span class="tag mtag hq">본점인센</span>
 
 async function mgLoad(force) {
   if (MS.loading || (MS.loaded && !force)) return;
-  MS.loading = true; busy(true, "유통마진 데이터 불러오는 중...");
+  MS.loading = true; MS.error = ""; busy(true, "유통마진 데이터 불러오는 중...");
   try {
     MS.db = await gs("marginList");
     MS.loaded = true;
     const ms = mMonths();
     if (!MS.month || !ms.includes(MS.month)) MS.month = ms[ms.length - 1] || null;
-  } catch (e) { if (!e.auth) toast(`<b>유통마진 불러오기 오류</b> ${esc(e.message)}`, 0); }
+  } catch (e) { MS.error = e.auth ? "" : (e.message || "알 수 없는 오류"); }
   finally { MS.loading = false; busy(false); render(); }
 }
 
@@ -2071,6 +2071,12 @@ function mgCalendarHtml() {
 
 // ---------- 본문 ----------
 function mgMainHtml() {
+  if (MS.error) {
+    const old = /알 수 없는 요청/.test(MS.error);
+    return `<div class="empty card"><h2>${old ? "서버(Code.gs) 업데이트가 필요해요" : "유통마진을 불러오지 못했어요"}</h2>
+      <p class="sub">${old ? "구글시트에 연결된 Apps Script가 아직 예전 버전이라 유통마진 기능이 없어요.<br>Apps Script에 새 Code.gs를 붙여넣고 저장 → <b>배포 → 배포 관리 → 연필 → 버전: 새 버전 → 배포</b>를 눌러주세요." : esc(MS.error)}</p>
+      <p style="margin-top:16px"><button class="primary" id="mgRetry">다시 불러오기</button></p></div>`;
+  }
   if (!MS.loaded) return `<div class="empty card"><h2>유통마진 데이터를 불러오는 중이에요</h2></div>`;
   const ms = mMonths();
   const head = (title, sub, extra) => `<div class="top"><div><h1>${title}</h1><p class="sub">${sub}</p></div><div class="top-r">${extra}<button class="primary" id="mgUp">${ic("upload")}정산 파일 올리기</button></div></div>`;
@@ -2370,6 +2376,7 @@ function mgBind() {
   const pv = $("#mgPrev"), nx = $("#mgNext"); if (pv) pv.onclick = () => step(-1); if (nx) nx.onclick = () => step(1);
   document.querySelectorAll(".side-cal .mp-m[data-mm]:not([disabled])").forEach(x => x.onclick = () => { MS.month = x.dataset.mm; MS.low.p = ""; render(); });
   const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
+  on("#mgRetry", () => { MS.error = ""; mgLoad(true); });
   on("#mgUp", mgOpenUpload); on("#mgDel", mgDelete); on("#mgXls", mgExcelMonth); on("#mgXlsAll", mgExcelAll);
   on("#mgShowAll", () => { MS.showAll = !MS.showAll; render(); });
   document.querySelectorAll("[data-msort]").forEach(h => h.onclick = () => { const k = h.dataset.msort; MS.partnerSort = { key: k, asc: MS.partnerSort.key === k ? !MS.partnerSort.asc : k === "partner" }; render(); });
@@ -2407,7 +2414,7 @@ async function doLogin(e) {
 }
 function logout() {
   lsSet(LS_KEY.token, null); lsSet(LS_KEY.user, null);
-  S.months = {}; S.master = null; S.user = null; MS.loaded = false; MS.db = { summaries: [], partners: [], categories: [], lows: [] }; derive(); render();
+  S.months = {}; S.master = null; S.user = null; MS.loaded = false; MS.error = ""; MS.db = { summaries: [], partners: [], categories: [], lows: [] }; derive(); render();
   showLogin("로그아웃했어요.");
 }
 function openPwModal() {

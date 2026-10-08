@@ -406,21 +406,21 @@ body.mode-margin .badge.orange,body.mode-margin .tag.mtag{background:var(--acc-w
 .card-h h2{display:flex;align-items:center}
 /* 신규 · 재거래 · 이탈 */
 .board{gap:22px;align-items:start;margin-bottom:24px}
-.board .col{border-radius:24px 62px 24px 24px;padding:0 10px 10px;margin-top:16px}
+.board .col{border-radius:18px 40px 18px 18px;padding:0 8px 8px;margin-top:12px}
 .board .col.t-new{background:#eef4ff}.board .col.t-back{background:#e7f7f2}.board .col.t-churn{background:#fff0ef}
-.hero{position:relative;border-radius:22px 60px 22px 22px;padding:30px 20px 18px;color:#fff;margin:0 -10px 12px}
-.t-new .hero{background:linear-gradient(140deg,#9cbcff 0%,#6a99fa 60%,#4c82f7 100%);box-shadow:0 16px 26px -18px rgba(76,130,247,.7)}
-.t-back .hero{background:linear-gradient(140deg,#9be3cf 0%,#5fcdb4 60%,#43bea3 100%);box-shadow:0 16px 26px -18px rgba(67,190,163,.7)}
-.t-churn .hero{background:linear-gradient(140deg,#ffc0ad 0%,#fb9393 60%,#f47f8f 100%);box-shadow:0 16px 26px -18px rgba(244,127,143,.7)}
-.hero .hico{position:absolute;left:18px;top:-18px;width:46px;height:46px;border-radius:16px;background:#fff;display:grid;place-items:center;box-shadow:0 8px 16px -6px rgba(20,30,50,.25)}
+.hero{position:relative;border-radius:18px 40px 18px 18px;padding:18px 16px 12px 62px;color:#fff;margin:0 -8px 10px}
+.t-new .hero{background:#4c82f7;box-shadow:0 10px 20px -14px rgba(76,130,247,.7)}
+.t-back .hero{background:#3dbb9f;box-shadow:0 10px 20px -14px rgba(61,187,159,.7)}
+.t-churn .hero{background:#f27a8a;box-shadow:0 10px 20px -14px rgba(242,122,138,.7)}
+.hero .hico{position:absolute;left:14px;top:16px;width:36px;height:36px;border-radius:12px;background:#fff;display:grid;place-items:center;box-shadow:0 6px 12px -6px rgba(20,30,50,.3)}
 .t-new .hico{color:#4c82f7}.t-back .hico{color:#2fae93}.t-churn .hico{color:#ef6f82}
-.hero .hh{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:31px}
-.hero h3{margin:0;font-size:17px;font-weight:800;letter-spacing:-.01em}
-.hero .hnum{margin:8px 0 2px;font-size:40px;line-height:1;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.hero .hnum small{font-size:15px;font-weight:600;margin-left:3px;opacity:.85}
-.hero .col-s{color:rgba(255,255,255,.88);margin:8px 0 0;font-size:12.5px;line-height:1.5}
+.hero .hh{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:28px}
+.hero h3{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:baseline;gap:6px}
+.hero .hnum{font-size:22px;line-height:1;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.hero .hnum small{font-size:12.5px;font-weight:600;margin-left:2px;opacity:.85}
+.hero .col-s{color:rgba(255,255,255,.88);margin:4px 0 0;font-size:12px;line-height:1.45}
 .hero .col-s b,.hero .col-s .warnt{color:#fff}
-.hero .pills{background:rgba(255,255,255,.22)}
+.hero .pills{background:rgba(255,255,255,.22)}.hero .pills.sm button{padding:3px 8px}
 .hero .pills button{color:rgba(255,255,255,.9)}
 .hero .pills button.on{background:#fff;box-shadow:0 2px 6px rgba(20,30,50,.15)}
 .t-new .hero .pills button.on{color:#3a6fe6}.t-back .hero .pills button.on{color:#2fae93}.t-churn .hero .pills button.on{color:#ef6f82}
@@ -432,6 +432,16 @@ body.mode-margin .badge.orange,body.mode-margin .tag.mtag{background:var(--acc-w
 .board .bempty{background:#fff;border-radius:16px}
 .board .t-new .bempty{border-color:#c6d9ff}.board .t-back .bempty{border-color:#b9e7da}.board .t-churn .bempty{border-color:#ffc9cd}
 .board .never{background:#fff}
+/* 색 카드 눌러서 목록 접기/펼치기 */
+.hero{cursor:pointer;user-select:none}
+.hero .pills{cursor:default}
+.hero .hr{display:flex;align-items:center;gap:8px}
+.hchev{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,.22);font-size:11px;transition:transform .2s}
+.hh>.hchev{margin-left:auto}
+.board .col.folded .hchev{transform:rotate(-90deg)}
+.board .col.folded{padding-bottom:0}
+.board .col.folded .hero{margin-bottom:0}
+.board .col.folded>:not(.hero){display:none}
 /* 아래 두 표 */
 #main .card .tw{border-color:#e8ecf5;border-radius:16px}
 #main .card .t tbody tr:hover td{background:#f8faff}
@@ -448,7 +458,7 @@ body.mode-margin .badge.orange,body.mode-margin .tag.mtag{background:var(--acc-w
 #main .tg{border-radius:8px}
 #main .tg.on{background:var(--pri);color:#fff;box-shadow:0 2px 6px -2px rgba(76,130,247,.55)}
 #main .tsub{border-left-color:#dbe7ff}
-@media (max-width:1024px){.board .col{margin-top:22px}}
+
 /* 구분별 유통마진 그래프 */
 .catwrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:stretch}
 .cbars{background:#f4f6fa;border-radius:18px;padding:16px 14px 12px;display:flex;flex-direction:column;box-shadow:inset 0 1px 0 #fff}
@@ -1153,6 +1163,7 @@ async function pool(items, k, fn) {
 
 // ---------- 상태 ----------
 const S = {
+  fold: (() => { try { return JSON.parse(localStorage.getItem("upche_fold") || "{}"); } catch (e) { return {}; } })(),   // 신규·재거래·이탈 목록 접힘
   mode: (() => { try { return localStorage.getItem("upche_mode") === "margin" ? "margin" : "meet"; } catch (e) { return "meet"; } })(),   // 업체회의 | 유통마진
   months: {},          // { "2026-09": {units:[...], file, at, rawRows} }
   master: null,        // { file, at, rows:[...] }
@@ -1604,13 +1615,13 @@ function boardHtml(M) {
     : `<div class="bempty">조건에 맞는 이탈 업체가 없어요</div>`;
   const never = ch.never.length ? `<details class="never"><summary>보유 기간 내 접수 이력 없음 ${ch.never.length}곳</summary><div class="chips">${ch.never.map(x => `<span class="tag lg">${esc(x.name)} · ${esc(x.grade)}</span>`).join("")}</div></details>` : "";
   return `<div class="board">
-    <div class="col t-new"><div class="hero"><span class="hico">${ic("userPlus", 22)}</span><div class="hh"><h3>신규</h3>${pill("newRange", S.newRange, [[1, "당월"], [3, "3개월"], [6, "6개월"]], 1)}</div><div class="hnum">${fmtN(nw.count)}<small>곳</small></div>
+    <div class="col t-new${S.fold.new ? " folded" : ""}"><div class="hero" data-fold="new" title="눌러서 목록 접기/펼치기"><span class="hico">${ic("userPlus", 18)}</span><div class="hh"><h3>신규 <span class="hnum">${fmtN(nw.count)}<small>곳</small></span></h3><span class="hr">${pill("newRange", S.newRange, [[1, "당월"], [3, "3개월"], [6, "6개월"]], 1)}<span class="hchev">▾</span></span></div>
       <p class="col-s">원장 등록일 기준 · 신규 업체 접수 <b>${fmtN(nw.sum)}건</b> = 전체의 <b>${nw.segAll ? fmtR(nw.sum / nw.segAll) : "-"}</b></p></div>
       <div class="col-b">${newCards}</div></div>
-    <div class="col t-back"><div class="hero"><span class="hico">${ic("rotate", 22)}</span><div class="hh"><h3>재거래</h3></div><div class="hnum">${fmtN(back.length)}<small>곳</small></div>
+    <div class="col t-back${S.fold.back ? " folded" : ""}"><div class="hero" data-fold="back" title="눌러서 목록 접기/펼치기"><span class="hico">${ic("rotate", 18)}</span><div class="hh"><h3>재거래 <span class="hnum">${fmtN(back.length)}<small>곳</small></span></h3><span class="hchev">▾</span></div>
       <p class="col-s">전월 접수가 없다가 이번 달 다시 접수 (신규 아님)</p></div>
       <div class="col-b">${backCards}</div></div>
-    <div class="col t-churn"><div class="hero"><span class="hico">${ic("userMinus", 22)}</span><div class="hh"><h3>이탈</h3>${pill("churn", S.churn, [[1, "1개월"], [3, "3개월"], [6, "6개월"], [12, "1년"]], 1)}</div><div class="hnum">${fmtN(ch.out.length)}<small>곳</small></div>
+    <div class="col t-churn${S.fold.churn ? " folded" : ""}"><div class="hero" data-fold="churn" title="눌러서 목록 접기/펼치기"><span class="hico">${ic("userMinus", 18)}</span><div class="hh"><h3>이탈 <span class="hnum">${fmtN(ch.out.length)}<small>곳</small></span></h3><span class="hr">${pill("churn", S.churn, [[1, "1개월"], [3, "3개월"], [6, "6개월"], [12, "1년"]], 1)}<span class="hchev">▾</span></span></div>
       <p class="col-s">${monthLabel(ch.winFrom)}~${monthLabel(M)} 접수 없음 · 활동량 큰 순${ch.short ? ` · <span class="warnt">보유 데이터가 짧아 ${monthLabel(D.months[0])}부터 판정</span>` : ""}</p></div>
       <div class="col-b">${churnCards}${never}</div></div>
   </div>`;
@@ -1745,6 +1756,10 @@ function bindMain() {
     S[k] = isNaN(+v) || v === "" ? v : +v;
     if (k === "telco") derive();
     render();
+  });
+  document.querySelectorAll(".hero[data-fold]").forEach(h => h.onclick = (e) => {
+    if (e.target.closest(".pills")) return;           // 기간 버튼은 접기와 상관없음
+    const k = h.dataset.fold; S.fold[k] = !S.fold[k]; lsSet("upche_fold", JSON.stringify(S.fold)); render();
   });
   document.querySelectorAll(".space[data-seg]").forEach(b => b.onclick = () => { S.seg = b.dataset.seg; render(); });
   const sm = $("#selMonth"); if (sm) sm.onchange = () => { S.month = sm.value; render(); };

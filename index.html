@@ -442,6 +442,13 @@ body.mode-margin .badge.orange,body.mode-margin .tag.mtag{background:var(--acc-w
 .board .col.folded{padding-bottom:0}
 .board .col.folded .hero{margin-bottom:0}
 .board .col.folded>:not(.hero){display:none}
+.fcard .card-h{cursor:pointer;user-select:none}
+.fcard.folded{padding-bottom:20px}
+.fcard.folded>:not(.card-h){display:none}
+.fcard.folded .card-h{margin-bottom:0}
+.cchev{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eef1f6;color:var(--sub);font-size:12px;transition:transform .2s,background .15s;align-self:center}
+.fcard .card-h:hover .cchev{background:var(--pri-w2);color:var(--pri-d)}
+.fcard.folded .cchev{transform:rotate(-90deg)}
 /* 아래 두 표 */
 #main .card .tw{border-color:#e8ecf5;border-radius:16px}
 #main .card .t tbody tr:hover td{background:#f8faff}
@@ -493,17 +500,19 @@ body.mode-margin .badge.orange,body.mode-margin .tag.mtag{background:var(--acc-w
 .t tr.opened>td{background:var(--pri-w)}
 .t tr.opened>td.memo textarea{background:#fff}
 .t.mt tr.subrow td{background:#f8faff;font-size:12.5px;padding-top:7px;padding-bottom:7px;border-bottom-color:#eef2fb}
-.t.mt tr.lowsub td{background:#f8faff;border-bottom-color:#eef2fa;font-size:12.5px;padding-top:7px;padding-bottom:7px}
-.t.mt tbody tr.lowsub:hover td{background:#f1f6ff}
-.t.mt tr.lowcap td{padding:8px 12px 6px 46px;color:var(--sub);font-size:12.5px;white-space:normal}
+.t.mt tr.lowsub td{background:#fcfdff;border-bottom-color:#edf0f6;font-size:13px;color:#2b3242;padding-top:8px;padding-bottom:8px}
+.t.mt tr.lowsub td.dim{color:#7d8697}
+.t.mt tr.lowsub td.bad{color:var(--up)}.t.mt tr.lowsub td.warnt{color:var(--acc,#F97316)}
+.t.mt tbody tr.lowsub:hover td{background:#f4f8ff}
+.t.mt tr.lowcap td{padding:9px 12px 7px 46px;color:#4a5263;font-size:12.5px;white-space:normal;background:#f6f9ff}
 .lowcap .lc b{color:var(--text)}.lowcap .lc b.bad{color:var(--up)}.lowcap .lc b.warnt{color:var(--acc,#F97316)}
-.lowcap small{margin-left:10px;color:var(--dim)}
+.lowcap small{margin-left:10px;color:#7d8697}
 .t.mt tr.lowsub td.nm{white-space:normal;font-weight:400}
 .ls{display:flex;align-items:flex-start;gap:8px;margin-left:34px;padding-left:10px;border-left:2px solid var(--pri-w2);width:330px}
 .ls .badge{flex:none;margin-top:1px;min-width:66px;text-align:center}
 .ls-t{min-width:0;display:flex;flex-direction:column;line-height:1.4}
-.ls-t b{font-size:13px}.ls-t small{color:var(--sub);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ls-t small.pr{color:var(--dim)}
+.ls-t b{font-size:13.5px;color:#1c2230}.ls-t small{color:#5b6475;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ls-t small.pr{color:#7d8697}
 .t.mt tr.lowsub td.memo textarea{background:#fff}
 button.lnk{display:inline-flex;align-items:center;gap:3px;border:0;cursor:pointer;background:var(--acc-w,#FFF1E6);color:#EA580C;font-weight:700;font-size:12.5px;border-radius:20px;padding:2px 10px;text-decoration:none;font-variant-numeric:tabular-nums}
 button.lnk i{font-style:normal;font-size:10px;opacity:.8}
@@ -1615,13 +1624,13 @@ function boardHtml(M) {
     : `<div class="bempty">조건에 맞는 이탈 업체가 없어요</div>`;
   const never = ch.never.length ? `<details class="never"><summary>보유 기간 내 접수 이력 없음 ${ch.never.length}곳</summary><div class="chips">${ch.never.map(x => `<span class="tag lg">${esc(x.name)} · ${esc(x.grade)}</span>`).join("")}</div></details>` : "";
   return `<div class="board">
-    <div class="col t-new${S.fold.new ? " folded" : ""}"><div class="hero" data-fold="new" title="눌러서 목록 접기/펼치기"><span class="hico">${ic("userPlus", 18)}</span><div class="hh"><h3>신규 <span class="hnum">${fmtN(nw.count)}<small>곳</small></span></h3><span class="hr">${pill("newRange", S.newRange, [[1, "당월"], [3, "3개월"], [6, "6개월"]], 1)}<span class="hchev">▾</span></span></div>
+    <div class="col t-new${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 세 목록 모두 접기/펼치기"><span class="hico">${ic("userPlus", 18)}</span><div class="hh"><h3>신규 <span class="hnum">${fmtN(nw.count)}<small>곳</small></span></h3><span class="hr">${pill("newRange", S.newRange, [[1, "당월"], [3, "3개월"], [6, "6개월"]], 1)}<span class="hchev">▾</span></span></div>
       <p class="col-s">원장 등록일 기준 · 신규 업체 접수 <b>${fmtN(nw.sum)}건</b> = 전체의 <b>${nw.segAll ? fmtR(nw.sum / nw.segAll) : "-"}</b></p></div>
       <div class="col-b">${newCards}</div></div>
-    <div class="col t-back${S.fold.back ? " folded" : ""}"><div class="hero" data-fold="back" title="눌러서 목록 접기/펼치기"><span class="hico">${ic("rotate", 18)}</span><div class="hh"><h3>재거래 <span class="hnum">${fmtN(back.length)}<small>곳</small></span></h3><span class="hchev">▾</span></div>
+    <div class="col t-back${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 세 목록 모두 접기/펼치기"><span class="hico">${ic("rotate", 18)}</span><div class="hh"><h3>재거래 <span class="hnum">${fmtN(back.length)}<small>곳</small></span></h3><span class="hchev">▾</span></div>
       <p class="col-s">전월 접수가 없다가 이번 달 다시 접수 (신규 아님)</p></div>
       <div class="col-b">${backCards}</div></div>
-    <div class="col t-churn${S.fold.churn ? " folded" : ""}"><div class="hero" data-fold="churn" title="눌러서 목록 접기/펼치기"><span class="hico">${ic("userMinus", 18)}</span><div class="hh"><h3>이탈 <span class="hnum">${fmtN(ch.out.length)}<small>곳</small></span></h3><span class="hr">${pill("churn", S.churn, [[1, "1개월"], [3, "3개월"], [6, "6개월"], [12, "1년"]], 1)}<span class="hchev">▾</span></span></div>
+    <div class="col t-churn${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 세 목록 모두 접기/펼치기"><span class="hico">${ic("userMinus", 18)}</span><div class="hh"><h3>이탈 <span class="hnum">${fmtN(ch.out.length)}<small>곳</small></span></h3><span class="hr">${pill("churn", S.churn, [[1, "1개월"], [3, "3개월"], [6, "6개월"], [12, "1년"]], 1)}<span class="hchev">▾</span></span></div>
       <p class="col-s">${monthLabel(ch.winFrom)}~${monthLabel(M)} 접수 없음 · 활동량 큰 순${ch.short ? ` · <span class="warnt">보유 데이터가 짧아 ${monthLabel(D.months[0])}부터 판정</span>` : ""}</p></div>
       <div class="col-b">${churnCards}${never}</div></div>
   </div>`;
@@ -1652,9 +1661,9 @@ function growHtml(M) {
     }
     return h;
   }).join("");
-  return `<section class="card">
-    <div class="card-h"><div><h2><span class="ib c1">${ic("trend")}</span>업체별 접수 증감 <span class="segb">${esc(S.seg)}</span></h2><p class="sub">직전 ${G.base.length}개월 평균보다 <b class="up">증가 ${G.up}곳</b> · <b class="down">감소 ${G.down}곳</b>${G.flat ? ` · 같음 ${G.flat}곳` : ""} <span class="dim">(유선+무선+렌탈 합계 기준) · ▸ 통신사별 펼치기 · 머리글 클릭 정렬</span></p></div>
-      <div class="hbtns">${openAllBtn()}${pill("growBase", S.growBase, [[1, "전월 비교"], [3, "3개월 평균 비교"], [6, "6개월 평균 비교"]])}</div></div>
+  return `<section class="card fcard${S.fold.grow ? " folded" : ""}">
+    <div class="card-h" data-fold="grow" title="눌러서 접기/펼치기"><div><h2><span class="ib c1">${ic("trend")}</span>업체별 접수 증감 <span class="segb">${esc(S.seg)}</span></h2><p class="sub">직전 ${G.base.length}개월 평균보다 <b class="up">증가 ${G.up}곳</b> · <b class="down">감소 ${G.down}곳</b>${G.flat ? ` · 같음 ${G.flat}곳` : ""} <span class="dim">(유선+무선+렌탈 합계 기준) · ▸ 통신사별 펼치기 · 머리글 클릭 정렬</span></p></div>
+      <div class="hbtns">${S.fold.grow ? "" : openAllBtn() + pill("growBase", S.growBase, [[1, "전월 비교"], [3, "3개월 평균 비교"], [6, "6개월 평균 비교"]])}<span class="cchev">▾</span></div></div>
     <div class="tw"><table class="t grow"><thead>${head1}${head2}</thead>
     <tbody>${body || `<tr><td colspan="99" class="none">접수 업체가 없어요</td></tr>`}</tbody></table></div></section>`;
 }
@@ -1681,9 +1690,9 @@ function qualityHtml(M) {
     return h;
   }).join("");
   const label = Q.ms.length > 1 ? `${monthLabel(Q.ms[0])}~${monthLabel(Q.ms[Q.ms.length - 1])}` : monthLabel(M);
-  return `<section class="card">
-    <div class="card-h"><div><h2><span class="ib c3">${ic("grid")}</span>취소율 · 해지율 · 신규가입 비율 <span class="segb">${esc(S.seg)}</span></h2><p class="sub">${label} 접수분 · ${Q.flagged ? `<b class="bad">주의 ${Q.flagged}곳</b>` : "주의 업체 없음"} <span class="dim">· ▸ 통신사별 펼치기 · 숫자에 마우스를 올리면 계산 근거</span></p></div>
-      <div class="hbtns">${openAllBtn()}${pill("qOnlyBad", S.qOnlyBad, [[0, "전체 업체"], [1, `주의 업체만 (${Q.flagged})`]])}${pill("qPeriod", S.qPeriod, [[1, "당월"], [3, "3개월"], [6, "6개월"]])}</div></div>
+  return `<section class="card fcard${S.fold.qual ? " folded" : ""}">
+    <div class="card-h" data-fold="qual" title="눌러서 접기/펼치기"><div><h2><span class="ib c3">${ic("grid")}</span>취소율 · 해지율 · 신규가입 비율 <span class="segb">${esc(S.seg)}</span></h2><p class="sub">${label} 접수분 · ${Q.flagged ? `<b class="bad">주의 ${Q.flagged}곳</b>` : "주의 업체 없음"} <span class="dim">· ▸ 통신사별 펼치기 · 숫자에 마우스를 올리면 계산 근거</span></p></div>
+      <div class="hbtns">${S.fold.qual ? "" : openAllBtn() + pill("qOnlyBad", S.qOnlyBad, [[0, "전체 업체"], [1, `주의 업체만 (${Q.flagged})`]]) + pill("qPeriod", S.qPeriod, [[1, "당월"], [3, "3개월"], [6, "6개월"]])}<span class="cchev">▾</span></div></div>
     <div class="tw"><table class="t q"><thead>
       <tr><th rowspan="2" class="sortable stick" data-t="q" data-k="name">업체${sortMark("q", "name")}</th><th colspan="3" class="grp">취소율 <small>취소/접수</small></th><th colspan="3" class="grp">해지율 <small>해지/개통</small></th>
         ${th("q", "fresh", "신규가입 비율<br><small>신규/전체</small>", "n grp2", 2)}</tr>
@@ -1757,8 +1766,8 @@ function bindMain() {
     if (k === "telco") derive();
     render();
   });
-  document.querySelectorAll(".hero[data-fold]").forEach(h => h.onclick = (e) => {
-    if (e.target.closest(".pills")) return;           // 기간 버튼은 접기와 상관없음
+  document.querySelectorAll("[data-fold]").forEach(h => h.onclick = (e) => {
+    if (e.target.closest(".pills, button, a, input, select, textarea")) return;   // 안쪽 버튼은 접기와 상관없음
     const k = h.dataset.fold; S.fold[k] = !S.fold[k]; lsSet("upche_fold", JSON.stringify(S.fold)); render();
   });
   document.querySelectorAll(".space[data-seg]").forEach(b => b.onclick = () => { S.seg = b.dataset.seg; render(); });

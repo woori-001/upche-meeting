@@ -604,6 +604,126 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
   .top-r{width:100%}.field{flex:1 1 150px}.field input{width:100%}.top-r .primary,.top-r .ghost{flex:1 1 auto;justify-content:center}
   .dr-stats{grid-template-columns:repeat(2,1fr)}
 }
+/* ===== 회의 결정 ===== */
+.board{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (min-width:1025px) and (max-width:1360px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:1024px){.board{grid-template-columns:1fr}}
+.board .col.t-dec,.col.t-dec{background:#f3f0ff}
+.t-dec .hero{background:#8b7cf6;box-shadow:0 10px 20px -14px rgba(139,124,246,.7)}
+.t-dec .hico{color:#7a68f0}
+.hero .hgo{border:0;background:rgba(255,255,255,.22);color:#fff;font-weight:700;font-size:12px;border-radius:8px;padding:3px 9px;cursor:pointer}
+.hero .hgo:hover{background:rgba(255,255,255,.34)}
+.board .t-dec .bcard,.t-dec .bcard{border:1px solid #e4defd}
+.board .t-dec .bempty,.t-dec .bempty{background:#fff;border-color:#d9d0fd;border-radius:16px}
+.ditem{cursor:pointer;padding:11px 13px}
+.di-top{display:flex;align-items:center;gap:7px;min-width:0}
+.di-n{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.di-act{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
+.di-memo{font-size:12.5px;color:#4a5263;margin-top:6px;background:#f7f5ff;border-radius:8px;padding:5px 8px}
+.di-by{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--dim);margin-top:7px}
+.di-done{display:inline-flex;gap:4px}
+.di-done i{font-style:normal;font-weight:600;font-size:10.5px;border-radius:5px;padding:1px 5px;background:#f0f2f6;color:#a8afbc}
+.di-done i.on{background:#e6f6ef;color:#1f9d6b}
+.dtel{display:inline-block;flex:none;font-size:11px;font-weight:800;color:#6d55e8;background:#ebe5ff;border-radius:6px;padding:1px 6px;letter-spacing:0}
+.dtel.lg{font-size:14px;padding:4px 10px;border-radius:8px}
+.dchip{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.dchip.k-keep{background:#eef1f5;color:#4a5263}
+.dchip.k-grade{background:#dbe7ff;color:#3a6fe6}
+.dchip.k-stop{background:#ffe3e3;color:#e35d70}
+.dchip.k-hold{background:#fff1d6;color:#b7791f}
+.dg{font-size:12.5px;font-weight:600;color:#667085;background:#f0f2f6;border-radius:6px;padding:1px 7px}
+.dar{color:var(--dim);font-size:12px}
+.dprev{display:block;width:100%;margin-top:2px;border:1px dashed #d9d0fd;background:#fff;border-radius:12px;padding:9px;color:#6d55e8;font-size:12.5px;cursor:pointer}
+.dprev:hover{background:#f7f5ff}
+/* 사이드바 회의 메뉴 */
+.sico.teal{background:#e3f4f8;color:#1a93a8}.sico.dec{background:#f0ecfe;color:#7a68f0}
+.space .snum{margin-left:auto;font-size:11px;font-weight:700;color:#7a68f0;background:#f0ecfe;border-radius:999px;padding:1px 7px}
+/* 통신사별 점검 · 회의 결과 공통 배치: 왼쪽 본문 + 오른쪽 따라다니는 카드 */
+.tlay{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+.tl-side{position:sticky;top:18px}
+.tl-side .col{border-radius:18px 40px 18px 18px;padding:0 8px 8px;margin-top:12px}
+.tl-side .col-b{max-height:calc(100vh - 190px);gap:10px;padding:2px 2px 0}
+@media (max-width:1100px){.tlay{grid-template-columns:1fr}.tl-side{position:static}}
+.teltabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.teltabs button{border:1px solid var(--line2);background:#fff;border-radius:12px;padding:8px 14px;font-weight:700;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;color:#3a4252}
+.teltabs button small{font-size:11.5px;font-weight:700;background:#f0f2f6;color:#7d8697;border-radius:999px;padding:0 7px}
+.teltabs button:hover{border-color:var(--pri)}
+.teltabs button.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.teltabs button.on small{background:rgba(255,255,255,.25);color:#fff}
+.t.tgap td{vertical-align:middle}
+.tw.free{max-height:none}
+.t.tgap td.dcell{white-space:normal}
+.board .hero .hh{flex-wrap:wrap;row-gap:6px}.board .hero h3{white-space:nowrap}
+.otel{display:inline-block;font-size:11.5px;font-weight:600;background:#e7f7f2;color:#2a9e86;border-radius:6px;padding:1px 6px;margin-right:4px}
+.dcell{min-width:150px}
+.dbtn{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2);background:#fff;border-radius:10px;padding:5px 11px;font-size:12.5px;font-weight:600;color:#3a4252;cursor:pointer}
+.dbtn:hover{border-color:#8b7cf6;color:#6d55e8}
+.dbtn.done{border-color:transparent;background:none;padding:2px 0;gap:6px}
+.dbtn.done:hover{text-decoration:underline;text-decoration-color:#c9bffb}
+.dmemo{font-size:11.5px;color:var(--sub);max-width:220px;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.okn{color:#1f9d6b}
+.holdbox{background:#fffaf0;border:1px solid #fbe3b4;border-radius:14px;padding:10px 12px 4px;margin:4px 0 14px}
+.hb-h{display:flex;align-items:center;gap:7px;color:#b7791f;font-size:13px;margin-bottom:4px;flex-wrap:wrap}
+.hb-h span{color:#8a6a2c;font-size:12px}
+.holdbox .t td{background:transparent;border-bottom-color:#f6ead0}
+/* 결정 기록 창 */
+.decbox{max-width:500px;position:relative}
+.dname{color:var(--text)}
+.dform{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.dform label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:600;color:#4a5263}
+.dform label small{font-weight:500;color:var(--dim)}
+.dform label[hidden]{display:none}
+.dform input,.dform select{font:inherit;font-weight:400;border:1px solid var(--line2);border-radius:10px;padding:9px 11px;outline:0;background:#fff}
+.dform input:focus,.dform select:focus{border-color:var(--pri)}
+.drow2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dctx{margin:-4px 0 0;font-size:12.5px;color:var(--sub);background:var(--soft);border-radius:8px;padding:6px 10px}
+.dacts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.dact{border:1.5px solid var(--line2);background:#fff;border-radius:12px;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.dact b{font-size:14px}.dact small{font-size:11px;color:var(--dim)}
+.dact:hover{border-color:#b9c2d3}
+.dact.on.k-keep{border-color:#7d8697;background:#f3f5f9}
+.dact.on.k-grade{border-color:#4c82f7;background:#edf3ff}.dact.on.k-grade b{color:#3a6fe6}
+.dact.on.k-stop{border-color:#ef6f82;background:#fff0ef}.dact.on.k-stop b{color:#e35d70}
+.dact.on.k-hold{border-color:#e7a93c;background:#fffaf0}.dact.on.k-hold b{color:#b7791f}
+.ghost.del:hover{border-color:var(--up);color:var(--up)}
+/* 업체 상세의 회의 결정 */
+.dh4{display:flex;align-items:center;gap:8px}.dh4 .ghost{margin-left:auto}
+.drdl{display:flex;flex-direction:column;gap:6px}
+.drd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid #e4defd;border-radius:10px;padding:7px 10px;cursor:pointer;background:#fff}
+.drd:hover{background:#f7f5ff}
+.drd-a{display:inline-flex;align-items:center;gap:6px}
+.drd-m{font-size:12px;color:var(--sub);flex-basis:100%}
+.drold{margin-top:8px;font-size:13px}.drold summary{cursor:pointer;color:var(--sub);padding:4px 0}
+.drold-r{display:flex;align-items:center;gap:8px;margin:5px 0}.drold-r .drd{flex:1}
+/* 회의 결과 */
+.rmonths{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.rmonths button{border:1px solid var(--line2);background:#fff;border-radius:12px;padding:7px 13px;font-weight:600;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
+.rmonths button small{color:var(--dim);font-weight:600}
+.rmonths button.on{background:var(--pri);border-color:var(--pri);color:#fff}.rmonths button.on small{color:rgba(255,255,255,.8)}
+.rsum{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:14px;margin-bottom:20px}
+.rs{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:4px}
+.rs span{font-size:12.5px;color:var(--sub);font-weight:600}
+.rs b{font-size:24px;font-weight:800;letter-spacing:-.02em}.rs b small{font-size:13px;color:var(--dim);font-weight:600;margin-left:2px}
+.rs em{font-style:normal;font-size:12.5px;color:var(--sub)}
+.rgrp{padding:16px 18px}
+.rg-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.rtab td{vertical-align:middle}.rtab td.memo{white-space:normal;min-width:160px;color:#4a5263}
+.ckc{min-width:110px}
+.ck{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--sub);user-select:none}
+.ck input{position:absolute;opacity:0;pointer-events:none}
+.ck i{width:18px;height:18px;border-radius:6px;border:1.5px solid #c9d0db;display:grid;place-items:center;background:#fff;color:#fff}
+.ck.on{color:#1f9d6b}.ck.on i{background:#3dbb9f;border-color:#3dbb9f}
+.ck:hover i{border-color:#3dbb9f}
+.kcard{padding:16px}
+.kc-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.kc-h b{display:inline-flex;align-items:center;gap:6px;font-size:15px}
+.kprev{background:#bacee0;border-radius:14px;padding:14px;max-height:calc(100vh - 260px);overflow:auto}
+.kprev pre{margin:0;background:#fff;border-radius:4px 14px 14px 14px;padding:12px 14px;font:13px/1.65 "Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;white-space:pre-wrap;color:#1c2230}
+.kprev pre .kh{font-weight:800}.kprev pre .kt{color:#3a6fe6}
+.kprev p{background:#fff;border-radius:10px;padding:12px;margin:0}
+.kc-b{display:flex;gap:8px;margin-top:12px}.kc-b button{flex:1;justify-content:center}
+.kc-b button[disabled]{opacity:.45;cursor:default}
+@media (max-width:760px){.rsum{grid-template-columns:1fr}.dacts{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -835,7 +955,7 @@ document.addEventListener("DOMContentLoaded", () => { const l = document.getElem
 // - 한 화면: 요약 / 신규 / 이탈 / 증감 / 품질
 // ============================================================
 
-const APP_VER = "9.0";
+const APP_VER = "9.1";
 
 // ---------- 규칙 상수 (인수인계서 참조) ----------
 // 분석 제외 유형(신규가입이 아닌 접수): 상품명+상품옵션에 아래 단어가 있으면 제외
@@ -1113,6 +1233,10 @@ const RPC = {
   accountList: ["upche_account_list", []],
   accountSave: ["upche_account_save", ["p_id", "p_name", "p_password", "p_role", "p_enabled"]],
   accountDelete: ["upche_account_delete", ["p_id"]],
+  decList: ["upche_decision_list", []],
+  decSave: ["upche_decision_save", ["p_month", "p_partner", "p_telco", "p_action", "p_from", "p_to", "p_memo"]],
+  decDelete: ["upche_decision_delete", ["p_month", "p_partner", "p_telco"]],
+  decCheck: ["upche_decision_check", ["p_month", "p_partner", "p_telco", "p_field", "p_done"]],
 };
 // 연결이 잠깐 끊기거나 서버가 바쁠 때(5xx)는 잠깐 쉬었다가 최대 3번까지 다시 시도
 // (저장은 같은 내용으로 통째로 덮어쓰는 방식이라 다시 해도 안전. 로그인·비밀번호 변경은 다시 하지 않음)
@@ -1177,6 +1301,11 @@ const S = {
   months: {},          // { "2026-09": {units:[...], file, at, rawRows} }
   master: null,        // { file, at, rows:[...] }
   seg: "협력점",
+  view: "seg",         // seg(협력점·판매점·제휴) | telco(통신사별 점검) | result(회의 결과)
+  dec: [],             // 회의 결정 [{month,partner,telco,action,...}]
+  decErr: "",
+  tTel: "KT", tSeg: "ALL", tGap: 3,   // 통신사별 점검
+  rMonth: null,        // 회의 결과에서 보는 달
   telco: "ALL",
   open: new Set(),
   openAll: false,
@@ -1341,6 +1470,13 @@ const IC = {
   rotate: '<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>',
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>',
   grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  check: '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><polyline points="9 14 11 16 15 12"/>',
+  check2: '<polyline points="20 6 9 17 4 12"/>',
+  signal: '<path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+  chat: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.4 9.4 0 0 1-3.6-.7L3 21l1.6-4.4A8 8 0 0 1 3 11.5 8.5 8.5 0 0 1 12 3a8.5 8.5 0 0 1 9 8.5z"/>',
   info: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
 };
 const ic = (k, s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
@@ -1500,8 +1636,13 @@ function sideHtml() {
   let file = "", at = "";
   if (hasMaster && S.master.note) { const i = S.master.note.lastIndexOf(" · "); file = i > 0 ? S.master.note.slice(0, i) : S.master.note; at = i > 0 ? S.master.note.slice(i + 3) : ""; }
   return `<div class="side-top"><div class="brand">${typeof LOGO_B64 === "string" && LOGO_B64.length > 100 ? `<img src="data:image/png;base64,${LOGO_B64}" alt="WAVENET">` : `<b class="logo-t">WAVENET</b>`}</div>${modeSwitchHtml()}</div>
-    <div class="side-mid"><nav class="spaces">${["협력점", "판매점", "제휴"].map(s => `<button class="space${S.seg === s ? " on" : ""}" data-seg="${s}">
+    <div class="side-mid"><nav class="spaces">${["협력점", "판매점", "제휴"].map(s => `<button class="space${S.view === "seg" && S.seg === s ? " on" : ""}" data-seg="${s}">
       <span class="sico ${SEG_META[s].tone}">${ic(SEG_META[s].icon)}</span><span class="stxt"><b>${s}</b><small>등록 ${fmtN(cnt(s))}곳</small></span></button>`).join("")}</nav>
+    <hr class="side-hr">
+    <nav class="spaces">
+      <button class="space${S.view === "telco" ? " on" : ""}" data-view="telco"><span class="sico teal">${ic("signal")}</span><span class="stxt"><b>통신사별 점검</b><small>무접수 업체 보고 결정</small></span></button>
+      <button class="space${S.view === "result" ? " on" : ""}" data-view="result"><span class="sico dec">${ic("check")}</span><span class="stxt"><b>회의 결과</b><small>어드민 · 카톡방 반영</small></span>${D && S.month && decsOf(S.month).length ? `<span class="snum">${decsOf(S.month).length}</span>` : ""}</button>
+    </nav>
     <hr class="side-hr">
     ${ms.length && S.month ? sideCalendarHtml(S.month) : ""}
     <div class="side-info">
@@ -1554,6 +1695,8 @@ function emptyHtml() {
 }
 function mainHtml() {
   const M = S.month;
+  if (S.view === "telco") return telcoHtml(M);
+  if (S.view === "result") return resultHtml();
   return headerHtml(M) + summaryHtml(M) + boardHtml(M) + growHtml(M) + qualityHtml(M) + footHtml();
 }
 function headerHtml(M) {
@@ -1624,15 +1767,16 @@ function boardHtml(M) {
     : `<div class="bempty">조건에 맞는 이탈 업체가 없어요</div>`;
   const never = ch.never.length ? `<details class="never"><summary>보유 기간 내 접수 이력 없음 ${ch.never.length}곳</summary><div class="chips">${ch.never.map(x => `<span class="tag lg">${esc(x.name)} · ${esc(x.grade)}</span>`).join("")}</div></details>` : "";
   return `<div class="board">
-    <div class="col t-new${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 세 목록 모두 접기/펼치기"><span class="hico">${ic("userPlus", 18)}</span><div class="hh"><h3>신규 <span class="hnum">${fmtN(nw.count)}<small>곳</small></span></h3><span class="hr">${pill("newRange", S.newRange, [[1, "당월"], [3, "3개월"], [6, "6개월"]], 1)}<span class="hchev">▾</span></span></div>
+    <div class="col t-new${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"><span class="hico">${ic("userPlus", 18)}</span><div class="hh"><h3>신규 <span class="hnum">${fmtN(nw.count)}<small>곳</small></span></h3><span class="hr">${pill("newRange", S.newRange, [[1, "당월"], [3, "3개월"], [6, "6개월"]], 1)}<span class="hchev">▾</span></span></div>
       <p class="col-s">원장 등록일 기준 · 신규 업체 접수 <b>${fmtN(nw.sum)}건</b> = 전체의 <b>${nw.segAll ? fmtR(nw.sum / nw.segAll) : "-"}</b></p></div>
       <div class="col-b">${newCards}</div></div>
-    <div class="col t-back${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 세 목록 모두 접기/펼치기"><span class="hico">${ic("rotate", 18)}</span><div class="hh"><h3>재거래 <span class="hnum">${fmtN(back.length)}<small>곳</small></span></h3><span class="hchev">▾</span></div>
+    <div class="col t-back${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"><span class="hico">${ic("rotate", 18)}</span><div class="hh"><h3>재거래 <span class="hnum">${fmtN(back.length)}<small>곳</small></span></h3><span class="hchev">▾</span></div>
       <p class="col-s">전월 접수가 없다가 이번 달 다시 접수 (신규 아님)</p></div>
       <div class="col-b">${backCards}</div></div>
-    <div class="col t-churn${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 세 목록 모두 접기/펼치기"><span class="hico">${ic("userMinus", 18)}</span><div class="hh"><h3>이탈 <span class="hnum">${fmtN(ch.out.length)}<small>곳</small></span></h3><span class="hr">${pill("churn", S.churn, [[1, "1개월"], [3, "3개월"], [6, "6개월"], [12, "1년"]], 1)}<span class="hchev">▾</span></span></div>
+    <div class="col t-churn${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"><span class="hico">${ic("userMinus", 18)}</span><div class="hh"><h3>이탈 <span class="hnum">${fmtN(ch.out.length)}<small>곳</small></span></h3><span class="hr">${pill("churn", S.churn, [[1, "1개월"], [3, "3개월"], [6, "6개월"], [12, "1년"]], 1)}<span class="hchev">▾</span></span></div>
       <p class="col-s">${monthLabel(ch.winFrom)}~${monthLabel(M)} 접수 없음 · 활동량 큰 순${ch.short ? ` · <span class="warnt">보유 데이터가 짧아 ${monthLabel(D.months[0])}부터 판정</span>` : ""}</p></div>
       <div class="col-b">${churnCards}${never}</div></div>
+    ${decColHtml(M)}
   </div>`;
 }
 const isOpen = (name) => S.openAll || S.open.has(name);
@@ -1738,11 +1882,13 @@ function openDetail(name) {
       <button class="icon" id="dclose" aria-label="닫기">${ic("x", 18)}</button></div>
     <div class="dr-stats"><div><span>보유 기간 접수</span><b>${fmtN(tot.n)}건</b></div><div><span>취소율</span><b>${fmtR(rt.cancel)}</b></div><div><span>해지율</span><b>${fmtR(rt.term)}</b></div><div><span>신규가입</span><b>${fmtR(rt.fresh)}</b></div></div>
     <h4>월별 접수</h4>${chart}
+    ${detailDecHtml(name)}
     <h4>통신사별 접수 <span class="sub">보유 기간 합계</span></h4>${telcoSplitHtml(name)}
     <h4>월별 상세</h4>
     <table class="t sm"><thead><tr><th>월</th><th class="n">유선</th><th class="n">무선</th><th class="n">렌탈</th><th class="n">취소율</th><th class="n">해지율</th><th class="n">신규가입</th></tr></thead><tbody>${rows}</tbody></table>`;
   document.body.classList.add("dr-open");
   $("#dclose").onclick = closeDetail;
+  bindDec($("#drawer"));
 }
 function telcoSplitHtml(name) {
   const m = new Map();
@@ -1757,6 +1903,290 @@ function telcoSplitHtml(name) {
   return `<div class="tsplit">${rows.map(([t, o]) => `<div class="ts-row"><span class="ts-n">${esc(t)}</span><div class="ts-bar"><b style="width:${o.n / max * 100}%"></b></div><span class="ts-v">${fmtN(o.n)}건</span><span class="ts-d">유선 ${fmtN(o.W)} · 무선 ${fmtN(o.M)}${o.R ? ` · 렌탈 ${fmtN(o.R)}` : ""}</span></div>`).join("")}</div>`;
 }
 function closeDetail() { document.body.classList.remove("dr-open"); }
+// =====================================================================
+// 회의 결정 (업체 × 통신사) · 통신사별 점검 · 회의 결과
+// =====================================================================
+const DEC_TELCOS = ["KT", "SKT", "SKB", "LG U+", "SKYLIFE", "헬로비전"];
+const DEC_ACT = {
+  keep: { l: "유지", d: "지금 등급 그대로" },
+  grade: { l: "등급변경", d: "현재 → 바꿀 등급" },
+  stop: { l: "정책중단", d: "휴면 처리" },
+  hold: { l: "유예", d: "한 달 더 보기" },
+};
+const DEC_CHANGE = (d) => d.action === "grade" || d.action === "stop";   // 어드민·카톡방에 반영해야 하는 결정
+const whoShort = (s) => String(s || "").replace(/\(.*\)$/, "");
+const atShort = (s) => s ? `${+s.slice(5, 7)}/${+s.slice(8, 10)} ${s.slice(11, 16)}` : "";
+const decKey = (d) => `${d.month}|${d.partner}|${d.telco}`;
+function decOf(m, p, t) { return S.dec.find(d => d.month === m && d.partner === p && d.telco === t) || null; }
+function decsOf(m) { return S.dec.filter(d => d.month === m); }
+function telOrder(t) { const i = DEC_TELCOS.indexOf(t); return i < 0 ? 99 : i; }
+// "협의 → 정책중단" 같은 한 줄 설명
+function decWhat(d, html = true) {
+  const A = DEC_ACT[d.action] || { l: d.action };
+  const chip = html ? `<span class="dchip k-${d.action}">${A.l}</span>` : A.l;
+  if (d.action === "grade") return html ? `<span class="dg">${esc(d.gradeFrom || "?")}</span><span class="dar">→</span><span class="dchip k-grade">${esc(d.gradeTo || "?")}</span>` : `등급변경 ${d.gradeFrom || "?"} → ${d.gradeTo || "?"}`;
+  if (d.action === "stop") return html ? `${d.gradeFrom ? `<span class="dg">${esc(d.gradeFrom)}</span><span class="dar">→</span>` : ""}${chip}` : `정책중단(휴면)${d.gradeFrom ? ` · ${d.gradeFrom}` : ""}`;
+  if (d.action === "hold") return html ? `${chip}<span class="dim small">한 달 더 보기</span>` : "유예(한 달 더)";
+  return html ? `${d.gradeFrom ? `<span class="dg">${esc(d.gradeFrom)}</span>` : ""}${chip}` : `유지${d.gradeFrom ? ` · ${d.gradeFrom}` : ""}`;
+}
+async function loadDecisions() {
+  try { S.dec = await gs("decList") || []; S.decErr = ""; }
+  catch (e) {
+    S.dec = [];
+    S.decErr = /함수가 아직 없어요/.test(e.message) ? "회의 결정을 저장하려면 Supabase 에 upche_schema.sql 을 한 번 더 실행해 주세요." : e.message;
+  }
+}
+
+// ---------- 결정 목록 (업체회의 4번째 칸 · 통신사별 점검 오른쪽 카드 공용) ----------
+function decListHtml(M) {
+  if (S.decErr) return `<div class="bempty">${esc(S.decErr)}</div>`;
+  const list = decsOf(M).slice().sort((a, b) => b.at.localeCompare(a.at) || telOrder(a.telco) - telOrder(b.telco));
+  const items = list.map(d => {
+    const p = D.partners.get(d.partner) || {};
+    return `<div class="bcard ditem" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" title="눌러서 고치기">
+      <div class="di-top"><span class="dtel">${esc(d.telco)}</span><b class="di-n">${esc(d.partner)}</b>${p.seg ? `<span class="dim small">${esc(p.seg)}</span>` : ""}</div>
+      <div class="di-act">${decWhat(d)}</div>
+      ${d.memo ? `<div class="di-memo">${esc(d.memo)}</div>` : ""}
+      <div class="di-by">${esc(whoShort(d.by))} · ${atShort(d.at)}${DEC_CHANGE(d) ? `<span class="di-done">${d.admin ? `<i class="on">어드민</i>` : `<i>어드민</i>`}${d.kakao ? `<i class="on">카톡</i>` : `<i>카톡</i>`}</span>` : ""}</div></div>`;
+  }).join("");
+  const prevHold = S.dec.filter(d => d.month === addMonths(M, -1) && d.action === "hold").length;
+  return (items || `<div class="bempty">아직 결정한 업체가 없어요<br><small>통신사별 점검이나 업체 이름을 눌러 기록해요</small></div>`)
+    + (prevHold ? `<button class="dprev" data-view="telco">지난달 유예 <b>${prevHold}곳</b> 다시 보기 ›</button>` : "");
+}
+function decColHtml(M, side) {
+  const list = S.decErr ? [] : decsOf(M);
+  const ch = list.filter(DEC_CHANGE).length;
+  const fold = !side && S.fold.board;
+  return `<div class="col t-dec${side ? " dside" : ""}${fold ? " folded" : ""}"><div class="hero"${side ? "" : ` data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"`}><span class="hico">${ic("check", 18)}</span>
+      <div class="hh"><h3>이번 회의 결정 <span class="hnum">${fmtN(list.length)}<small>건</small></span></h3><span class="hr">${side ? "" : `<button class="hgo" data-view="${S.view === "telco" ? "result" : "telco"}">${S.view === "telco" ? "결과" : "점검"} ›</button><span class="hchev">▾</span>`}</span></div>
+      <p class="col-s">${monthLabel(M)} 실적 회의 · 반영할 변경 <b>${ch}건</b>${side ? " · 카드를 누르면 고쳐요" : ""}</p></div>
+    <div class="col-b">${decListHtml(M)}</div></div>`;
+}
+
+// ---------- 통신사별 점검 ----------
+// 그 통신사로 접수하던 곳 중 최근 N개월 접수가 없는 업체
+function calcTelGap(M, t) {
+  const N = S.tGap, winFrom = addMonths(M, -(N - 1));
+  const ms = D.months.filter(m => m <= M);
+  const rows = [];
+  for (const p of D.partners.values()) {
+    if (p.trade && p.trade !== "거래중") continue;
+    if (S.tSeg !== "ALL" && p.seg !== S.tSeg) continue;
+    const pt = D.statsT.get(p.dataName); if (!pt) continue;
+    const act = ms.filter(m => { const c = pt[m] && pt[m][t]; return c && (c.W.n + c.M.n + c.R.n + c.W.EX + c.M.EX + c.R.EX) > 0; });
+    if (!act.length) continue;
+    const last = act[act.length - 1];
+    if (last >= winFrom) continue;
+    const span = ms.filter(m => m >= act[0] && m <= last);
+    const o = {}; for (const g of ALLG) o[g] = sumCellsT(p.dataName, t, span, [g]).n / span.length;
+    const others = (telcoRows(p.dataName, [M]) || []).filter(x => x !== t && x !== "렌탈" && x !== "미상").map(x => [x, sumCellsT(p.dataName, x, [M], ALLG).n]).filter(x => x[1] > 0);
+    rows.push({ p, last, gap: monthsBetween(last, M), o, avg: o.W + o.M + o.R, others });
+  }
+  rows.sort((a, b) => b.avg - a.avg);
+  return { rows, winFrom, short: N > ms.length };
+}
+function telcoHtml(M) {
+  const t = S.tTel;
+  const G = calcTelGap(M, t);
+  const rows = G.rows.filter(r => matchSearch(r.p.dataName));
+  const prev = addMonths(M, -1);
+  const holds = S.dec.filter(d => d.month === prev && d.action === "hold" && d.telco === t && matchSearch(d.partner));
+  const tabCnt = (x) => { const s = S.tTel; S.tTel = x; const n = calcTelGap(M, x).rows.length; S.tTel = s; return n; };
+  const decCell = (name) => {
+    const d = decOf(M, name, t);
+    return d ? `<td class="dcell"><button class="dbtn done" data-dp="${esc(name)}" data-dt="${esc(t)}">${decWhat(d)}</button>${d.memo ? `<div class="dmemo">${esc(d.memo)}</div>` : ""}</td>`
+      : `<td class="dcell"><button class="dbtn" data-dp="${esc(name)}" data-dt="${esc(t)}">${ic("edit", 13)}결정</button></td>`;
+  };
+  const holdHtml = holds.length ? `<div class="holdbox"><div class="hb-h">${ic("rotate", 14)}<b>지난달 유예</b><span>${monthLabel(prev)} 회의에서 “한 달 더 보기”로 한 곳 · 이번 달 ${esc(t)} 접수를 확인하세요</span></div>
+    <table class="t"><tbody>${holds.map(h => { const p = D.partners.get(h.partner) || {}; const n = sumCellsT(h.partner, t, [M], ALLG).n;
+      return `<tr><td class="nm">${nameHtml(h.partner, p.grade)}</td><td>${h.memo ? `<span class="dim">지난 메모</span> ${esc(h.memo)}` : `<span class="dim">메모 없음</span>`}</td>
+        <td class="n">${n ? `<b class="okn">이번 달 ${fmtN(n)}건</b>` : `<span class="warnt">이번 달도 0건</span>`}</td>${decCell(h.partner)}</tr>`; }).join("")}</tbody></table></div>` : "";
+  const allSeg = S.tSeg === "ALL";
+  const body = rows.map(r => `<tr><td class="nm">${nameHtml(r.p.dataName, r.p.grade)}</td>${allSeg ? `<td><span class="dim">${esc(r.p.seg)}</span></td>` : ""}
+      <td class="n">${monthLabel(r.last)} <span class="badge red">${r.gap}개월</span></td>
+      <td class="n"><b>${fmtAvg(r.avg)}</b><span class="dim small"> 건/월</span><div class="dim small">유선 ${fmtAvg(r.o.W)} · 무선 ${fmtAvg(r.o.M)}</div></td>
+      <td>${r.others.length ? r.others.map(([x, n]) => `<span class="otel">${esc(x)} ${fmtN(n)}</span>`).join("") : `<span class="dim">없음</span>`}</td>
+      ${decCell(r.p.dataName)}</tr>`).join("");
+  const done = rows.filter(r => decOf(M, r.p.dataName, t)).length;
+  return `<div class="top"><div><h1>통신사별 점검</h1><p class="sub">${mLabel(M)} 실적 기준 · 통신사별로 최근 ${S.tGap}개월 접수가 끊긴 업체를 보고 결정해요</p></div>
+      <div class="top-r"><label class="field">${ic("search")}<input id="search" type="search" placeholder="업체명 검색" value="${esc(S.search)}"></label></div></div>
+    <div class="tlay"><div class="tl-main">
+      <div class="teltabs">${DEC_TELCOS.map(x => `<button class="${x === t ? "on" : ""}" data-tel="${esc(x)}">${esc(x)}<small>${tabCnt(x)}</small></button>`).join("")}</div>
+      <section class="card">
+        <div class="card-h"><div><h2><span class="ib c3">${ic("signal")}</span>${esc(t)} 무접수 업체 <span class="segb">${rows.length}곳</span></h2>
+          <p class="sub">${monthLabel(G.winFrom)}~${monthLabel(M)} ${esc(t)} 접수 없음 · 활동 당시 월평균 큰 순 · 결정 <b>${done}</b>/${rows.length}${G.short ? ` · <span class="warnt">보유 데이터가 짧아요</span>` : ""}</p></div>
+          <div class="hbtns">${pill("tSeg", S.tSeg, [["ALL", "전체"], ["협력점", "협력점"], ["판매점", "판매점"], ["제휴", "제휴"]])}${pill("tGap", S.tGap, [[1, "1개월"], [2, "2개월"], [3, "3개월"], [6, "6개월"]])}</div></div>
+        ${holdHtml}
+        <div class="tw free"><table class="t tgap"><thead><tr><th>업체 · 등급</th>${allSeg ? "<th>구분</th>" : ""}<th class="n">마지막 접수 · 공백</th><th class="n">활동 당시 월평균</th><th>이번 달 다른 통신사</th><th>이번 회의 결정</th></tr></thead>
+        <tbody>${body || `<tr><td colspan="7" class="none">조건에 맞는 업체가 없어요</td></tr>`}</tbody></table></div>
+      </section></div>
+      <aside class="tl-side">${decColHtml(M, true)}</aside></div>`;
+}
+
+// ---------- 회의 결과 ----------
+function resultMonths() { return [...new Set([S.month, ...S.dec.map(d => d.month)])].filter(Boolean).sort().reverse(); }
+function kakaoText(m) {
+  const list = decsOf(m).filter(DEC_CHANGE);
+  const by = {}; for (const d of list) (by[d.telco] = by[d.telco] || []).push(d);
+  const tels = Object.keys(by).sort((a, b) => telOrder(a) - telOrder(b));
+  if (!tels.length) return "";
+  return `[${mLabel(m)} 실적 회의 결과]\n` + tels.map(t => `\n■ ${t}\n` + by[t].sort((a, b) => a.action.localeCompare(b.action) || a.partner.localeCompare(b.partner))
+    .map(d => `· ${d.partner} : ${d.action === "grade" ? `등급변경 ${d.gradeFrom || "?"} → ${d.gradeTo || "?"}` : `정책중단(휴면)${d.gradeFrom ? ` (${d.gradeFrom})` : ""}`}`).join("\n")).join("\n");
+}
+function resultHtml() {
+  const ms = resultMonths();
+  if (!S.rMonth || !ms.includes(S.rMonth)) S.rMonth = S.month;
+  const m = S.rMonth, list = decsOf(m);
+  const cnt = (a) => list.filter(d => d.action === a).length;
+  const chg = list.filter(DEC_CHANGE), ad = chg.filter(d => d.admin).length, kk = chg.filter(d => d.kakao).length;
+  const by = {}; for (const d of list) (by[d.telco] = by[d.telco] || []).push(d);
+  const tels = Object.keys(by).sort((a, b) => telOrder(a) - telOrder(b));
+  const ck = (d, f) => {
+    if (!DEC_CHANGE(d)) return `<td class="ckc"><span class="dim small">필요 없음</span></td>`;
+    const on = d[f], who = d[f + "By"], at = d[f + "At"];
+    return `<td class="ckc"><label class="ck${on ? " on" : ""}"><input type="checkbox" data-ck="${f}" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}"${on ? " checked" : ""}><i>${on ? ic("check2", 12) : ""}</i>${on ? "반영함" : "반영 전"}</label>${on ? `<div class="dim small">${esc(whoShort(who))} · ${atShort(at)}</div>` : ""}</td>`;
+  };
+  const groups = tels.map(t => `<section class="card rgrp"><div class="rg-h"><span class="dtel lg">${esc(t)}</span><span class="dim">${by[t].length}건</span></div>
+    <div class="tw"><table class="t rtab"><thead><tr><th>업체</th><th>구분</th><th>결정</th><th>메모</th><th>결정한 사람</th><th>어드민 반영</th><th>카톡방 반영</th></tr></thead><tbody>
+    ${by[t].sort((a, b) => (DEC_CHANGE(b) - DEC_CHANGE(a)) || a.partner.localeCompare(b.partner)).map(d => { const p = D.partners.get(d.partner) || {};
+      return `<tr><td class="nm"><a class="pn" data-p="${esc(d.partner)}">${esc(d.partner)}</a></td><td><span class="dim">${esc(p.seg || "-")}</span></td>
+        <td><button class="dbtn done" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}">${decWhat(d)}</button></td>
+        <td class="memo">${esc(d.memo) || `<span class="dim">-</span>`}</td><td><span class="small">${esc(whoShort(d.by))}</span><div class="dim small">${atShort(d.at)}</div></td>${ck(d, "admin")}${ck(d, "kakao")}</tr>`; }).join("")}
+    </tbody></table></div></section>`).join("");
+  const kt = kakaoText(m);
+  const prevTxt = kt ? esc(kt).replace(/^\[(.*)\]$/m, "<b class=\"kh\">[$1]</b>").replace(/^■ (.*)$/gm, "<b class=\"kt\">■ $1</b>") : "";
+  return `<div class="top"><div><h1>회의 결과</h1><p class="sub">회의에서 정한 결정 · 다음 달 1일 어드민과 카톡 정책방에 반영하고 체크해요</p></div>
+      <div class="top-r">${S.decErr ? "" : `<button class="ghost" id="bDecXls">${ic("sheet")}엑셀 저장</button>`}</div></div>
+    ${S.decErr ? `<div class="card"><p class="warnt">${esc(S.decErr)}</p></div>` : `
+    <div class="rmonths">${ms.map(x => `<button class="${x === m ? "on" : ""}" data-rm="${x}">${mLabel(x)} 실적<small>${decsOf(x).length}건</small></button>`).join("")}</div>
+    <div class="rsum">
+      <div class="rs"><span>결정</span><b>${list.length}<small>건</small></b><em>유지 ${cnt("keep")} · 등급변경 ${cnt("grade")} · 정책중단 ${cnt("stop")} · 유예 ${cnt("hold")}</em></div>
+      <div class="rs"><span>어드민 반영</span><b>${ad}<small>/${chg.length}</small></b><div class="gauge"><b style="width:${chg.length ? ad / chg.length * 100 : 0}%"></b></div></div>
+      <div class="rs"><span>카톡방 반영</span><b>${kk}<small>/${chg.length}</small></b><div class="gauge"><b style="width:${chg.length ? kk / chg.length * 100 : 0}%"></b></div></div>
+    </div>
+    <div class="tlay"><div class="tl-main">${groups || `<div class="card"><p class="none">${mLabel(m)} 실적 회의 결정이 아직 없어요</p></div>`}</div>
+      <aside class="tl-side"><div class="card kcard"><div class="kc-h"><b>${ic("chat", 15)}카톡방 공지</b><span class="dim small">등급변경·정책중단만</span></div>
+        <div class="kprev" id="kakaoCap">${kt ? `<pre>${prevTxt}</pre>` : `<p class="dim">반영할 변경이 없어요</p>`}</div>
+        <div class="kc-b"><button class="primary" id="bKakao" ${kt ? "" : "disabled"}>${ic("copy")}문구 복사</button><button class="ghost" id="bDecImg" ${kt ? "" : "disabled"}>${ic("image")}이미지 저장</button></div></div></aside></div>`}`;
+}
+
+// ---------- 결정 기록 창 ----------
+function gradeOptions() {
+  const s = new Set();
+  for (const p of D.partners.values()) if (p.grade) s.add(p.grade);
+  for (const d of S.dec) { if (d.gradeFrom) s.add(d.gradeFrom); if (d.gradeTo) s.add(d.gradeTo); }
+  ["협의"].forEach(x => s.add(x));
+  return [...s].sort();
+}
+function topTelco(name) {
+  let best = "KT", bn = -1;
+  for (const t of DEC_TELCOS) { const n = sumCellsT(name, t, D.months, ALLG).n; if (n > bn) { bn = n; best = t; } }
+  return best;
+}
+function openDecision(name, telco, month) {
+  if (S.decErr) { toast(esc(S.decErr), 6000); return; }
+  const M = month || S.month;
+  const t = telco || topTelco(name);
+  const cur = decOf(M, name, t);
+  const info = D.partners.get(name) || (D.MI && D.MI.lookup(name)) || {};
+  const tels = [...new Set([...DEC_TELCOS, t])];
+  const st = { action: cur ? cur.action : "" };
+  const lastN = sumCellsT(name, t, [M], ALLG).n;
+  const lastM = D.months.filter(m => m <= M && sumCellsT(name, t, [m], ALLG).n > 0).pop();
+  const box = $("#modal");
+  box.innerHTML = `<div class="mbox decbox"><button class="icon x" id="mclose">${ic("x", 18)}</button>
+    <h3>회의 결정 기록</h3><p class="sub"><b class="dname">${esc(name)}</b>${info.seg ? ` · ${esc(info.seg)}` : ""} · ${mLabel(M)} 실적 회의</p>
+    <div class="dform">
+      <div class="drow2">
+        <label>통신사<select id="dTel">${tels.map(x => `<option${x === t ? " selected" : ""}>${esc(x)}</option>`).join("")}</select></label>
+        <label><span>현재 등급 <small>· 통신사별로 다르면 고쳐요</small></span><input id="dFrom" list="dGrades" value="${esc(cur ? cur.gradeFrom : info.grade || "")}"></label>
+      </div>
+      <p class="dctx">${esc(t)} 접수 · 이번 달 <b>${fmtN(lastN)}건</b> · 마지막 접수 <b>${lastM ? monthLabel(lastM) : "없음"}</b></p>
+      <div class="dacts">${Object.entries(DEC_ACT).map(([k, a]) => `<button type="button" class="dact k-${k}${st.action === k ? " on" : ""}" data-a="${k}"><b>${a.l}</b><small>${a.d}</small></button>`).join("")}</div>
+      <label id="dToW" ${st.action === "grade" ? "" : "hidden"}>바꿀 등급<input id="dTo" list="dGrades" value="${esc(cur ? cur.gradeTo : "")}" placeholder="예: B"></label>
+      <label><span>메모 <small>· 한 줄</small></span><input id="dMemo" maxlength="200" value="${esc(cur ? cur.memo : "")}" placeholder="예: 영업 담당 통화 후 다음 달 재확인"></label>
+      <datalist id="dGrades">${gradeOptions().map(g => `<option value="${esc(g)}">`).join("")}</datalist>
+      ${cur ? `<p class="dim small">${esc(whoShort(cur.by))} · ${atShort(cur.at)} 기록${DEC_CHANGE(cur) && (cur.admin || cur.kakao) ? " · 결정을 바꾸면 반영 체크가 풀려요" : ""}</p>` : ""}
+      <p class="loginerr" id="dErr"></p>
+    </div>
+    <div class="mfoot">${cur ? `<button class="ghost del" id="dDel" style="margin-right:auto">${ic("trash")}지우기</button>` : ""}<button class="ghost" id="dCancel">취소</button><button class="primary" id="dSave">저장</button></div></div>`;
+  box.hidden = false;
+  const close = () => box.hidden = true;
+  $("#mclose").onclick = close; $("#dCancel").onclick = close;
+  $("#dTel").onchange = () => openDecision(name, $("#dTel").value, M);
+  box.querySelectorAll(".dact").forEach(b => b.onclick = () => {
+    st.action = b.dataset.a;
+    box.querySelectorAll(".dact").forEach(x => x.classList.toggle("on", x === b));
+    $("#dToW").hidden = st.action !== "grade";
+    if (st.action === "grade") $("#dTo").focus();
+  });
+  const after = () => { close(); render(); if (document.body.classList.contains("dr-open")) openDetail(name); };
+  $("#dSave").onclick = async () => {
+    if (!st.action) { $("#dErr").textContent = "결정을 골라주세요."; return; }
+    if (st.action === "grade" && !$("#dTo").value.trim()) { $("#dErr").textContent = "바꿀 등급을 적어주세요."; return; }
+    $("#dSave").disabled = true;
+    try {
+      const r = await gs("decSave", M, name, $("#dTel").value, st.action, $("#dFrom").value.trim(), $("#dTo").value.trim(), $("#dMemo").value);
+      S.dec = S.dec.filter(d => decKey(d) !== decKey(r)); S.dec.push(r);
+      after(); toast(`${esc(name)} · ${esc(r.telco)} 결정을 저장했어요.`);
+    } catch (e) { $("#dErr").textContent = e.message; $("#dSave").disabled = false; }
+  };
+  if (cur) $("#dDel").onclick = async () => {
+    try { await gs("decDelete", M, name, t); S.dec = S.dec.filter(d => decKey(d) !== decKey(cur)); after(); toast("결정을 지웠어요."); }
+    catch (e) { $("#dErr").textContent = e.message; }
+  };
+}
+// 업체 상세 패널 안의 "회의 결정" 칸
+function detailDecHtml(name) {
+  if (S.decErr) return "";
+  const M = S.month, now = S.dec.filter(d => d.partner === name && d.month === M).sort((a, b) => telOrder(a.telco) - telOrder(b.telco));
+  const old = S.dec.filter(d => d.partner === name && d.month !== M).sort((a, b) => b.month.localeCompare(a.month) || telOrder(a.telco) - telOrder(b.telco));
+  const row = (d) => `<div class="drd" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}"><span class="dtel">${esc(d.telco)}</span><span class="drd-a">${decWhat(d)}</span>${d.memo ? `<span class="drd-m">${esc(d.memo)}</span>` : ""}</div>`;
+  return `<h4 class="dh4">회의 결정 <span class="sub">${monthLabel(M)} 실적 회의</span><button class="ghost sm" data-dp="${esc(name)}" data-dt="">${ic("edit", 13)}결정 기록</button></h4>
+    <div class="drdl">${now.length ? now.map(row).join("") : `<p class="sub">이번 회의 결정이 없어요</p>`}</div>
+    ${old.length ? `<details class="drold"><summary>지난 결정 ${old.length}건</summary>${old.map(d => `<div class="drold-r"><span class="dim">${monthLabel(d.month)}</span>${row(d)}</div>`).join("")}</details>` : ""}`;
+}
+function bindDec(root) {
+  root.querySelectorAll("[data-dp]").forEach(b => { if (b.tagName === "INPUT") return; b.onclick = (e) => { e.stopPropagation(); openDecision(b.dataset.dp, b.dataset.dt || "", b.dataset.dm || ""); }; });
+}
+function bindDecPages() {
+  bindDec($("#main"));
+  document.querySelectorAll("[data-view]").forEach(b => b.onclick = (e) => { e.stopPropagation(); S.view = b.dataset.view; closeDetail(); render(); window.scrollTo(0, 0); });
+  document.querySelectorAll(".teltabs [data-tel]").forEach(b => b.onclick = () => { S.tTel = b.dataset.tel; render(); });
+  document.querySelectorAll(".rmonths [data-rm]").forEach(b => b.onclick = () => { S.rMonth = b.dataset.rm; render(); });
+  document.querySelectorAll("input[data-ck]").forEach(c => c.onchange = async () => {
+    c.disabled = true;
+    try {
+      const r = await gs("decCheck", c.dataset.dm, c.dataset.dp, c.dataset.dt, c.dataset.ck, c.checked);
+      S.dec = S.dec.filter(d => decKey(d) !== decKey(r)); S.dec.push(r); render();
+    } catch (e) { c.checked = !c.checked; c.disabled = false; toast(esc(e.message)); }
+  });
+  const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
+  on("#bKakao", async () => {
+    const txt = kakaoText(S.rMonth);
+    try { await navigator.clipboard.writeText(txt); }
+    catch (e) { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+    toast("카톡 공지 문구를 복사했어요. 카톡방에 붙여넣기 하세요.");
+  });
+  on("#bDecImg", async () => {
+    try {
+      if (typeof html2canvas === "undefined") await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
+      const cv = await html2canvas($("#kakaoCap"), { backgroundColor: "#ffffff", scale: 2 });
+      const a = document.createElement("a"); a.href = cv.toDataURL("image/png"); a.download = `회의결과_${S.rMonth}.png`; a.click();
+    } catch (e) { toast("이미지를 만들지 못했어요. 인터넷 연결을 확인해 주세요."); }
+  });
+  on("#bDecXls", () => {
+    const m = S.rMonth, yn = (b) => b ? "O" : "";
+    const rows = [["실적월", "통신사", "업체", "구분", "결정", "현재 등급", "바꿀 등급", "메모", "결정한 사람", "결정 일시", "어드민 반영", "어드민 반영자", "어드민 반영 일시", "카톡방 반영", "카톡방 반영자", "카톡방 반영 일시"]];
+    decsOf(m).sort((a, b) => telOrder(a.telco) - telOrder(b.telco) || a.partner.localeCompare(b.partner)).forEach(d => {
+      const p = D.partners.get(d.partner) || {};
+      rows.push([m, d.telco, d.partner, p.seg || "", (DEC_ACT[d.action] || {}).l, d.gradeFrom, d.gradeTo, d.memo, whoShort(d.by), d.at,
+        DEC_CHANGE(d) ? yn(d.admin) : "-", d.adminBy ? whoShort(d.adminBy) : "", d.adminAt, DEC_CHANGE(d) ? yn(d.kakao) : "-", d.kakaoBy ? whoShort(d.kakaoBy) : "", d.kakaoAt]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows); ws["!cols"] = rows[0].map((h, i) => ({ wch: [8, 9, 18, 8, 9, 9, 9, 30][i] || 14 }));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "회의결과"); XLSX.writeFile(wb, `회의결과_${m}.xlsx`);
+  });
+}
 
 // ---------- 이벤트 ----------
 function bindMain() {
@@ -1770,7 +2200,8 @@ function bindMain() {
     if (e.target.closest(".pills, button, a, input, select, textarea")) return;   // 안쪽 버튼은 접기와 상관없음
     const k = h.dataset.fold; S.fold[k] = !S.fold[k]; lsSet("upche_fold", JSON.stringify(S.fold)); render();
   });
-  document.querySelectorAll(".space[data-seg]").forEach(b => b.onclick = () => { S.seg = b.dataset.seg; render(); });
+  document.querySelectorAll(".space[data-seg]").forEach(b => b.onclick = () => { S.seg = b.dataset.seg; S.view = "seg"; render(); });
+  bindDecPages();
   const sm = $("#selMonth"); if (sm) sm.onchange = () => { S.month = sm.value; render(); };
   // 검색: 한글 조합 중에는 다시 그리지 않고, 입력이 0.25초 멈추면 한 번만 검색
   const se = $("#search");
@@ -2821,6 +3252,7 @@ async function loadAll() {
       S.months[m] = { units: tsvToUnits(tsv) };
       busy(true, `데이터 불러오는 중... ${++done}/${info.months.length}개월`);
     });
+    await loadDecisions();
   } catch (e) {
     if (!e.auth) toast(`<b>서버 연결 오류</b> ${esc(e.message)}`, 0);
   } finally { busy(false); }

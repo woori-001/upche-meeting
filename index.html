@@ -2046,11 +2046,12 @@ function kakaoText(m) {
   if (!list.length) return "";
   const line = (d) => {
     const g = d.action === "grade" ? ` : ${d.gradeFrom || "?"} → ${d.gradeTo || "?"}` : d.gradeFrom ? ` (${d.gradeFrom})` : "";
-    return `· [${d.telco}] ${d.partner}${g}${d.memo ? `\n   └ ${d.memo}` : ""}`;
+    return `· ${d.partner}${g}${d.memo ? `\n   └ ${d.memo}` : ""}`;
   };
   return `[${mLabel(m)} 실적 회의 결과]\n` + SHARE_ORDER.map(([k, l]) => {
-    const xs = list.filter(d => d.action === k).sort((a, b) => telOrder(a.telco) - telOrder(b.telco) || a.partner.localeCompare(b.partner));
-    return xs.length ? `\n■ ${l} ${xs.length}건\n` + xs.map(line).join("\n") : "";
+    const xs = list.filter(d => d.action === k).sort((a, b) => a.partner.localeCompare(b.partner));
+    const ls = [...new Set(xs.map(line))];   // 같은 업체를 여러 통신사로 정했으면 한 줄만
+    return ls.length ? `\n■ ${l} ${ls.length}건\n` + ls.join("\n") : "";
   }).filter(Boolean).join("\n");
 }
 function resultHtml() {
@@ -2068,14 +2069,14 @@ function resultHtml() {
   };
   // 결정 항목별로 묶은 한 장짜리 목록
   const rowsHtml = SHARE_ORDER.map(([k, l]) => {
-    const xs = list.filter(d => d.action === k).sort((a, b) => telOrder(a.telco) - telOrder(b.telco) || a.partner.localeCompare(b.partner));
+    const xs = list.filter(d => d.action === k).sort((a, b) => a.partner.localeCompare(b.partner) || telOrder(a.telco) - telOrder(b.telco));
     if (!xs.length) return "";
-    return `<tr class="rgh"><td colspan="8"><span class="dchip k-${k}">${l}</span><span class="dim">${xs.length}건</span></td></tr>` + xs.map(d => { const p = D.partners.get(d.partner) || {};
-      return `<tr><td><span class="dtel">${esc(d.telco)}</span></td><td class="nm"><a class="pn" data-p="${esc(d.partner)}">${esc(d.partner)}</a></td><td><span class="dim">${esc(p.seg || "-")}</span></td>
+    return `<tr class="rgh"><td colspan="7"><span class="dchip k-${k}">${l}</span><span class="dim">${xs.length}건</span></td></tr>` + xs.map(d => { const p = D.partners.get(d.partner) || {};
+      return `<tr><td class="nm"><a class="pn" data-p="${esc(d.partner)}">${esc(d.partner)}</a></td><td><span class="dim">${esc(p.seg || "-")}</span></td>
         <td><button class="dbtn done" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}">${d.action === "grade" ? `<span class="dg">${esc(d.gradeFrom || "?")}</span><span class="dar">→</span><span class="dchip k-grade">${esc(d.gradeTo || "?")}</span>` : d.gradeFrom ? `<span class="dg">${esc(d.gradeFrom)}</span>` : `<span class="dim">고치기</span>`}</button></td>
         <td class="memo">${esc(d.memo) || `<span class="dim">-</span>`}</td><td class="small" title="${esc(d.at)}">${esc(whoShort(d.by))} <span class="dim">${atShort(d.at)}</span></td>${ck(d, "admin")}${ck(d, "kakao")}</tr>`; }).join("");
   }).join("");
-  const groups = rowsHtml ? `<section class="card rgrp"><div class="tw free"><table class="t rtab"><thead><tr><th>통신사</th><th>업체</th><th>구분</th><th>등급</th><th>메모</th><th>결정한 사람</th><th>어드민 반영</th><th>카톡방 반영</th></tr></thead><tbody>${rowsHtml}</tbody></table></div></section>` : "";
+  const groups = rowsHtml ? `<section class="card rgrp"><div class="tw free"><table class="t rtab"><thead><tr><th>업체</th><th>구분</th><th>등급</th><th>메모</th><th>결정한 사람</th><th>어드민 반영</th><th>카톡방 반영</th></tr></thead><tbody>${rowsHtml}</tbody></table></div></section>` : "";
   const kt = kakaoText(m);
   const prevTxt = kt ? esc(kt).replace(/^\[(.*)\]$/m, "<b class=\"kh\">[$1]</b>").replace(/^■ (등급변경|정책중단|유예|유지)(.*)$/gm, (x, k, r) => `<b class="kt k-${{등급변경: "grade", 정책중단: "stop", 유예: "hold", 유지: "keep"}[k]}">■ ${k}${r}</b>`).replace(/^(   └ .*)$/gm, '<span class="km">$1</span>') : "";
   return `<div class="top"><div><h1>회의 결과</h1><p class="sub">회의에서 정한 결정 · 다음 달 1일 어드민과 카톡 정책방에 반영하고 체크해요</p></div>

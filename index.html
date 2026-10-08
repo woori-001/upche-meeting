@@ -710,6 +710,10 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
 .rs b{font-size:24px;font-weight:800;letter-spacing:-.02em}.rs b small{font-size:13px;color:var(--dim);font-weight:600;margin-left:2px}
 .rs em{font-style:normal;font-size:12.5px;color:var(--sub)}
 .rgrp{padding:16px 18px}
+.rtab td{padding:7px 12px}
+.rtab tr.rgh td{background:#f8f9fb;padding:9px 12px;border-bottom:1px solid var(--line)}
+.rtab tr.rgh td .dchip{margin-right:6px}
+.rtab tr.rgh:not(:first-child) td{border-top:6px solid #fff}
 .rg-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .rtab td{vertical-align:middle}.rtab td.memo{white-space:normal;min-width:160px;color:#4a5263}
 .ckc{min-width:110px}
@@ -724,6 +728,8 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
 .kprev{background:#bacee0;border-radius:14px;padding:14px;max-height:calc(100vh - 260px);overflow:auto}
 .kprev pre{margin:0;background:#fff;border-radius:4px 14px 14px 14px;padding:12px 14px;font:13px/1.65 "Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;white-space:pre-wrap;color:#1c2230}
 .kprev pre .kh{font-weight:800}.kprev pre .kt{color:#3a6fe6}
+.kprev pre .kt.k-grade{color:#3a6fe6}.kprev pre .kt.k-stop{color:#e35d70}.kprev pre .kt.k-hold{color:#c27c0e}.kprev pre .kt.k-keep{color:#667085}
+.kprev pre .km{color:#7d8697;font-size:12px}
 .kprev p{background:#fff;border-radius:10px;padding:12px;margin:0}
 .kc-b{display:flex;gap:8px;margin-top:12px}.kc-b button{flex:1;justify-content:center}
 .kc-b button[disabled]{opacity:.45;cursor:default}
@@ -2033,13 +2039,19 @@ function telcoHtml(M) {
 
 // ---------- 회의 결과 ----------
 function resultMonths() { return [...new Set([S.month, ...S.dec.map(d => d.month)])].filter(Boolean).sort().reverse(); }
+// 회의 공유 문구: 결정 항목별(등급변경 → 정책중단 → 유예 → 유지)로 전체 결정
+const SHARE_ORDER = [["grade", "등급변경"], ["stop", "정책중단(휴면)"], ["hold", "유예 (한 달 더)"], ["keep", "유지"]];
 function kakaoText(m) {
-  const list = decsOf(m).filter(DEC_CHANGE);
-  const by = {}; for (const d of list) (by[d.telco] = by[d.telco] || []).push(d);
-  const tels = Object.keys(by).sort((a, b) => telOrder(a) - telOrder(b));
-  if (!tels.length) return "";
-  return `[${mLabel(m)} 실적 회의 결과]\n` + tels.map(t => `\n■ ${t}\n` + by[t].sort((a, b) => a.action.localeCompare(b.action) || a.partner.localeCompare(b.partner))
-    .map(d => `· ${d.partner} : ${d.action === "grade" ? `등급변경 ${d.gradeFrom || "?"} → ${d.gradeTo || "?"}` : `정책중단(휴면)${d.gradeFrom ? ` (${d.gradeFrom})` : ""}`}`).join("\n")).join("\n");
+  const list = decsOf(m);
+  if (!list.length) return "";
+  const line = (d) => {
+    const g = d.action === "grade" ? ` : ${d.gradeFrom || "?"} → ${d.gradeTo || "?"}` : d.gradeFrom ? ` (${d.gradeFrom})` : "";
+    return `· [${d.telco}] ${d.partner}${g}${d.memo ? `\n   └ ${d.memo}` : ""}`;
+  };
+  return `[${mLabel(m)} 실적 회의 결과]\n` + SHARE_ORDER.map(([k, l]) => {
+    const xs = list.filter(d => d.action === k).sort((a, b) => telOrder(a.telco) - telOrder(b.telco) || a.partner.localeCompare(b.partner));
+    return xs.length ? `\n■ ${l} ${xs.length}건\n` + xs.map(line).join("\n") : "";
+  }).filter(Boolean).join("\n");
 }
 function resultHtml() {
   const ms = resultMonths();
@@ -2052,17 +2064,20 @@ function resultHtml() {
   const ck = (d, f) => {
     if (!DEC_CHANGE(d)) return `<td class="ckc"><span class="dim small">필요 없음</span></td>`;
     const on = d[f], who = d[f + "By"], at = d[f + "At"];
-    return `<td class="ckc"><label class="ck${on ? " on" : ""}"><input type="checkbox" data-ck="${f}" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}"${on ? " checked" : ""}><i>${on ? ic("check2", 12) : ""}</i>${on ? "반영함" : "반영 전"}</label>${on ? `<div class="dim small">${esc(whoShort(who))} · ${atShort(at)}</div>` : ""}</td>`;
+    return `<td class="ckc"><label class="ck${on ? " on" : ""}"${on ? ` title="${esc(who)} · ${esc(at)} 반영"` : ""}><input type="checkbox" data-ck="${f}" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}"${on ? " checked" : ""}><i>${on ? ic("check2", 12) : ""}</i>${on ? `${esc(whoShort(who))}` : "반영 전"}</label></td>`;
   };
-  const groups = tels.map(t => `<section class="card rgrp"><div class="rg-h"><span class="dtel lg">${esc(t)}</span><span class="dim">${by[t].length}건</span></div>
-    <div class="tw"><table class="t rtab"><thead><tr><th>업체</th><th>구분</th><th>결정</th><th>메모</th><th>결정한 사람</th><th>어드민 반영</th><th>카톡방 반영</th></tr></thead><tbody>
-    ${by[t].sort((a, b) => (DEC_CHANGE(b) - DEC_CHANGE(a)) || a.partner.localeCompare(b.partner)).map(d => { const p = D.partners.get(d.partner) || {};
-      return `<tr><td class="nm"><a class="pn" data-p="${esc(d.partner)}">${esc(d.partner)}</a></td><td><span class="dim">${esc(p.seg || "-")}</span></td>
-        <td><button class="dbtn done" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}">${decWhat(d)}</button></td>
-        <td class="memo">${esc(d.memo) || `<span class="dim">-</span>`}</td><td><span class="small">${esc(whoShort(d.by))}</span><div class="dim small">${atShort(d.at)}</div></td>${ck(d, "admin")}${ck(d, "kakao")}</tr>`; }).join("")}
-    </tbody></table></div></section>`).join("");
+  // 결정 항목별로 묶은 한 장짜리 목록
+  const rowsHtml = SHARE_ORDER.map(([k, l]) => {
+    const xs = list.filter(d => d.action === k).sort((a, b) => telOrder(a.telco) - telOrder(b.telco) || a.partner.localeCompare(b.partner));
+    if (!xs.length) return "";
+    return `<tr class="rgh"><td colspan="8"><span class="dchip k-${k}">${l}</span><span class="dim">${xs.length}건</span></td></tr>` + xs.map(d => { const p = D.partners.get(d.partner) || {};
+      return `<tr><td><span class="dtel">${esc(d.telco)}</span></td><td class="nm"><a class="pn" data-p="${esc(d.partner)}">${esc(d.partner)}</a></td><td><span class="dim">${esc(p.seg || "-")}</span></td>
+        <td><button class="dbtn done" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}">${d.action === "grade" ? `<span class="dg">${esc(d.gradeFrom || "?")}</span><span class="dar">→</span><span class="dchip k-grade">${esc(d.gradeTo || "?")}</span>` : d.gradeFrom ? `<span class="dg">${esc(d.gradeFrom)}</span>` : `<span class="dim">고치기</span>`}</button></td>
+        <td class="memo">${esc(d.memo) || `<span class="dim">-</span>`}</td><td class="small" title="${esc(d.at)}">${esc(whoShort(d.by))} <span class="dim">${atShort(d.at)}</span></td>${ck(d, "admin")}${ck(d, "kakao")}</tr>`; }).join("");
+  }).join("");
+  const groups = rowsHtml ? `<section class="card rgrp"><div class="tw free"><table class="t rtab"><thead><tr><th>통신사</th><th>업체</th><th>구분</th><th>등급</th><th>메모</th><th>결정한 사람</th><th>어드민 반영</th><th>카톡방 반영</th></tr></thead><tbody>${rowsHtml}</tbody></table></div></section>` : "";
   const kt = kakaoText(m);
-  const prevTxt = kt ? esc(kt).replace(/^\[(.*)\]$/m, "<b class=\"kh\">[$1]</b>").replace(/^■ (.*)$/gm, "<b class=\"kt\">■ $1</b>") : "";
+  const prevTxt = kt ? esc(kt).replace(/^\[(.*)\]$/m, "<b class=\"kh\">[$1]</b>").replace(/^■ (등급변경|정책중단|유예|유지)(.*)$/gm, (x, k, r) => `<b class="kt k-${{등급변경: "grade", 정책중단: "stop", 유예: "hold", 유지: "keep"}[k]}">■ ${k}${r}</b>`).replace(/^(   └ .*)$/gm, '<span class="km">$1</span>') : "";
   return `<div class="top"><div><h1>회의 결과</h1><p class="sub">회의에서 정한 결정 · 다음 달 1일 어드민과 카톡 정책방에 반영하고 체크해요</p></div>
       <div class="top-r">${S.decErr ? "" : `<button class="ghost" id="bDecXls">${ic("sheet")}엑셀 저장</button>`}</div></div>
     ${S.decErr ? `<div class="card"><p class="warnt">${esc(S.decErr)}</p></div>` : `
@@ -2073,8 +2088,8 @@ function resultHtml() {
       <div class="rs"><span>카톡방 반영</span><b>${kk}<small>/${chg.length}</small></b><div class="gauge"><b style="width:${chg.length ? kk / chg.length * 100 : 0}%"></b></div></div>
     </div>
     <div class="tlay"><div class="tl-main">${groups || `<div class="card"><p class="none">${mLabel(m)} 실적 회의 결정이 아직 없어요</p></div>`}</div>
-      <aside class="tl-side"><div class="card kcard"><div class="kc-h"><b>${ic("chat", 15)}카톡방 공지</b><span class="dim small">등급변경·정책중단만</span></div>
-        <div class="kprev" id="kakaoCap">${kt ? `<pre>${prevTxt}</pre>` : `<p class="dim">반영할 변경이 없어요</p>`}</div>
+      <aside class="tl-side"><div class="card kcard"><div class="kc-h"><b>${ic("chat", 15)}회의 공유</b><span class="dim small">결정 항목별 전체</span></div>
+        <div class="kprev" id="kakaoCap">${kt ? `<pre>${prevTxt}</pre>` : `<p class="dim">아직 결정이 없어요</p>`}</div>
         <div class="kc-b"><button class="primary" id="bKakao" ${kt ? "" : "disabled"}>${ic("copy")}문구 복사</button><button class="ghost" id="bDecImg" ${kt ? "" : "disabled"}>${ic("image")}이미지 저장</button></div></div></aside></div>`}`;
 }
 
@@ -2174,7 +2189,7 @@ function bindDecPages() {
     const txt = kakaoText(S.rMonth);
     try { await navigator.clipboard.writeText(txt); }
     catch (e) { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
-    toast("카톡 공지 문구를 복사했어요. 카톡방에 붙여넣기 하세요.");
+    toast("회의 공유 문구를 복사했어요. 카톡방에 붙여넣기 하세요.");
   });
   on("#bDecImg", async () => {
     try {

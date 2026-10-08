@@ -653,7 +653,10 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
 .t.tgap td{vertical-align:middle}
 .tw.free{max-height:none}
 .t.tgap td.dcell{white-space:normal}
-.board .hero .hh{flex-wrap:wrap;row-gap:6px}.board .hero h3{white-space:nowrap}
+.board .hero h3{white-space:nowrap}
+.board .hero .hpills{height:26px;margin-top:8px;display:flex;align-items:center}
+.board .hero .hnote{font-size:12px;font-weight:600;color:rgba(255,255,255,.92);background:rgba(255,255,255,.18);border-radius:8px;padding:4px 9px}
+.board .hero .col-s{min-height:35px;margin-top:8px}
 .otel{display:inline-block;font-size:11.5px;font-weight:600;background:#e7f7f2;color:#2a9e86;border-radius:6px;padding:1px 6px;margin-right:4px}
 .dcell{min-width:150px}
 .dbtn{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2);background:#fff;border-radius:10px;padding:5px 11px;font-size:12.5px;font-weight:600;color:#3a4252;cursor:pointer}
@@ -1767,13 +1770,16 @@ function boardHtml(M) {
     : `<div class="bempty">조건에 맞는 이탈 업체가 없어요</div>`;
   const never = ch.never.length ? `<details class="never"><summary>보유 기간 내 접수 이력 없음 ${ch.never.length}곳</summary><div class="chips">${ch.never.map(x => `<span class="tag lg">${esc(x.name)} · ${esc(x.grade)}</span>`).join("")}</div></details>` : "";
   return `<div class="board">
-    <div class="col t-new${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"><span class="hico">${ic("userPlus", 18)}</span><div class="hh"><h3>신규 <span class="hnum">${fmtN(nw.count)}<small>곳</small></span></h3><span class="hr">${pill("newRange", S.newRange, [[1, "당월"], [3, "3개월"], [6, "6개월"]], 1)}<span class="hchev">▾</span></span></div>
+    <div class="col t-new${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"><span class="hico">${ic("userPlus", 18)}</span><div class="hh"><h3>신규 <span class="hnum">${fmtN(nw.count)}<small>곳</small></span></h3><span class="hr"><span class="hchev">▾</span></span></div>
+      <div class="hpills">${pill("newRange", S.newRange, [[1, "당월"], [3, "3개월"], [6, "6개월"]], 1)}</div>
       <p class="col-s">원장 등록일 기준 · 신규 업체 접수 <b>${fmtN(nw.sum)}건</b> = 전체의 <b>${nw.segAll ? fmtR(nw.sum / nw.segAll) : "-"}</b></p></div>
       <div class="col-b">${newCards}</div></div>
-    <div class="col t-back${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"><span class="hico">${ic("rotate", 18)}</span><div class="hh"><h3>재거래 <span class="hnum">${fmtN(back.length)}<small>곳</small></span></h3><span class="hchev">▾</span></div>
-      <p class="col-s">전월 접수가 없다가 이번 달 다시 접수 (신규 아님)</p></div>
+    <div class="col t-back${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"><span class="hico">${ic("rotate", 18)}</span><div class="hh"><h3>재거래 <span class="hnum">${fmtN(back.length)}<small>곳</small></span></h3><span class="hr"><span class="hchev">▾</span></span></div>
+      <div class="hpills"><span class="hnote">신규 업체 제외</span></div>
+      <p class="col-s">전월 접수가 없다가 이번 달 다시 접수한 곳</p></div>
       <div class="col-b">${backCards}</div></div>
-    <div class="col t-churn${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"><span class="hico">${ic("userMinus", 18)}</span><div class="hh"><h3>이탈 <span class="hnum">${fmtN(ch.out.length)}<small>곳</small></span></h3><span class="hr">${pill("churn", S.churn, [[1, "1개월"], [3, "3개월"], [6, "6개월"], [12, "1년"]], 1)}<span class="hchev">▾</span></span></div>
+    <div class="col t-churn${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"><span class="hico">${ic("userMinus", 18)}</span><div class="hh"><h3>이탈 <span class="hnum">${fmtN(ch.out.length)}<small>곳</small></span></h3><span class="hr"><span class="hchev">▾</span></span></div>
+      <div class="hpills">${pill("churn", S.churn, [[1, "1개월"], [3, "3개월"], [6, "6개월"], [12, "1년"]], 1)}</div>
       <p class="col-s">${monthLabel(ch.winFrom)}~${monthLabel(M)} 접수 없음 · 활동량 큰 순${ch.short ? ` · <span class="warnt">보유 데이터가 짧아 ${monthLabel(D.months[0])}부터 판정</span>` : ""}</p></div>
       <div class="col-b">${churnCards}${never}</div></div>
     ${decColHtml(M)}
@@ -1959,6 +1965,7 @@ function decColHtml(M, side) {
   const fold = !side && S.fold.board;
   return `<div class="col t-dec${side ? " dside" : ""}${fold ? " folded" : ""}"><div class="hero"${side ? "" : ` data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"`}><span class="hico">${ic("check", 18)}</span>
       <div class="hh"><h3>이번 회의 결정 <span class="hnum">${fmtN(list.length)}<small>건</small></span></h3><span class="hr">${side ? "" : `<button class="hgo" data-view="${S.view === "telco" ? "result" : "telco"}">${S.view === "telco" ? "결과" : "점검"} ›</button><span class="hchev">▾</span>`}</span></div>
+      ${side ? "" : `<div class="hpills"><span class="hnote">업체 × 통신사별 결정</span></div>`}
       <p class="col-s">${monthLabel(M)} 실적 회의 · 반영할 변경 <b>${ch}건</b>${side ? " · 카드를 누르면 고쳐요" : ""}</p></div>
     <div class="col-b">${decListHtml(M)}</div></div>`;
 }

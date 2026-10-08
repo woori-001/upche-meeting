@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>업체회의 누적분석</title>
-<!-- 업체회의 누적분석 Ver8.1 · 화면은 깃허브(woori-001/upche-meeting), 데이터는 구글시트(Apps Script) -->
+<!-- 업체회의 누적분석 Ver9.0 · 화면은 깃허브(woori-001/upche-meeting), 데이터는 Supabase -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 :root{
@@ -396,6 +396,22 @@ body.mode-margin .badge.orange,body.mode-margin .tag.mtag{background:var(--acc-w
 .mg-hero .kpi .kv.bad{color:#fff}
 .mg-hero .kpi .chip{background:rgba(255,255,255,.2);color:#fff}
 .mg-hero .kpi.accent{background:var(--acc);box-shadow:0 6px 18px rgba(249,115,22,.25)}
+/* 계정 관리 */
+.acc-list{margin-top:14px;max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.acc-list .t th{position:sticky;top:0}
+.acc-form{margin-top:18px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--soft)}
+.acc-form h4,.migr h4{margin:0 0 10px;font-size:14.5px}
+.acc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end}
+.acc-grid label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:600;color:#4a5263}
+.acc-grid input,.acc-grid select{font:inherit;font-weight:400;border:1px solid var(--line2);border-radius:10px;padding:8px 10px;outline:0;background:#fff}
+.acc-grid input:focus,.acc-grid select:focus{border-color:var(--pri)}
+.acc-grid label.chk{flex-direction:row;align-items:center;gap:6px;padding-bottom:9px}
+.acc-form .mfoot{margin-top:12px}
+.migr{margin-top:16px;border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+.migr summary{cursor:pointer;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px}
+.migr .acc-grid{margin-top:10px}
+.mig-log{margin:12px 0 0;max-height:220px;overflow:auto;background:#0f172a;color:#d6e2ff;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.6;white-space:pre-wrap}
+.me-a .icon{width:28px}
 /* 유통마진 본문 */
 .t tr.opened>td{background:var(--pri-w)}
 .t tr.opened>td.memo textarea{background:#fff}
@@ -509,7 +525,7 @@ window.__showErr = function (msg) {
   var b = document.getElementById("fatal");
   if (!b) { b = document.createElement("div"); b.id = "fatal"; document.body.appendChild(b); }
   b.innerHTML = "<b>화면을 그리는 중 오류가 났어요</b><br>" + String(msg).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") +
-    "<br><small>이 화면을 캡처해서 보내주세요. Apps Script의 index.html이 끝까지 붙여넣어졌는지도 확인해 주세요.</small>";
+    "<br><small>이 화면을 캡처해서 보내주세요.</small>";
 };
 window.addEventListener("error", function (e) { window.__showErr((e.message || "") + (e.lineno ? " (줄 " + e.lineno + ")" : "")); });
 // 앱 코드가 끝까지 읽히지 않았으면(붙여넣기가 잘린 경우 등) 5초 뒤 안내
@@ -531,10 +547,6 @@ window.addEventListener("unhandledrejection", function (e) { window.__showErr(e.
     <label>비밀번호<input type="password" id="loginPw" autocomplete="current-password" required></label>
     <p class="loginerr" id="loginErr"></p>
     <button class="primary lbtn" id="loginBtn" type="submit">로그인</button>
-    <details class="lset"><summary>연결 설정</summary>
-      <p class="sub">Apps Script 웹앱 주소(…/exec). 비워두면 기본 주소를 씁니다.</p>
-      <div class="lurl"><input type="text" id="loginUrl" placeholder="https://script.google.com/macros/s/.../exec"><button type="button" class="ghost" id="loginUrlSave">저장</button></div>
-    </details>
   </form>
 </div>
 <div id="modal" hidden></div>
@@ -729,13 +741,13 @@ document.addEventListener("DOMContentLoaded", () => { const l = document.getElem
 <script>
 "use strict";
 // ============================================================
-// 업체회의 누적분석 Ver8.1 (화면: 깃허브 / 데이터: 구글시트 + Apps Script)
-// - 접수 데이터(전체정산관리 엑셀)를 월별로 구글시트 탭(접수_YYYY-MM)에 누적 저장
+// 업체회의 누적분석 Ver9.0 (화면: 깃허브 / 데이터: Supabase)
+// - 접수 데이터(전체정산관리 엑셀)를 월별로 Supabase(upche_units)에 누적 저장
 // - 협력점정보(원장)는 "협력점정보" 탭에 저장
 // - 한 화면: 요약 / 신규 / 이탈 / 증감 / 품질
 // ============================================================
 
-const APP_VER = "8.1";
+const APP_VER = "9.0";
 
 // ---------- 규칙 상수 (인수인계서 참조) ----------
 // 분석 제외 유형(신규가입이 아닌 접수): 상품명+상품옵션에 아래 단어가 있으면 제외
@@ -986,48 +998,72 @@ function buildMaster(rows) {
   return out;
 }
 
-// ---------- 저장소 (구글시트, Apps Script 서버 함수 호출) ----------
-// 서버(Apps Script 웹앱) 주소. 바뀌면 이 한 줄만 고치면 됩니다. (로그인 화면의 [연결 설정]으로 이 브라우저만 바꿀 수도 있음)
-const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzOJPyFSlGlG3HBphtLEgiABetEr76R-av4ET736yo-dpnlHNqNA-TLW4HsUJa815jJUg/exec";
-const LS_KEY = { url: "upche_api_url", token: "upche_token", user: "upche_user" };
+// ---------- 저장소 (Supabase) ----------
+// 화면은 Supabase 의 upche_* 함수(RPC)만 부른다. 테이블은 RLS 로 막혀 있어 직접 읽거나 쓸 수 없고,
+// 함수가 로그인 토큰을 확인한 뒤 대신 읽고 쓴다. 아래 키는 공개용(publishable) 키라 화면에 있어도 괜찮다.
+const SB_URL = "https://omdyyvqkxxigilxjysbz.supabase.co";
+const SB_KEY = "sb_publishable_g41wwhIMN19UchPheU9Vvg_lAHjnZNf";
+// 예전 구글시트 서버 (구글시트 → Supabase 옮기기에만 씀)
+const OLD_API_URL = "https://script.google.com/macros/s/AKfycbzOJPyFSlGlG3HBphtLEgiABetEr76R-av4ET736yo-dpnlHNqNA-TLW4HsUJa815jJUg/exec";
+const LS_KEY = { token: "upche_sb_token", user: "upche_user" };
 const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
-const apiUrl = () => (lsGet(LS_KEY.url) || DEFAULT_API_URL || "").trim();
-async function api(body) {
-  const url = apiUrl();
-  if (!url || url.indexOf("__API") === 0) throw new Error("서버 주소가 설정되지 않았어요. 로그인 화면의 [연결 설정]에서 Apps Script 웹앱 주소를 넣어주세요.");
-  let res;
-  try {
-    // Content-Type 을 지정하지 않으면 text/plain 으로 보내져서 Apps Script 가 바로 받을 수 있다
-    res = await fetch(url, { method: "POST", body: JSON.stringify(body) });
-  } catch (e) { throw new Error("서버에 연결하지 못했어요. 인터넷 연결이나 서버 주소를 확인해 주세요."); }
-  // 응답을 글자로 먼저 받고 JSON 으로 해석 (실패하면 실제 받은 내용 일부를 보여준다)
-  const text = await res.text();
-  let j;
-  try { j = JSON.parse(text); }
-  catch (e) {
-    const m = text.match(/\{[\s\S]*"ok"[\s\S]*\}/);   // 앞뒤에 다른 글이 붙어 와도 JSON 부분만 꺼내 본다
-    try { j = m ? JSON.parse(m[0]) : null; } catch (e2) { j = null; }
-    if (!j) {
-      const plain = text.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-      console.error("서버 응답:", res.status, res.url, text.slice(0, 2000));
-      throw new Error(`서버 응답을 읽지 못했어요 (상태 ${res.status}). 받은 내용: ${plain.slice(0, 160) || "(비어 있음)"}`);
+// 화면 코드의 함수 이름 → Supabase 함수 이름과 인자 이름 (순서대로)
+const RPC = {
+  getInfo: ["upche_get_info", []],
+  getMonth: ["upche_get_month", ["p_month"]],
+  saveMonth: ["upche_save_month", ["p_month", "p_tsv", "p_file", "p_at", "p_by"]],
+  deleteMonth: ["upche_delete_month", ["p_month"]],
+  saveMaster: ["upche_save_master", ["p_rows", "p_file", "p_note"]],
+  changePassword: ["upche_change_password", ["p_old", "p_new"]],
+  logout: ["upche_logout", []],
+  marginList: ["upche_margin_list", []],
+  marginSave: ["upche_margin_save", ["p_month", "p_summary", "p_partners", "p_categories", "p_lows", "p_memo", "p_partner_cats"]],
+  marginDelete: ["upche_margin_delete", ["p_month"]],
+  marginPartnerMemo: ["upche_margin_partner_memo", ["p_month", "p_partner", "p_memo"]],
+  marginReason: ["upche_margin_reason", ["p_month", "p_key", "p_reason"]],
+  accountList: ["upche_account_list", []],
+  accountSave: ["upche_account_save", ["p_id", "p_name", "p_password", "p_role", "p_enabled"]],
+  accountDelete: ["upche_account_delete", ["p_id"]],
+};
+// 연결이 잠깐 끊기거나 서버가 바쁠 때(5xx)는 잠깐 쉬었다가 최대 3번까지 다시 시도
+// (저장은 같은 내용으로 통째로 덮어쓰는 방식이라 다시 해도 안전. 로그인·비밀번호 변경은 다시 하지 않음)
+const NO_RETRY = new Set(["upche_login", "upche_change_password", "upche_logout"]);
+async function rpc(name, params) {
+  for (let i = 0; ; i++) {
+    try { return await rpc1(name, params); }
+    catch (e) {
+      if (!e.retry || NO_RETRY.has(name) || i >= 3) throw e;
+      await new Promise(r => setTimeout(r, 700 * (i + 1) + Math.random() * 400));
     }
   }
-  if (!j.ok) {
-    const msg = String(j.error || "요청 실패");
-    const err = new Error(msg.replace(/^AUTH:\s*/, ""));
-    if (msg.indexOf("AUTH:") === 0) { err.auth = true; }
-    throw err;
-  }
-  return j;
 }
-// 기존 화면 코드는 gs("함수", 인자...) 로 서버를 부른다 → 로그인 토큰을 붙여 api 로 전달
-async function gs(fn, ...args) {
+async function rpc1(name, params) {
+  let res;
   try {
-    const j = await api({ action: fn, args, token: lsGet(LS_KEY.token) || "" });
-    return j.result;
-  } catch (e) {
+    res = await fetch(`${SB_URL}/rest/v1/rpc/${name}`, {
+      method: "POST", headers: { apikey: SB_KEY, "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(params || {}),
+    });
+  } catch (e) { const er = new Error("서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요."); er.retry = true; throw er; }
+  const text = await res.text();
+  let j = null; try { j = text ? JSON.parse(text) : null; } catch (e) { j = undefined; }
+  if (res.ok && j !== undefined) return j;
+  const msg = String((j && (j.message || j.error)) || "").trim();
+  console.error("서버 응답:", res.status, name, text.slice(0, 1000));
+  if (j && j.code === "PGRST202") throw new Error("Supabase 에 이 앱의 함수가 아직 없어요. supabase/upche_schema.sql 을 먼저 적용해 주세요.");
+  const err = new Error(msg ? msg.replace(/^AUTH:\s*/, "") : `서버 응답을 읽지 못했어요 (상태 ${res.status}). 잠시 뒤 다시 시도해 주세요.`);
+  if (msg.indexOf("AUTH:") === 0) err.auth = true;
+  else if (res.status >= 500 || res.status === 429 || j === undefined) err.retry = true;
+  throw err;
+}
+// 화면 코드는 gs("함수", 인자...) 로 서버를 부른다 → 로그인 토큰을 붙여 Supabase 함수로 전달
+async function gs(fn, ...args) {
+  const def = RPC[fn]; if (!def) throw new Error("알 수 없는 요청: " + fn);
+  const params = { p_token: lsGet(LS_KEY.token) || "" };
+  def[1].forEach((k, i) => { if (args[i] !== undefined) params[k] = args[i]; });
+  try { return await rpc(def[0], params); }
+  catch (e) {
     if (e.auth) { lsSet(LS_KEY.token, null); showLogin("로그인이 만료됐어요. 다시 로그인해 주세요."); }
     throw e;
   }
@@ -1395,7 +1431,7 @@ function sideHtml() {
 function meHtml() {
   if (!S.user) return "";
   return `<div class="me"><span class="avatar">${esc(S.user.name[0])}</span><span class="me-n"><b>${esc(S.user.name)}</b><small>${esc(S.user.id)}</small></span>
-    <span class="me-a"><button class="icon" id="bPw" title="비밀번호 변경" aria-label="비밀번호 변경">${ic("key")}</button><button class="icon out" id="bLogout" title="로그아웃" aria-label="로그아웃">${ic("logout")}</button></span></div>`;
+    <span class="me-a">${S.user.role === "admin" ? `<button class="icon" id="bAcc" title="계정 관리 · 데이터 옮기기" aria-label="계정 관리">${ic("users")}</button>` : ""}<button class="icon" id="bPw" title="비밀번호 변경" aria-label="비밀번호 변경">${ic("key")}</button><button class="icon out" id="bLogout" title="로그아웃" aria-label="로그아웃">${ic("logout")}</button></span></div>`;
 }
 // 사이드바 년·월 달력 (데이터가 있는 달만 선택)
 function sideCalendarHtml(M) {
@@ -1416,7 +1452,7 @@ function emptyHtml() {
   return `<div class="empty card">
     <div class="steps"><i class="${hasMaster ? "done" : "on"}"></i><i class="${hasMaster ? "on" : ""}"></i></div>
     <h2>데이터를 올려서 시작해요</h2>
-    <p class="sub">올린 데이터는 구글시트에 월별로 쌓여서 팀원 모두가 같이 봐요.</p>
+    <p class="sub">올린 데이터는 서버(Supabase)에 월별로 쌓여서 팀원 모두가 같이 봐요.</p>
     <ol class="stepl">
       <li class="${hasMaster ? "done" : ""}"><span>1</span><div><b>협력점정보(원장) 올리기</b><small>판매점 · 협력점 · 제휴 구분과 등급, 등록일을 읽어요</small></div>${hasMaster ? `<em>완료</em>` : `<button class="ghost" id="bMaster2">올리기</button>`}</li>
       <li><span>2</span><div><b>접수 데이터 올리기</b><small>전체정산관리 엑셀(접수일 기준). 여러 파일을 한 번에 올려도 월별로 나눠요</small></div><button class="primary" id="bData2">${ic("upload")}올리기</button></li>
@@ -1689,7 +1725,7 @@ function bindCommon() {
     closeDetail(); render(); window.scrollTo(0, 0);
   });
   const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
-  on("#bPw", openPwModal); on("#bLogout", logout);
+  on("#bPw", () => openPwModal()); on("#bLogout", logout); on("#bAcc", openAccountModal);
 }
 
 function dataNameOf(masterName) {
@@ -1737,7 +1773,7 @@ async function onDataFiles(files, skippedNames = []) {
     const todo = Object.keys(byMonth).sort();
     let done = 0;
     for (const m of todo) {
-      busy(true, `구글시트에 저장 중... ${monthLabel(m)} (${++done}/${todo.length})`);
+      busy(true, `서버에 저장 중... ${monthLabel(m)} (${++done}/${todo.length})`);
       const file = [...byMonth[m].files].join(", ");
       const r = await gs("saveMonth", m, unitsToTsv(byMonth[m].units), file);
       if (r.replaced) replaced.push(monthLabel(m));
@@ -1754,7 +1790,7 @@ async function onDataFiles(files, skippedNames = []) {
 }
 async function applyMaster(rows, fileName) {
   const mrows = buildMaster(rows);
-  busy(true, "협력점정보를 구글시트에 저장 중...");
+  busy(true, "협력점정보를 서버에 저장 중...");
   const r = await gs("saveMaster", mrows, fileName);
   S.master = { rows: mrows, note: r.note };
 }
@@ -1779,7 +1815,7 @@ async function onDeleteMonth() {
   const ms = Object.keys(S.months).sort();
   if (!ms.length) return;
   const box = $("#modal");
-  box.innerHTML = `<div class="mbox small"><h3>월 데이터 삭제</h3><p class="sub">잘못 올린 달을 지웁니다(구글시트의 해당 탭도 삭제). 지운 뒤 다시 올리면 됩니다.</p>
+  box.innerHTML = `<div class="mbox small"><h3>월 데이터 삭제</h3><p class="sub">잘못 올린 달을 서버에서 지웁니다. 지운 뒤 다시 올리면 됩니다.</p>
     <div class="chips">${ms.map(m => `<label class="tag lg chk"><input type="checkbox" value="${m}"> ${monthLabel(m)} <span class="dim">${fmtN(S.months[m].units.length)}건</span></label>`).join("")}</div>
     <div class="mfoot"><button id="mclose" class="ghost">취소</button><button id="delGo" class="danger">선택한 달 삭제</button></div></div>`;
   box.hidden = false;
@@ -2051,7 +2087,7 @@ function buildResult(month, customers, unmatched) {
 })();
 
 // =====================================================================
-// 유통마진 메뉴 (화면) — 계산은 MG(원본 그대로), 저장은 구글시트(마진_* 탭)
+// 유통마진 메뉴 (화면) — 계산은 MG(원본 그대로), 저장은 Supabase(upche_margin_*)
 // =====================================================================
 const MS = {
   loaded: false, loading: false,
@@ -2135,9 +2171,9 @@ function mgCalendarHtml() {
 // ---------- 본문 ----------
 function mgMainHtml() {
   if (MS.error) {
-    const old = /알 수 없는 요청/.test(MS.error);
-    return `<div class="empty card"><h2>${old ? "서버(Code.gs) 업데이트가 필요해요" : "유통마진을 불러오지 못했어요"}</h2>
-      <p class="sub">${old ? "구글시트에 연결된 Apps Script가 아직 예전 버전이라 유통마진 기능이 없어요.<br>Apps Script에 새 Code.gs를 붙여넣고 저장 → <b>배포 → 배포 관리 → 연필 → 버전: 새 버전 → 배포</b>를 눌러주세요." : esc(MS.error)}</p>
+    const old = /함수가 아직 없어요/.test(MS.error);
+    return `<div class="empty card"><h2>${old ? "서버 설정이 아직 안 됐어요" : "유통마진을 불러오지 못했어요"}</h2>
+      <p class="sub">${esc(MS.error)}</p>
       <p style="margin-top:16px"><button class="primary" id="mgRetry">다시 불러오기</button></p></div>`;
   }
   if (!MS.loaded) return `<div class="empty card"><h2>유통마진 데이터를 불러오는 중이에요</h2></div>`;
@@ -2408,7 +2444,7 @@ function mgPreviewHtml(r) {
     <div class="pgrid"><div><span>유통 고객수</span><b>${s.customers.toLocaleString()}명</b></div><div><span>총 유통마진</span><b>${wonF(s.margin)}원</b></div>
       <div><span>고객당 마진</span><b>${wonF(s.perCustomer)}원</b></div><div><span>1만원 미만 / 역마진</span><b>${s.lowCount} / <span class="bad">${s.negCount}</span>명</b></div></div>
     <p class="sub">상부정산 ${wonF(s.upper)} − 자점마진 ${wonF(s.jaMargin)} − 본점인센 ${wonF(s.hqIncentive)} − 전체정산 ${wonF(s.total)} · 협력점 ${r.partners.length}곳${r.unmatched ? ` · 전체정산에서 짝을 못 찾은 행 ${r.unmatched}건은 0원으로 계산` : ""}</p>
-    <div class="upm"><input type="text" id="mgMemo" placeholder="메모 (선택) — 예: 9월 24일 기준, 마감 전"><button class="primary" id="mgSave">${ic("upload")}구글시트에 저장</button></div></div>`;
+    <div class="upm"><input type="text" id="mgMemo" placeholder="메모 (선택) — 예: 9월 24일 기준, 마감 전"><button class="primary" id="mgSave">${ic("upload")}서버에 저장</button></div></div>`;
 }
 async function mgSave() {
   const r = MS.up.calc; if (!r) return;
@@ -2514,29 +2550,31 @@ function showLogin(msg) {
   const box = $("#login");
   box.hidden = false;
   $("#loginErr").textContent = msg || "";
-  $("#loginUrl").value = apiUrl().indexOf("__API") === 0 ? "" : apiUrl();
   setTimeout(() => { const i = $("#loginId"); if (i && !i.value) i.focus(); else if ($("#loginPw")) $("#loginPw").focus(); }, 50);
 }
 async function doLogin(e) {
   e.preventDefault();
   const btn = $("#loginBtn"); btn.disabled = true; $("#loginErr").textContent = "";
   try {
-    const j = await api({ action: "login", id: $("#loginId").value.trim(), password: $("#loginPw").value });
+    const j = await rpc("upche_login", { p_id: $("#loginId").value.trim(), p_password: $("#loginPw").value });
+    if (!j || !j.ok) throw new Error((j && j.error) || "로그인하지 못했어요.");
     lsSet(LS_KEY.token, j.token); lsSet(LS_KEY.user, JSON.stringify(j.user));
     $("#loginPw").value = "";
     $("#login").hidden = true;
     await loadAll();
+    if (j.mustChange) openPwModal(true);
   } catch (err) { $("#loginErr").textContent = err.message; }
   finally { btn.disabled = false; }
 }
 function logout() {
+  if (lsGet(LS_KEY.token)) gs("logout").catch(() => {});
   lsSet(LS_KEY.token, null); lsSet(LS_KEY.user, null);
   S.months = {}; S.master = null; S.user = null; MS.loaded = false; MS.error = ""; MS.db = { summaries: [], partners: [], categories: [], lows: [], partnerCats: [] }; derive(); render();
   showLogin("로그아웃했어요.");
 }
-function openPwModal() {
+function openPwModal(first) {
   const box = $("#modal");
-  box.innerHTML = `<div class="mbox small"><h3>비밀번호 변경</h3><p class="sub">${esc(S.user ? S.user.name : "")} 계정</p>
+  box.innerHTML = `<div class="mbox small"><h3>비밀번호 변경</h3><p class="sub">${first === true ? "임시 비밀번호로 로그인했어요. 계속 쓰기 전에 새 비밀번호로 바꿔 주세요." : esc(S.user ? S.user.name : "") + " 계정"}</p>
     <form id="pwForm" class="pwf">
       <label>현재 비밀번호<input type="password" id="pwCur" autocomplete="current-password" required></label>
       <label>새 비밀번호 (4자 이상)<input type="password" id="pwNew" autocomplete="new-password" required></label>
@@ -2552,24 +2590,128 @@ function openPwModal() {
     catch (err) { $("#pwErr").textContent = err.message; }
   };
 }
-function saveUrl() {
-  const v = $("#loginUrl").value.trim();
-  lsSet(LS_KEY.url, v || null);
-  $("#loginErr").textContent = v ? "서버 주소를 저장했어요. 로그인해 주세요." : "기본 서버 주소로 되돌렸어요.";
+// ---------- 계정 관리 (관리자) ----------
+async function openAccountModal() {
+  const box = $("#modal");
+  box.innerHTML = `<div class="mbox wide"><button class="icon x" id="mclose">${ic("x", 18)}</button><h3>계정 관리</h3>
+    <p class="sub">로그인 계정을 만들고 고쳐요. 새 계정이나 비밀번호를 바꾼 계정은 처음 로그인할 때 비밀번호를 새로 정하게 돼요.</p>
+    <div id="accList" class="acc-list"><p class="sub">불러오는 중...</p></div>
+    <form id="accForm" class="acc-form">
+      <h4 id="accFormT">새 계정 만들기</h4>
+      <div class="acc-grid">
+        <label>아이디<input id="aId" required placeholder="영문·숫자"></label>
+        <label>이름<input id="aName" placeholder="화면에 보일 이름"></label>
+        <label>비밀번호<input id="aPw" type="password" autocomplete="new-password" placeholder="새 계정은 필수"></label>
+        <label>권한<select id="aRole"><option value="user">일반</option><option value="admin">관리자</option></select></label>
+        <label class="chk"><input id="aOn" type="checkbox" checked> 사용</label>
+      </div>
+      <p class="loginerr" id="accErr"></p>
+      <div class="mfoot"><button type="button" class="ghost" id="accNew">새로 입력</button><button type="submit" class="primary">저장</button></div>
+    </form>
+    <details class="migr"><summary>${ic("upload")}구글시트 데이터 옮겨오기 (처음 한 번)</summary>
+      <p class="sub">예전 구글시트(업체회의v1)에 쌓인 접수 데이터 · 협력점정보 · 유통마진(사유·메모 포함)을 그대로 가져와요.
+        예전 화면에서 쓰던 아이디·비밀번호를 넣어주세요. 같은 달이 이미 있으면 구글시트 내용으로 덮어써요.</p>
+      <div class="acc-grid"><label>예전 아이디<input id="oId" autocomplete="off"></label><label>예전 비밀번호<input id="oPw" type="password" autocomplete="off"></label></div>
+      <div class="mfoot"><button type="button" class="primary" id="migGo">옮기기 시작</button></div>
+      <pre id="migLog" class="mig-log" hidden></pre>
+    </details></div>`;
+  box.hidden = false;
+  $("#mclose").onclick = () => box.hidden = true;
+  let editing = null;
+  const fill = (a) => { editing = a ? a.id : null; $("#accFormT").textContent = a ? `${a.id} 고치기` : "새 계정 만들기";
+    $("#aId").value = a ? a.id : ""; $("#aId").readOnly = !!a; $("#aName").value = a ? a.name : ""; $("#aPw").value = "";
+    $("#aPw").placeholder = a ? "바꿀 때만 입력" : "새 계정은 필수"; $("#aRole").value = a ? a.role : "user"; $("#aOn").checked = a ? a.enabled : true; $("#accErr").textContent = ""; };
+  const load = async () => {
+    try {
+      const list = await gs("accountList");
+      $("#accList").innerHTML = `<table class="t sm"><thead><tr><th>아이디</th><th>이름</th><th>권한</th><th>상태</th><th>마지막 로그인</th><th></th></tr></thead><tbody>${list.map(a => `<tr>
+        <td class="b">${esc(a.id)}</td><td>${esc(a.name)}</td><td>${a.role === "admin" ? `<span class="badge blue">관리자</span>` : "일반"}</td>
+        <td>${a.enabled ? (a.mustChange ? `<span class="badge orange">비밀번호 변경 전</span>` : `<span class="badge green">사용</span>`) : `<span class="badge red">중지</span>`}</td>
+        <td class="dim">${esc(a.lastLogin || "-")}</td>
+        <td class="n"><button class="ghost sm" data-aedit="${esc(a.id)}">고치기</button>${a.id !== S.user.id ? ` <button class="ghost sm" data-adel="${esc(a.id)}">삭제</button>` : ""}</td></tr>`).join("")}</tbody></table>`;
+      box.querySelectorAll("[data-aedit]").forEach(b => b.onclick = () => fill(list.find(a => a.id === b.dataset.aedit)));
+      box.querySelectorAll("[data-adel]").forEach(b => b.onclick = async () => {
+        if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "정말 삭제"; b.classList.add("danger"); return; }
+        try { await gs("accountDelete", b.dataset.adel); toast("계정을 지웠어요."); load(); } catch (e) { $("#accErr").textContent = e.message; }
+      });
+    } catch (e) { $("#accList").innerHTML = `<p class="loginerr">${esc(e.message)}</p>`; }
+  };
+  $("#accNew").onclick = () => fill(null);
+  $("#accForm").onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await gs("accountSave", $("#aId").value.trim(), $("#aName").value.trim(), $("#aPw").value, $("#aRole").value, $("#aOn").checked);
+      toast(editing ? "계정을 고쳤어요." : "계정을 만들었어요."); fill(null); load();
+    } catch (err) { $("#accErr").textContent = err.message; }
+  };
+  $("#migGo").onclick = () => migrateFromSheet($("#oId").value.trim(), $("#oPw").value);
+  load();
+}
+
+// ---------- 구글시트 → Supabase 옮기기 (한 번만) ----------
+async function oldApi(body) {
+  for (let i = 0; ; i++) {
+    try {
+      const res = await fetch(OLD_API_URL, { method: "POST", body: JSON.stringify(body) });
+      const text = await res.text(); let j;
+      try { j = JSON.parse(text); } catch (e) { const m = text.match(/\{[\s\S]*"ok"[\s\S]*\}/); j = m ? JSON.parse(m[0]) : null; }
+      if (!j) throw Object.assign(new Error(`구글시트 서버 응답을 읽지 못했어요 (상태 ${res.status})`), { retry: true });
+      if (!j.ok) throw new Error(String(j.error || "요청 실패").replace(/^AUTH:\s*/, ""));
+      return j;
+    } catch (e) {
+      if (!(e.retry || e instanceof TypeError) || i >= 3) throw e;
+      await new Promise(r => setTimeout(r, 900 * (i + 1)));
+    }
+  }
+}
+async function migrateFromSheet(id, pw) {
+  const logEl = $("#migLog"), btn = $("#migGo"); logEl.hidden = false; logEl.textContent = "";
+  const log = (t) => { logEl.textContent += t + "\n"; logEl.scrollTop = logEl.scrollHeight; };
+  if (!id || !pw) { log("예전 아이디와 비밀번호를 넣어주세요."); return; }
+  btn.disabled = true;
+  try {
+    log("구글시트 서버에 로그인하는 중...");
+    const token = (await oldApi({ action: "login", id, password: pw })).token;
+    const old = (fn, ...args) => oldApi({ action: fn, args, token }).then(j => j.result);
+    const info = await old("getInfo");
+    if (info.master && info.master.length) {
+      const r = await gs("saveMaster", info.master.map(row => row.map(x => String(x == null ? "" : x))), "", info.masterNote || "");
+      log(`협력점정보 ${r.n.toLocaleString()}행 옮김`);
+    }
+    let units = 0;
+    for (const m of info.months) {
+      const tsv = await old("getMonth", m.m);
+      const r = await gs("saveMonth", m.m, tsv, m.file || "", m.at || "", m.by || "");
+      units += r.n; log(`${monthLabel(m.m)} 접수 ${r.n.toLocaleString()}건 옮김`);
+    }
+    let mg = null;
+    try { mg = await old("marginList"); } catch (e) { log(`유통마진은 건너뜀 (${e.message})`); }
+    if (mg && mg.summaries && mg.summaries.length) {
+      for (const sm of mg.summaries) {
+        const m = sm.month, pick = (arr) => (arr || []).filter(x => x.month === m);
+        await gs("marginSave", m, sm, pick(mg.partners), pick(mg.categories), pick(mg.lows), sm.memo || "", pick(mg.partnerCats));
+        log(`${mLabel(m)} 유통마진 옮김 (고객 ${pick(mg.lows).length ? "" : ""}${Number(sm.customers || 0).toLocaleString()}명)`);
+      }
+    }
+    log(`\n끝났어요. 접수 ${info.months.length}개월 ${units.toLocaleString()}건${mg && mg.summaries ? ` · 유통마진 ${mg.summaries.length}개월` : ""}`);
+    toast("구글시트 데이터를 옮겼어요.", 6000);
+    MS.loaded = false; await loadAll();
+  } catch (e) { log("오류: " + e.message); }
+  finally { btn.disabled = false; }
 }
 
 async function loadAll() {
-  busy(true, "구글시트에서 데이터 불러오는 중...");
+  busy(true, "데이터 불러오는 중...");
   S.months = {};
   try {
     const info = await gs("getInfo");
-    S.user = info.user || null;
+    S.user = info.user || null; if (S.user) lsSet(LS_KEY.user, JSON.stringify(S.user));
     S.master = info.master.length ? { rows: info.master.map(r => r.map(x => String(x).trim())), note: info.masterNote } : null;
     let done = 0;
-    await pool(info.months.map(x => x.m), 4, async (m) => {
+    await pool(info.months.map(x => x.m), 2, async (m) => {
       const tsv = await gs("getMonth", m);
       S.months[m] = { units: tsvToUnits(tsv) };
-      busy(true, `구글시트에서 데이터 불러오는 중... ${++done}/${info.months.length}개월`);
+      busy(true, `데이터 불러오는 중... ${++done}/${info.months.length}개월`);
     });
   } catch (e) {
     if (!e.auth) toast(`<b>서버 연결 오류</b> ${esc(e.message)}`, 0);
@@ -2589,7 +2731,6 @@ async function init() {
   document.addEventListener("dragover", e => e.preventDefault());
   document.addEventListener("drop", e => { e.preventDefault(); if (!lsGet(LS_KEY.token)) return; if (S.mode === "margin") mgOpenUpload(); else onDataFiles([...e.dataTransfer.files]); });
   $("#loginForm").onsubmit = doLogin;
-  $("#loginUrlSave").onclick = saveUrl;
   derive(); render();
   if (!lsGet(LS_KEY.token)) { showLogin(); return; }
   try { S.user = JSON.parse(lsGet(LS_KEY.user) || "null"); } catch (e) {}

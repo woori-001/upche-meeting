@@ -734,6 +734,13 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
 .kc-b{display:flex;gap:8px;margin-top:12px}.kc-b button{flex:1;justify-content:center}
 .kc-b button[disabled]{opacity:.45;cursor:default}
 @media (max-width:760px){.rsum{grid-template-columns:1fr}.dacts{grid-template-columns:1fr 1fr}}
+/* 역마진 모아보기 */
+.t.negt td{vertical-align:middle}
+.t.negt .badge{white-space:nowrap}
+.t.negt td.nm{white-space:normal;font-weight:400}
+.t.negt td.nm .ls-t{max-width:260px}
+.t.negt td.memo{min-width:240px}
+.t.negt td.memo textarea{width:100%}
 </style>
 </head>
 <body>
@@ -2649,6 +2656,9 @@ const MS = {
   view: "month",                        // month | trend
   partnerSort: { key: "perCustomer", asc: false }, catMetric: "margin",
   openLow: new Set(), chartOpen: false, mxAll: false, upYear: 0, mpOpen: false,
+  negFold: (() => { try { return localStorage.getItem("upche_neg_fold") === "1"; } catch (e) { return false; } })(),   // 역마진 모아보기 접힘
+  negKind: "neg", negTodo: 0,           // neg(역마진만) | low(1만원 미만 전체) · 사유 미작성만
+
   trendRange: 12, pivot: "margin", showAll: false,
   up: { s: null, j: null, sName: "", jName: "", month: "", calc: null },
   charts: {},
@@ -2767,7 +2777,28 @@ function mgMonthHtml(d) {
       <div class="hbtns"><button class="ghost sm${MS.chartOpen ? " on" : ""}" id="mgChartBtn">${ic("chart")}통신사별 마진표 ${MS.chartOpen ? "▴" : "▾"}</button>${d.lows.length ? `<button class="ghost sm" id="mgOpenAll">${MS.openLow.size ? "모두 접기" : "1만원 미만 모두 펼치기"}</button>` : ""}</div></div>
     ${MS.chartOpen ? mgMatrixHtml(d) : ""}
     <div class="tw tall"><table class="t mt">${mgPartnerTable(d)}</table></div></section>`;
-  return [kpi, cat + part];
+  return [kpi, cat + mgNegHtml(d) + part];
+}
+// 역마진(·1만원 미만) 고객만 한 곳에 모아 사유 입력
+function mgNegHtml(d) {
+  if (!d.lows.length) return "";
+  const neg = d.lows.filter(l => l.margin < 0), base = MS.negKind === "neg" ? neg : d.lows;
+  const todo = base.filter(l => !l.reason).length;
+  const ls = base.filter(l => !MS.negTodo || !l.reason).slice().sort((a, b) => a.margin - b.margin);
+  const sum = base.reduce((a, l) => a + l.margin, 0);
+  const kb = MS.negKind === "low";   // 1만원 미만 전체를 볼 때만 역마진/1만원 미만 표시
+  const rows = ls.map(l => `<tr>${kb ? `<td><span class="badge ${l.margin < 0 ? "red" : "orange"}">${l.margin < 0 ? "역마진" : "1만원 미만"}</span></td>` : ""}
+      <td class="nm"><b>${esc(l.partner)}</b>${jaTag(l.ja)}${hqTag(l.partner)}</td>
+      <td class="nm"><div class="ls-t"><b>${esc(l.name)}</b><small>${esc(l.phone)} · ${esc(l.upperShop)}</small></div></td>
+      <td class="nm"><div class="ls-t"><small>${esc(l.category || l.carrier)}${l.category === MG.WIRED_ETC || !l.carrier ? "" : ` · ${esc(l.carrier)}`}</small><small class="pr" title="${esc(l.products)}">${esc(l.products)}</small></div></td>
+      <td class="n">${wonF(l.upper)}</td><td class="n">${wonF(l.total)}</td>
+      <td class="n b ${l.margin < 0 ? "bad" : "warnt"}">${wonF(l.margin)}</td>
+      <td class="memo"><textarea rows="1" data-reason="${esc(l.key)}" placeholder="사유 입력">${esc(l.reason || "")}</textarea>${l.reasonBy ? `<small>${esc(l.reasonBy)} · ${esc(l.reasonAt)}</small>` : ""}</td></tr>`).join("");
+  return `<section class="card fcard mgneg${MS.negFold ? " folded" : ""}"><div class="card-h" id="mgNegH" title="눌러서 접기/펼치기"><div><h2>${MS.negKind === "neg" ? "역마진" : "1만원 미만"} 고객 모아보기 <span class="segb">${base.length}명</span></h2>
+      <p class="sub">${MS.negKind === "neg" ? "유통마진 0원 미만" : "건당 마진 1만원 미만 (역마진 포함)"} · 합계 <b class="${sum < 0 ? "bad" : ""}">${wonF(sum)}원</b> · 사유 미작성 <b class="${todo ? "warnt" : ""}">${todo}명</b> · 마진 낮은 순 · 사유는 칸 밖을 누르면 저장돼요</p></div>
+      <div class="hbtns">${MS.negFold ? "" : pill("mgNegK", MS.negKind, [["neg", `역마진 ${neg.length}`], ["low", `1만원 미만 전체 ${d.lows.length}`]]) + pill("mgNegT", MS.negTodo, [[0, "전체"], [1, `사유 미작성만 ${todo}`]])}<span class="cchev">▾</span></div></div>
+    <div class="tw"><table class="t mt negt"><thead><tr>${kb ? "<th></th>" : ""}<th>협력점</th><th>고객</th><th>구분 · 상품</th><th class="n">상부정산</th><th class="n">전체정산</th><th class="n">유통마진</th><th>사유</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="8" class="none">${MS.negTodo ? "사유를 모두 적었어요 👍" : "해당 고객이 없어요"}</td></tr>`}</tbody></table></div></section>`;
 }
 // 구분별 유통마진 막대 (둥근 캡슐 모양, 마우스를 올리면 금액·건수)
 const wonK = (v) => { const a = Math.abs(v); return a >= 1e8 ? (v / 1e8).toFixed(1) + "억" : a >= 1e4 ? Math.round(v / 1e4).toLocaleString() + "만" : wonF(v); };
@@ -3050,6 +3081,7 @@ async function mgSaveReason(t) {
   try {
     const r = await gs("marginReason", MS.month, key, reason);
     const l = MS.db.lows.find(x => x.month === MS.month && x.key === key); if (l) Object.assign(l, { reason, reasonBy: r.reasonBy, reasonAt: r.reasonAt });
+    document.querySelectorAll(`textarea[data-reason="${CSS.escape(key)}"]`).forEach(x => { if (x !== t) x.value = reason; });
     t.classList.add("saved"); toast("사유를 저장했어요.", 2500);
   } catch (e) { toast(`<b>사유 저장 실패</b> ${esc(e.message)}`, 0); }
 }
@@ -3099,6 +3131,9 @@ function mgBind() {
   document.querySelectorAll("[data-lowp]").forEach(b => b.onclick = () => { tog(MS.openLow, b.dataset.lowp); render(); });
   on("#mgOpenAll", () => { if (MS.openLow.size) MS.openLow.clear(); else mData(MS.month).partners.filter(p => p.lowCount).forEach(p => MS.openLow.add(p.partner)); render(); });
   on("#mgChartBtn", () => { MS.chartOpen = !MS.chartOpen; render(); });
+  const nh = $("#mgNegH"); if (nh) nh.onclick = (e) => { if (e.target.closest(".pills, button")) return; MS.negFold = !MS.negFold; lsSet("upche_neg_fold", MS.negFold ? "1" : null); render(); };
+  document.querySelectorAll('.pills[data-k="mgNegK"] button').forEach(b => b.onclick = () => { MS.negKind = b.dataset.v; render(); });
+  document.querySelectorAll('.pills[data-k="mgNegT"] button').forEach(b => b.onclick = () => { MS.negTodo = +b.dataset.v; render(); });
   on("#mgMxAll", () => { MS.mxAll = !MS.mxAll; render(); });
   document.querySelectorAll("textarea[data-reason]").forEach(t => t.onchange = () => mgSaveReason(t));
   document.querySelectorAll('.pills[data-k="mgCatM"] button').forEach(b => b.onclick = () => { MS.catMetric = b.dataset.v; render(); });

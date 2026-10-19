@@ -1273,6 +1273,8 @@ const RPC = {
   marginList: ["upche_margin_list", []],
   marginSave: ["upche_margin_save", ["p_month", "p_summary", "p_partners", "p_categories", "p_lows", "p_memo", "p_partner_cats"]],
   marginDelete: ["upche_margin_delete", ["p_month"]],
+  marginLinesList: ["upche_margin_lines_list", []],
+  marginLinesSave: ["upche_margin_lines_save", ["p_month", "p_rows"]],
   marginPartnerMemo: ["upche_margin_partner_memo", ["p_month", "p_partner", "p_memo"]],
   marginReason: ["upche_margin_reason", ["p_month", "p_key", "p_reason"]],
   accountList: ["upche_account_list", []],
@@ -2652,13 +2654,15 @@ function analyze(sRows, jRows, month) {
     let c = custMap.get(ck);
     if (!c) {
       c = { key: hashKey(ck), name, phone: maskPhone(phone), partner, ja: isJajeom(partner),
-            shops: new Set(), carriers: new Set(), prods: [], rawProds: [], memos: new Set(), upper:0, jaMargin:0, hqIncentive:0, total:0 };
+            shops: new Set(), carriers: new Set(), prods: [], rawProds: [], memos: new Set(), lw:0, lm:0, lr:0, ltv:0, upper:0, jaMargin:0, hqIncentive:0, total:0 };
       custMap.set(ck, c);
     }
     const up = amountOf(r), tot = amountOf(j), jm = isJajeom(partner) ? jaMarginOf(p) : 0;   // 자점마진은 행의 협력점 기준
     const hr = hqRuleOf(partner), hq = hr && isInternet(p) ? hr.perInternet : 0;   // 본점인센: 인터넷 1건당
     c.upper += up; c.total += tot; c.jaMargin += jm; c.hqIncentive += hq;
     c.shops.add(String(r['상부점']||'').trim()); c.carriers.add(carrierOf(p));
+    // 상품 건수: 인터넷·유선기타 = 유선, 모바일 = 무선, 렌탈 = 렌탈 (TV는 인터넷 없이 TV만 있을 때 유선 1건)
+    if (isInternet(p) || isWiredEtc(p)) c.lw++; else if (p.startsWith('모바일')) c.lm++; else if (p.startsWith('렌탈')) c.lr++; else if (/_TV/.test(p)) c.ltv++;
     const memo = String(r['정산 비고']||r['정산비고']||r['정산메모']||'').trim(); if (memo) c.memos.add(memo);   // 상부정산 정산 비고 → 사유로 가져옴
     c.prods.push(p + (up||tot ? '' : '(0원)')); c.rawProds.push(p);
   });
@@ -2668,6 +2672,7 @@ function analyze(sRows, jRows, month) {
     upper:Math.round(c.upper), jaMargin:Math.round(c.jaMargin), hqIncentive:Math.round(c.hqIncentive), total:Math.round(c.total),
     margin:Math.round(c.upper - c.jaMargin - c.hqIncentive - c.total),
     memo:[...c.memos].join(' / '),
+    lines:{ w: c.lw || (c.ltv ? 1 : 0), m: c.lm, r: c.lr },
   }));
   return buildResult(month, customers, unmatched);
 }
@@ -2699,7 +2704,10 @@ function buildResult(month, customers, unmatched) {
   });
   const categories = sortCategories([...cm.values()]);
   const lows = customers.filter(c => c.margin < LOW_MARGIN).sort((a,b) => a.margin - b.margin).map(c => ({ ...c, month }));
-  return { month, summary, partners, categories, lows, customers, unmatched };
+  const lm = new Map();
+  customers.forEach(c => { if (!c.lines) return; let o = lm.get(c.partner); if (!o) lm.set(c.partner, o = { partner: c.partner, wired: 0, mobile: 0, rental: 0 });
+    o.wired += c.lines.w; o.mobile += c.lines.m; o.rental += c.lines.r; });
+  return { month, summary, partners, categories, lows, customers, unmatched, lines: [...lm.values()] };
 }
   return { analyze, parseFile, isJajeom, isHq, hqRuleOf, HQ_INCENTIVE, JA_MARGIN_INTERNET, JA_MARGIN_MOBILE, JA_MARGIN_SKYLIFE_MOBILE,
            LOW_MARGIN, WIRED_ETC, CATEGORY_ORDER, sortCategories, JAJEOM_CONSULT };
@@ -2741,6 +2749,7 @@ async function mgLoad(force) {
   MS.loading = true; MS.error = ""; busy(true, "유통마진 데이터 불러오는 중...");
   try {
     MS.db = await gs("marginList"); if (!MS.db.partnerCats) MS.db.partnerCats = [];
+    try { MS.db.lines = await gs("marginLinesList") || []; } catch (e) { MS.db.lines = []; }
     MS.loaded = true;
     const ms = mMonths();
     if (!MS.month || !ms.includes(MS.month)) MS.month = ms[ms.length - 1] || null;
@@ -2845,7 +2854,7 @@ function mgMonthHtml(d) {
   let body;
   if (tab === "all") {
     const memoN = ps.filter(x => x.memo).length, todoAll = dx.lows.filter(l => !l.reason).length;
-    body = `<p class="sub mgt-sub">${ps.length}개 협력점 · 메모 ${memoN}건 · 1만원 미만 ${lowN}명 · 역마진 ${negN}명 (사유 미작성 <b class="${todoAll ? "warnt" : ""}">${todoAll}</b>) · ▸ 를 누르면 그 협력점의 1만원 미만·역마진 고객이 펼쳐져요</p>
+    body = `<p class="sub mgt-sub">${ps.length}개 협력점 · 메모 ${memoN}건 · 1만원 미만 ${lowN}명 · 역마진 ${negN}명 (사유 미작성 <b class="${todoAll ? "warnt" : ""}">${todoAll}</b>) · ▸ 를 누르면 그 협력점의 1만원 미만·역마진 고객이 펼쳐져요${(MS.db.lines || []).some(x => x.month === d.month) ? " · 유선·무선은 상품 건수" : " · <span class=\"warnt\">유선·무선은 고객 기준 (정산 파일을 다시 올리면 상품 건수로 바뀌어요)</span>"}</p>
       ${MS.chartOpen ? mgMatrixHtml(dx) : ""}<div class="tw tall"><table class="t mt">${mgPartnerTable(dx)}</table></div>`;
   } else body = mgLowListHtml(base, tab);
   const part = `<section class="card mgpart"><div class="card-h"><div><h2>협력점별 유통마진</h2><p class="sub">자점 ${jaN}곳은 빼고 봐요 (구분별 유통마진·위 숫자에는 포함)</p></div></div>
@@ -2895,9 +2904,13 @@ function mgCatTable(cats) {
 const SUMK = ["customers", "upper", "jaMargin", "hqIncentive", "total", "margin", "lowCount", "negCount"];
 function mgPartnerTable(d) {
   // 유선·무선·렌탈 건수 (협력점×구분 자료로: 모바일만 = 무선, 렌탈만 = 렌탈, 나머지(인터넷·TV·유선기타, 결합 포함) = 유선)
-  const wm = new Map(); d.pcs.forEach(c => { let o = wm.get(c.partner); if (!o) wm.set(c.partner, o = { w: 0, m: 0, r: 0 });
+  const lines = (MS.db.lines || []).filter(x => x.month === d.month);
+  const wm = new Map();
+  if (lines.length) lines.forEach(x => wm.set(x.partner, { w: x.wired, m: x.mobile, r: x.rental }));   // 상품별 건수
+  else d.pcs.forEach(c => { let o = wm.get(c.partner); if (!o) wm.set(c.partner, o = { w: 0, m: 0, r: 0 });   // 예전 저장분: 고객 구분 기준
     if (c.category === "모바일") o.m += c.customers; else if (c.category === "렌탈") o.r += c.customers; else o.w += c.customers; });
-  const hasWM = d.pcs.length > 0, hasR = hasWM && [...wm.values()].some(o => o.r);
+  const hasWM = lines.length > 0 || d.pcs.length > 0, hasR = hasWM && [...wm.values()].some(o => o.r);
+  MS.wmByLine = lines.length > 0;
   const rows = d.partners.map(p => { const o = wm.get(p.partner) || { w: 0, m: 0, r: 0 }; return { ...p, wired: o.w, mobile: o.m, rental: o.r, perCustomer: p.customers ? p.margin / p.customers : 0 }; });
   const { key, asc } = MS.partnerSort;
   rows.sort((a, b) => (key === "partner" ? a.partner.localeCompare(b.partner) : (a[key] - b[key]) || (a.margin - b.margin)) * (asc ? 1 : -1));
@@ -3122,6 +3135,7 @@ async function mgSave() {
     const had = new Set(MS.db.lows.filter(x => x.month === r.month && x.reason).map(x => x.key));   // 이미 적어둔 사유는 그대로 둠
     const lows = r.lows.map(({ month, memo, ...l }) => memo && !had.has(l.key) ? { ...l, reason: memo, reasonBy: "상부정산 메모" } : l);
     const res = await gs("marginSave", r.month, r.summary, r.partners, r.categories, lows, ($("#mgMemo") || {}).value || "", r.partnerCats || []);
+    try { if (r.lines && r.lines.length) await gs("marginLinesSave", r.month, r.lines); } catch (e) { console.warn("상품 건수 저장 실패", e); }
     MS.loaded = false; MS.month = r.month; MS.view = "month";
     $("#modal").hidden = true;
     const kept = [res.keptReasons ? `사유 ${res.keptReasons}건` : "", res.keptMemos ? `메모 ${res.keptMemos}건` : ""].filter(Boolean).join(", ");

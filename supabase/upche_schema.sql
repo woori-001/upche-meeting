@@ -681,6 +681,46 @@ begin
   return jsonb_build_object('partner', r.partner, 'note', r.note, 'month', r.month, 'by', r.updated_by, 'at', private.upche_fmt(r.updated_at));
 end $$;
 
+
+-- ---------------------------------------------------------------------
+-- 유통마진 · 협력점별 상품 건수 (유선·무선·렌탈, 고객 수가 아니라 상품 수)
+-- ---------------------------------------------------------------------
+create table if not exists public.upche_margin_lines (
+  month    text not null,
+  partner  text not null,
+  wired    integer not null default 0,
+  mobile   integer not null default 0,
+  rental   integer not null default 0,
+  primary key (month, partner)
+);
+comment on table public.upche_margin_lines is '유통마진 · 협력점별 유선/무선/렌탈 상품 건수';
+alter table public.upche_margin_lines enable row level security;
+revoke all on public.upche_margin_lines from anon, authenticated;
+
+create or replace function public.upche_margin_lines_list(p_token text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+begin
+  perform private.upche_auth(p_token);
+  return coalesce((select jsonb_agg(jsonb_build_object('month', month, 'partner', partner, 'wired', wired, 'mobile', mobile, 'rental', rental))
+    from public.upche_margin_lines), '[]'::jsonb);
+end $$;
+
+-- 한 달치 저장 (같은 협력점은 덮어씀)
+create or replace function public.upche_margin_lines_save(p_token text, p_month text, p_rows jsonb) returns integer
+language plpgsql security definer set search_path = '' as $$
+declare n integer;
+begin
+  perform private.upche_auth(p_token);
+  if p_month !~ '^\d{4}-\d{2}$' then raise exception '월 형식 오류: %', p_month; end if;
+  insert into public.upche_margin_lines as t (month, partner, wired, mobile, rental)
+  select p_month, x->>'partner', coalesce((x->>'wired')::int, 0), coalesce((x->>'mobile')::int, 0), coalesce((x->>'rental')::int, 0)
+  from jsonb_array_elements(coalesce(p_rows, '[]'::jsonb)) x
+  where coalesce(x->>'partner', '') <> ''
+  on conflict (month, partner) do update set wired = excluded.wired, mobile = excluded.mobile, rental = excluded.rental;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
 -- ---------------------------------------------------------------------
 -- 실행 권한: 화면(anon 키)은 public.upche_* 함수만 부를 수 있음
 -- ---------------------------------------------------------------------

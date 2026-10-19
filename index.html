@@ -424,7 +424,8 @@ body.mode-margin .badge.orange,body.mode-margin .tag.mtag{background:var(--acc-w
 .hero .pills{background:rgba(255,255,255,.22)}.hero .pills.sm button{padding:3px 8px}
 .hero .pills button{color:rgba(255,255,255,.9)}
 .hero .pills button.on{background:#fff;box-shadow:0 2px 6px rgba(20,30,50,.15)}
-.t-new .hero .pills button.on{color:#3a6fe6}.t-back .hero .pills button.on{color:#2fae93}.t-churn .hero .pills button.on{color:#ef6f82}
+.t-new .hero .pills button.on{color:#3a6fe6}
+.t-back .hero .pills button.on{color:#2fae93}.t-back .hero .pills button.on{color:#2fae93}.t-churn .hero .pills button.on{color:#ef6f82}
 .board .col-b{gap:10px;padding:2px 2px 0}
 .board .bcard{border-radius:16px;box-shadow:0 1px 2px rgba(20,30,50,.04);transition:box-shadow .15s}
 .board .bcard:hover{box-shadow:0 8px 18px -12px rgba(30,45,90,.35)}
@@ -741,6 +742,17 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
 .t.negt td.nm .ls-t{max-width:260px}
 .t.negt td.memo{min-width:240px}
 .t.negt td.memo textarea{width:100%}
+/* 재거래 흐름 · 이탈 사유 */
+.bc-tl{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.bc-tl span{display:inline-flex;flex-direction:column;align-items:center;min-width:44px;border-radius:8px;padding:3px 6px;background:#f3f5f9;line-height:1.25}
+.bc-tl i{font-style:normal;font-size:10.5px;color:var(--dim)}
+.bc-tl b{font-size:12.5px;color:#3a4252}
+.bc-tl span.gap{background:#fff;border:1px dashed #d5dbe5}.bc-tl span.gap b{color:#b8bec9;font-weight:500}
+.bc-tl span.now{background:#dbf4ec}.bc-tl span.now b{color:#1f8f74}.bc-tl span.now i{color:#2a9e86}
+.bc-note{margin-top:8px;padding-top:8px;border-top:1px dashed #f3d3d6}
+.bc-note textarea{width:100%;min-height:30px;resize:vertical;font:inherit;font-size:12.5px;border:1px solid #f1dfe1;border-radius:8px;padding:5px 8px;outline:0;background:#fffafa;color:var(--text)}
+.bc-note textarea:focus{border-color:#ef6f82;background:#fff}.bc-note textarea.saved{border-color:#9bd8bd}
+.bc-note small{display:block;font-size:11px;color:var(--dim);margin-top:3px}
 </style>
 </head>
 <body>
@@ -1031,9 +1043,12 @@ function gradeOf(name, group) {
 function segmentOf(name, group) {
   if (FORCE_ALLY.has(name)) return "제휴";
   const s = String(group || "").replace(SYM_RE, "").trim();
-  if (s.startsWith("판매점_")) return "판매점";
-  if (s.startsWith("협력점_")) return "협력점";
-  return null; // 자점·본점·상부점 등 → 분석 제외
+  if (!s.startsWith("판매점_") && !s.startsWith("협력점_")) return null; // 자점·본점·상부점 등 → 분석 제외
+  // 판매점·협력점은 상호 앞 기호로 구분: ★☆ = 협력점, ■□◆◇ = 판매점 (기호가 없으면 정산그룹 기준)
+  const c = String(name || "").trim().charAt(0);
+  if ("★☆".includes(c)) return "협력점";
+  if ("■□◆◇".includes(c)) return "판매점";
+  return s.startsWith("판매점_") ? "판매점" : "협력점";
 }
 const coreName = (n) => String(n).replace(PARTNER_SYMBOL_RE, "").replace(/\(휴\)/g, "").trim();
 
@@ -1254,6 +1269,8 @@ const RPC = {
   decSave: ["upche_decision_save", ["p_month", "p_partner", "p_telco", "p_action", "p_from", "p_to", "p_memo"]],
   decDelete: ["upche_decision_delete", ["p_month", "p_partner", "p_telco"]],
   decCheck: ["upche_decision_check", ["p_month", "p_partner", "p_telco", "p_field", "p_done"]],
+  cnoteList: ["upche_churn_note_list", []],
+  cnoteSave: ["upche_churn_note_save", ["p_partner", "p_month", "p_note"]],
 };
 // 연결이 잠깐 끊기거나 서버가 바쁠 때(5xx)는 잠깐 쉬었다가 최대 3번까지 다시 시도
 // (저장은 같은 내용으로 통째로 덮어쓰는 방식이라 다시 해도 안전. 로그인·비밀번호 변경은 다시 하지 않음)
@@ -1335,6 +1352,8 @@ const S = {
   month: null,
   newRange: 1,         // 신규: 최근 N개월 등록
   churn: 3,            // 이탈: 최근 N개월 무접수
+  backRange: 1,        // 재거래: 직전 N개월 안에 빈 달이 있었는지
+  cnotes: new Map(),   // 이탈 사유 { 업체 → {note, month, by, at} }
   growG: "W",
   growBase: 3,         // 증감 비교: 직전 N개월 평균
   qPeriod: 1,          // 품질: 최근 N개월
@@ -1537,17 +1556,22 @@ function calcNew(M) {
   }).filter(r => matchSearch(r.x.name)).sort((a, b) => b.x.reg.localeCompare(a.x.reg) || b.t - a.t);
   return { rows, sum, segAll, count: list.length };
 }
+// 재거래: 이번 달 접수가 있고, 직전 N개월 중 접수 없는 달이 있었던 곳 (그 전엔 접수 이력이 있어야 함, 신규 제외)
 function calcBack(M) {
-  const prev = addMonths(M, -1);
-  if (!D.months.includes(prev)) return [];
+  const N = S.backRange, win = prevMonths(M, N);
+  if (!win.length) return [];
   const newNames = new Set(calcNew(M).rows.map(r => r.x.name));
+  const act = (p, m) => { const o = sumCells(p, [m], ALLG); return o.n + o.EX > 0; };
   return segPartners().map(p => {
     const cur = sumCells(p.dataName, [M], ALLG).n;
     if (!cur) return null;
-    const pv = sumCells(p.dataName, [prev], ALLG); if (pv.n + pv.EX > 0) return null;
-    const last = D.months.filter(m => m < prev && sumCells(p.dataName, [m], ALLG).n > 0).pop();
-    if (!last) return null;
-    return { p, cur, last };
+    const gaps = win.filter(m => !act(p.dataName, m));
+    if (!gaps.length) return null;
+    const before = D.months.filter(m => m < gaps[0] && sumCells(p.dataName, [m], ALLG).n > 0);
+    if (!before.length) return null;
+    const last = D.months.filter(m => m < M && sumCells(p.dataName, [m], ALLG).n > 0).pop();
+    const series = [...win, M].map(m => ({ m, n: sumCells(p.dataName, [m], ALLG).n }));
+    return { p, cur, last, gaps: gaps.length, series };
   }).filter(r => r && matchSearch(r.p.dataName) && !newNames.has(r.p.name)).sort((a, b) => b.cur - a.cur);
 }
 function calcChurn(M) {
@@ -1774,13 +1798,18 @@ function boardHtml(M) {
       <div class="bc-meta"><span>유선 ${fmtN(r.o.W)} · 무선 ${fmtN(r.o.M)} · 렌탈 ${fmtN(r.o.R)}</span><b>${fmtN(r.t)}건</b></div>
       <div class="bc-foot"><span>전체 대비 ${nw.segAll ? fmtR(r.t / nw.segAll) : "-"}</span><span>등록 후 누적 ${fmtN(r.since)}건</span></div>`)).join("")
     : `<div class="bempty">새로 등록된 ${esc(S.seg)}이 없어요</div>`;
-  const backCards = back.length ? back.map(r => card(`<div class="bc-top"><span class="badge green">재거래</span><span class="dim small">마지막 ${monthLabel(r.last)}</span></div>
+  const tl = (r) => `<div class="bc-tl">${r.series.map((x, i) => { const now = i === r.series.length - 1;
+      return `<span class="${now ? "now" : x.n ? "" : "gap"}"><i>${+x.m.slice(5)}월</i><b>${x.n ? fmtN(x.n) : "없음"}</b></span>`; }).join("")}</div>`;
+  const backCards = back.length ? back.map(r => card(S.backRange === 1 ? `<div class="bc-top"><span class="badge green">재거래</span><span class="dim small">마지막 ${monthLabel(r.last)}</span></div>
       <div class="bc-name">${nameHtml(r.p.dataName, r.p.grade)}</div>
-      <div class="bc-meta"><span>전월 접수 없음 → 이번 달 접수</span><b>${fmtN(r.cur)}건</b></div>`)).join("")
-    : `<div class="bempty">전월 공백 후 돌아온 곳이 없어요</div>`;
+      <div class="bc-meta"><span>전월 접수 없음 → 이번 달 접수</span><b>${fmtN(r.cur)}건</b></div>`
+    : `<div class="bc-top"><span class="badge green">${r.gaps}개월 공백</span><span class="dim small">이번 달 ${fmtN(r.cur)}건</span></div>
+      <div class="bc-name">${nameHtml(r.p.dataName, r.p.grade)}</div>${tl(r)}`)).join("")
+    : `<div class="bempty">${S.backRange === 1 ? "전월 공백 후 돌아온 곳이 없어요" : `최근 ${S.backRange}개월 중 빈 달이 있다가 돌아온 곳이 없어요`}</div>`;
   const churnCards = ch.out.length ? ch.out.map(r => card(`<div class="bc-top"><span class="badge red">${r.gap}개월 공백</span><span class="dim small">마지막 ${monthLabel(r.last)}</span></div>
       <div class="bc-name">${nameHtml(r.x.name, r.x.grade)}</div>
-      <div class="bc-meta"><span>활동 당시 월평균 · 유선 ${fmtAvg(r.o.W)} · 무선 ${fmtAvg(r.o.M)}${r.o.R ? ` · 렌탈 ${fmtAvg(r.o.R)}` : ""}</span><b>${fmtAvg(r.tot)}건</b></div>`)).join("")
+      <div class="bc-meta"><span>활동 당시 월평균 · 유선 ${fmtAvg(r.o.W)} · 무선 ${fmtAvg(r.o.M)}${r.o.R ? ` · 렌탈 ${fmtAvg(r.o.R)}` : ""}</span><b>${fmtAvg(r.tot)}건</b></div>
+      ${cnoteHtml(r.x.name)}`)).join("")
     : `<div class="bempty">조건에 맞는 이탈 업체가 없어요</div>`;
   const never = ch.never.length ? `<details class="never"><summary>보유 기간 내 접수 이력 없음 ${ch.never.length}곳</summary><div class="chips">${ch.never.map(x => `<span class="tag lg">${esc(x.name)} · ${esc(x.grade)}</span>`).join("")}</div></details>` : "";
   return `<div class="board">
@@ -1789,8 +1818,8 @@ function boardHtml(M) {
       <p class="col-s">원장 등록일 기준 · 신규 업체 접수 <b>${fmtN(nw.sum)}건</b> = 전체의 <b>${nw.segAll ? fmtR(nw.sum / nw.segAll) : "-"}</b></p></div>
       <div class="col-b">${newCards}</div></div>
     <div class="col t-back${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"><span class="hico">${ic("rotate", 18)}</span><div class="hh"><h3>재거래 <span class="hnum">${fmtN(back.length)}<small>곳</small></span></h3><span class="hr"><span class="hchev">▾</span></span></div>
-      <div class="hpills"><span class="hnote">신규 업체 제외</span></div>
-      <p class="col-s">전월 접수가 없다가 이번 달 다시 접수한 곳</p></div>
+      <div class="hpills">${pill("backRange", S.backRange, [[1, "전월"], [3, "3개월"], [6, "6개월"]], 1)}</div>
+      <p class="col-s">${S.backRange === 1 ? "전월 접수가 없다가 이번 달 다시 접수한 곳" : `최근 ${S.backRange}개월 중 접수 없는 달이 있었고 이번 달 다시 접수`} · 신규 제외</p></div>
       <div class="col-b">${backCards}</div></div>
     <div class="col t-churn${S.fold.board ? " folded" : ""}"><div class="hero" data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"><span class="hico">${ic("userMinus", 18)}</span><div class="hh"><h3>이탈 <span class="hnum">${fmtN(ch.out.length)}<small>곳</small></span></h3><span class="hr"><span class="hchev">▾</span></span></div>
       <div class="hpills">${pill("churn", S.churn, [[1, "1개월"], [3, "3개월"], [6, "6개월"], [12, "1년"]], 1)}</div>
@@ -1798,6 +1827,11 @@ function boardHtml(M) {
       <div class="col-b">${churnCards}${never}</div></div>
     ${decColHtml(M)}
   </div>`;
+}
+// 이탈 사유 칸 (적어두면 다음 달에도 그대로 보임)
+function cnoteHtml(name) {
+  const n = S.cnotes.get(name);
+  return `<div class="bc-note"><textarea rows="1" data-cnote="${esc(name)}" placeholder="이탈 사유 적기">${esc(n ? n.note : "")}</textarea>${n && n.note ? `<small>${n.month ? `${+n.month.slice(5)}월 실적 회의 · ` : ""}${esc(whoShort(n.by))} · ${atShort(n.at)}</small>` : ""}</div>`;
 }
 const isOpen = (name) => S.openAll || S.open.has(name);
 const tgBtn = (name, has) => has ? `<button class="tg${isOpen(name) ? " on" : ""}" data-open="${esc(name)}" title="통신사별 펼치기/접기">▸</button>` : `<span class="tg-sp"></span>`;
@@ -2258,6 +2292,16 @@ function bindMain() {
     render();
   });
   document.querySelectorAll("a.pn").forEach(a => a.onclick = () => openDetail(a.dataset.p));
+  document.querySelectorAll("textarea[data-cnote]").forEach(t => t.onchange = async () => {
+    const name = t.dataset.cnote;
+    try {
+      const r = await gs("cnoteSave", name, S.month, t.value);
+      if (r.note) S.cnotes.set(name, r); else S.cnotes.delete(name);
+      t.classList.add("saved"); toast(r.note ? "이탈 사유를 저장했어요." : "이탈 사유를 지웠어요.", 2500);
+      const sm = t.parentElement.querySelector("small"); if (sm) sm.remove();
+      if (r.note) t.insertAdjacentHTML("afterend", `<small>${+S.month.slice(5)}월 실적 회의 · ${esc(whoShort(r.by))} · ${atShort(r.at)}</small>`);
+    } catch (e) { toast(/함수가 아직 없어요/.test(e.message) ? "이탈 사유를 저장하려면 Supabase 설정이 한 번 더 필요해요." : `<b>저장 실패</b> ${esc(e.message)}`, 0); }
+  });
   // 통신사 펼치기/접기
   document.querySelectorAll("button.tg").forEach(b => b.onclick = () => {
     const n = b.dataset.open;
@@ -3312,6 +3356,7 @@ async function loadAll() {
       busy(true, `데이터 불러오는 중... ${++done}/${info.months.length}개월`);
     });
     await loadDecisions();
+    try { S.cnotes = new Map((await gs("cnoteList") || []).map(n => [n.partner, n])); } catch (e) { S.cnotes = new Map(); }
   } catch (e) {
     if (!e.auth) toast(`<b>서버 연결 오류</b> ${esc(e.message)}`, 0);
   } finally { busy(false); }

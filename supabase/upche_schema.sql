@@ -645,6 +645,42 @@ begin
   return private.upche_dec_json(r);
 end $$;
 
+
+-- ---------------------------------------------------------------------
+-- 이탈 사유 (업체별 한 줄, 다음 달에도 계속 보임)
+-- ---------------------------------------------------------------------
+create table if not exists public.upche_churn_notes (
+  partner     text primary key,
+  note        text not null default '',
+  month       text not null default '',          -- 사유를 적을 때 보던 실적 월
+  updated_by  text not null default '',
+  updated_at  timestamptz not null default now()
+);
+comment on table public.upche_churn_notes is '업체회의 · 이탈 업체 사유';
+alter table public.upche_churn_notes enable row level security;
+revoke all on public.upche_churn_notes from anon, authenticated;
+
+create or replace function public.upche_churn_note_list(p_token text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+begin
+  perform private.upche_auth(p_token);
+  return coalesce((select jsonb_agg(jsonb_build_object('partner', n.partner, 'note', n.note, 'month', n.month,
+    'by', n.updated_by, 'at', private.upche_fmt(n.updated_at))) from public.upche_churn_notes n where n.note <> ''), '[]'::jsonb);
+end $$;
+
+-- 사유 저장 (빈 칸으로 저장하면 지운 것과 같음)
+create or replace function public.upche_churn_note_save(p_token text, p_partner text, p_month text, p_note text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare a private.upche_accounts := private.upche_auth(p_token); r public.upche_churn_notes;
+begin
+  if btrim(coalesce(p_partner, '')) = '' then raise exception '업체를 알 수 없어요.'; end if;
+  insert into public.upche_churn_notes as t (partner, note, month, updated_by, updated_at)
+  values (p_partner, btrim(coalesce(p_note, '')), coalesce(p_month, ''), private.upche_who(a), now())
+  on conflict (partner) do update set note = excluded.note, month = excluded.month, updated_by = excluded.updated_by, updated_at = excluded.updated_at
+  returning * into r;
+  return jsonb_build_object('partner', r.partner, 'note', r.note, 'month', r.month, 'by', r.updated_by, 'at', private.upche_fmt(r.updated_at));
+end $$;
+
 -- ---------------------------------------------------------------------
 -- 실행 권한: 화면(anon 키)은 public.upche_* 함수만 부를 수 있음
 -- ---------------------------------------------------------------------

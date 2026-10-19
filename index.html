@@ -753,6 +753,18 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
 .bc-note textarea{width:100%;min-height:30px;resize:vertical;font:inherit;font-size:12.5px;border:1px solid #f1dfe1;border-radius:8px;padding:5px 8px;outline:0;background:#fffafa;color:var(--text)}
 .bc-note textarea:focus{border-color:#ef6f82;background:#fff}.bc-note textarea.saved{border-color:#9bd8bd}
 .bc-note small{display:block;font-size:11px;color:var(--dim);margin-top:3px}
+/* 협력점별 유통마진 탭 (주황 포인트) */
+.mgtabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 10px}
+.mgtabs>button{display:inline-flex;align-items:center;gap:7px;border:1.5px solid #fbd5b5;background:#fff;color:#c2560c;border-radius:12px;padding:8px 14px;font-weight:700;font-size:14px;cursor:pointer}
+.mgtabs>button small{font-size:12px;font-weight:800;background:#FFF1E6;color:#EA580C;border-radius:999px;padding:1px 8px}
+.mgtabs>button:hover{background:#FFF7F0}
+.mgtabs>button.on{background:#F97316;border-color:#F97316;color:#fff;box-shadow:0 6px 14px -8px rgba(249,115,22,.8)}
+.mgtabs>button.on small{background:rgba(255,255,255,.25);color:#fff}
+.mgtabs>button:first-child{border-color:var(--line2);color:#3a4252}.mgtabs>button:first-child small{background:#f0f2f6;color:#667085}
+.mgtabs>button:first-child.on{background:#2563EB;border-color:#2563EB;color:#fff;box-shadow:none}
+.mgtabs .mgt-r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.mgt-sub{margin:0 0 10px}
+.t.negt td.memo small.auto{color:#EA580C}
 </style>
 </head>
 <body>
@@ -2639,13 +2651,14 @@ function analyze(sRows, jRows, month) {
     let c = custMap.get(ck);
     if (!c) {
       c = { key: hashKey(ck), name, phone: maskPhone(phone), partner, ja: isJajeom(partner),
-            shops: new Set(), carriers: new Set(), prods: [], rawProds: [], upper:0, jaMargin:0, hqIncentive:0, total:0 };
+            shops: new Set(), carriers: new Set(), prods: [], rawProds: [], memos: new Set(), upper:0, jaMargin:0, hqIncentive:0, total:0 };
       custMap.set(ck, c);
     }
     const up = amountOf(r), tot = amountOf(j), jm = isJajeom(partner) ? jaMarginOf(p) : 0;   // 자점마진은 행의 협력점 기준
     const hr = hqRuleOf(partner), hq = hr && isInternet(p) ? hr.perInternet : 0;   // 본점인센: 인터넷 1건당
     c.upper += up; c.total += tot; c.jaMargin += jm; c.hqIncentive += hq;
     c.shops.add(String(r['상부점']||'').trim()); c.carriers.add(carrierOf(p));
+    const memo = String(r['정산 비고']||r['정산비고']||r['정산메모']||'').trim(); if (memo) c.memos.add(memo);   // 상부정산 정산 비고 → 사유로 가져옴
     c.prods.push(p + (up||tot ? '' : '(0원)')); c.rawProds.push(p);
   });
   const customers = [...custMap.values()].map(c => ({
@@ -2653,6 +2666,7 @@ function analyze(sRows, jRows, month) {
     upperShop:[...c.shops].join(', '), carrier:[...c.carriers].join(', '), products:c.prods.join(' + '), category:categoryOf(c.rawProds),
     upper:Math.round(c.upper), jaMargin:Math.round(c.jaMargin), hqIncentive:Math.round(c.hqIncentive), total:Math.round(c.total),
     margin:Math.round(c.upper - c.jaMargin - c.hqIncentive - c.total),
+    memo:[...c.memos].join(' / '),
   }));
   return buildResult(month, customers, unmatched);
 }
@@ -2700,8 +2714,7 @@ const MS = {
   view: "month",                        // month | trend
   partnerSort: { key: "perCustomer", asc: false }, catMetric: "margin",
   openLow: new Set(), chartOpen: false, mxAll: false, upYear: 0, mpOpen: false,
-  negFold: (() => { try { return localStorage.getItem("upche_neg_fold") === "1"; } catch (e) { return false; } })(),   // 역마진 모아보기 접힘
-  negKind: "neg", negTodo: 0,           // neg(역마진만) | low(1만원 미만 전체) · 사유 미작성만
+  pTab: "all", negTodo: 0,              // 협력점별 유통마진 탭: all(협력점) | low(1만원 미만) | neg(역마진) · 사유 미작성만
 
   trendRange: 12, pivot: "margin", showAll: false,
   up: { s: null, j: null, sName: "", jName: "", month: "", calc: null },
@@ -2816,33 +2829,43 @@ function mgMonthHtml(d) {
   const cat = d.categories.length ? `<section class="card"><div class="card-h"><div><h2>구분별 유통마진</h2><p class="sub">유선기타는 별도 구분</p></div>
       ${pill("mgCatM", MS.catMetric, [["margin", "유통마진"], ["per", "건당 마진"]])}</div>
     <div class="catwrap"><div class="tw"><table class="t mt">${mgCatTable(d.categories)}</table></div>${mgCatBars(d.categories)}</div></section>` : "";
-  const memoN = d.partners.filter(x => x.memo).length, todo = d.lows.filter(l => !l.reason).length, hasPc = d.pcs.length > 0;
-  const part = `<section class="card"><div class="card-h"><div><h2>협력점별 유통마진</h2><p class="sub">${d.partners.length}개 협력점 · 메모 ${memoN}건 · 1만원 미만 ${d.lows.length}명 (사유 미작성 <b class="${todo ? "warnt" : ""}">${todo}</b>) · ▸ 나 1만원 미만 숫자를 누르면 그 협력점의 고객 목록이 펼쳐져요</p></div>
-      <div class="hbtns"><button class="ghost sm${MS.chartOpen ? " on" : ""}" id="mgChartBtn">${ic("chart")}통신사별 마진표 ${MS.chartOpen ? "▴" : "▾"}</button>${d.lows.length ? `<button class="ghost sm" id="mgOpenAll">${MS.openLow.size ? "모두 접기" : "1만원 미만 모두 펼치기"}</button>` : ""}</div></div>
-    ${MS.chartOpen ? mgMatrixHtml(d) : ""}
-    <div class="tw tall"><table class="t mt">${mgPartnerTable(d)}</table></div></section>`;
-  return [kpi, cat + mgNegHtml(d) + part];
+  // 협력점별 유통마진: 자점은 빼고 봄 (구분별 유통마진은 자점 포함 그대로)
+  const ps = d.partners.filter(p => !p.ja), psSet = new Set(ps.map(p => p.partner));
+  const dx = { ...d, partners: ps, lows: d.lows.filter(l => !l.ja), pcs: d.pcs.filter(c => psSet.has(c.partner)) };
+  const negN = dx.lows.filter(l => l.margin < 0).length, lowN = dx.lows.length, jaN = d.partners.length - ps.length;
+  const tab = MS.pTab;
+  const base = tab === "neg" ? dx.lows.filter(l => l.margin < 0) : dx.lows, todo = base.filter(l => !l.reason).length;
+  const tabs = `<div class="mgtabs">
+      <button class="${tab === "all" ? "on" : ""}" data-ptab="all">${ic("users", 15)}협력점별<small>${ps.length}</small></button>
+      <button class="${tab === "low" ? "on" : ""}" data-ptab="low">1만원 미만 고객<small>${lowN}</small></button>
+      <button class="${tab === "neg" ? "on" : ""}" data-ptab="neg">역마진 고객<small>${negN}</small></button>
+      <span class="mgt-r">${tab === "all" ? `<button class="ghost sm${MS.chartOpen ? " on" : ""}" id="mgChartBtn">${ic("chart")}통신사별 마진표 ${MS.chartOpen ? "▴" : "▾"}</button>${lowN ? `<button class="ghost sm" id="mgOpenAll">${MS.openLow.size ? "모두 접기" : "1만원 미만 모두 펼치기"}</button>` : ""}`
+        : pill("mgNegT", MS.negTodo, [[0, "전체"], [1, `사유 미작성만 ${todo}`]])}</span></div>`;
+  let body;
+  if (tab === "all") {
+    const memoN = ps.filter(x => x.memo).length, todoAll = dx.lows.filter(l => !l.reason).length;
+    body = `<p class="sub mgt-sub">${ps.length}개 협력점 · 메모 ${memoN}건 · 1만원 미만 ${lowN}명 (사유 미작성 <b class="${todoAll ? "warnt" : ""}">${todoAll}</b>) · ▸ 나 1만원 미만 숫자를 누르면 고객 목록이 펼쳐져요</p>
+      ${MS.chartOpen ? mgMatrixHtml(dx) : ""}<div class="tw tall"><table class="t mt">${mgPartnerTable(dx)}</table></div>`;
+  } else body = mgLowListHtml(base, tab);
+  const part = `<section class="card mgpart"><div class="card-h"><div><h2>협력점별 유통마진</h2><p class="sub">자점 ${jaN}곳은 빼고 봐요 (구분별 유통마진·위 숫자에는 포함)</p></div></div>
+    ${tabs}${body}</section>`;
+  return [kpi, cat + part];
 }
-// 역마진(·1만원 미만) 고객만 한 곳에 모아 사유 입력
-function mgNegHtml(d) {
-  if (!d.lows.length) return "";
-  const neg = d.lows.filter(l => l.margin < 0), base = MS.negKind === "neg" ? neg : d.lows;
-  const todo = base.filter(l => !l.reason).length;
+// 1만원 미만 / 역마진 탭: 협력점 상관없이 고객을 마진 낮은 순으로 모아 사유 입력
+function mgLowListHtml(base, tab) {
   const ls = base.filter(l => !MS.negTodo || !l.reason).slice().sort((a, b) => a.margin - b.margin);
-  const sum = base.reduce((a, l) => a + l.margin, 0);
-  const kb = MS.negKind === "low";   // 1만원 미만 전체를 볼 때만 역마진/1만원 미만 표시
+  const sum = base.reduce((a, l) => a + l.margin, 0), todo = base.filter(l => !l.reason).length, auto = base.filter(l => l.reasonBy === "상부정산 메모").length;
+  const kb = tab === "low";   // 1만원 미만 탭에서만 역마진/1만원 미만 표시
   const rows = ls.map(l => `<tr>${kb ? `<td><span class="badge ${l.margin < 0 ? "red" : "orange"}">${l.margin < 0 ? "역마진" : "1만원 미만"}</span></td>` : ""}
-      <td class="nm"><b>${esc(l.partner)}</b>${jaTag(l.ja)}${hqTag(l.partner)}</td>
+      <td class="nm"><b>${esc(l.partner)}</b>${hqTag(l.partner)}</td>
       <td class="nm"><div class="ls-t"><b>${esc(l.name)}</b><small>${esc(l.phone)} · ${esc(l.upperShop)}</small></div></td>
       <td class="nm"><div class="ls-t"><small>${esc(l.category || l.carrier)}${l.category === MG.WIRED_ETC || !l.carrier ? "" : ` · ${esc(l.carrier)}`}</small><small class="pr" title="${esc(l.products)}">${esc(l.products)}</small></div></td>
       <td class="n">${wonF(l.upper)}</td><td class="n">${wonF(l.total)}</td>
       <td class="n b ${l.margin < 0 ? "bad" : "warnt"}">${wonF(l.margin)}</td>
-      <td class="memo"><textarea rows="1" data-reason="${esc(l.key)}" placeholder="사유 입력">${esc(l.reason || "")}</textarea>${l.reasonBy ? `<small>${esc(l.reasonBy)} · ${esc(l.reasonAt)}</small>` : ""}</td></tr>`).join("");
-  return `<section class="card fcard mgneg${MS.negFold ? " folded" : ""}"><div class="card-h" id="mgNegH" title="눌러서 접기/펼치기"><div><h2>${MS.negKind === "neg" ? "역마진" : "1만원 미만"} 고객 모아보기 <span class="segb">${base.length}명</span></h2>
-      <p class="sub">${MS.negKind === "neg" ? "유통마진 0원 미만" : "건당 마진 1만원 미만 (역마진 포함)"} · 합계 <b class="${sum < 0 ? "bad" : ""}">${wonF(sum)}원</b> · 사유 미작성 <b class="${todo ? "warnt" : ""}">${todo}명</b> · 마진 낮은 순 · 사유는 칸 밖을 누르면 저장돼요</p></div>
-      <div class="hbtns">${MS.negFold ? "" : pill("mgNegK", MS.negKind, [["neg", `역마진 ${neg.length}`], ["low", `1만원 미만 전체 ${d.lows.length}`]]) + pill("mgNegT", MS.negTodo, [[0, "전체"], [1, `사유 미작성만 ${todo}`]])}<span class="cchev">▾</span></div></div>
-    <div class="tw"><table class="t mt negt"><thead><tr>${kb ? "<th></th>" : ""}<th>협력점</th><th>고객</th><th>구분 · 상품</th><th class="n">상부정산</th><th class="n">전체정산</th><th class="n">유통마진</th><th>사유</th></tr></thead>
-      <tbody>${rows || `<tr><td colspan="8" class="none">${MS.negTodo ? "사유를 모두 적었어요 👍" : "해당 고객이 없어요"}</td></tr>`}</tbody></table></div></section>`;
+      <td class="memo"><textarea rows="1" data-reason="${esc(l.key)}" placeholder="사유 입력">${esc(l.reason || "")}</textarea>${l.reasonBy ? `<small class="${l.reasonBy === "상부정산 메모" ? "auto" : ""}">${esc(l.reasonBy)}${l.reasonAt ? ` · ${esc(l.reasonAt)}` : ""}</small>` : ""}</td></tr>`).join("");
+  return `<p class="sub mgt-sub">${tab === "neg" ? "유통마진 0원 미만" : "건당 마진 1만원 미만 (역마진 포함)"} ${base.length}명 · 합계 <b class="${sum < 0 ? "bad" : ""}">${wonF(sum)}원</b> · 사유 미작성 <b class="${todo ? "warnt" : ""}">${todo}명</b>${auto ? ` · 상부정산 메모에서 가져온 사유 ${auto}건` : ""} · 마진 낮은 순 · 사유는 칸 밖을 누르면 저장돼요</p>
+    <div class="tw tall"><table class="t mt negt"><thead><tr>${kb ? "<th></th>" : ""}<th>협력점</th><th>고객</th><th>구분 · 상품</th><th class="n">상부정산</th><th class="n">전체정산</th><th class="n">유통마진</th><th>사유</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="8" class="none">${MS.negTodo ? "사유를 모두 적었어요 👍" : "해당 고객이 없어요"}</td></tr>`}</tbody></table></div>`;
 }
 // 구분별 유통마진 막대 (둥근 캡슐 모양, 마우스를 올리면 금액·건수)
 const wonK = (v) => { const a = Math.abs(v); return a >= 1e8 ? (v / 1e8).toFixed(1) + "억" : a >= 1e4 ? Math.round(v / 1e4).toLocaleString() + "만" : wonF(v); };
@@ -3087,7 +3110,8 @@ async function mgSave() {
   const r = MS.up.calc; if (!r) return;
   busy(true, `${mLabel(r.month)} 유통마진 저장 중... (10초 정도 걸릴 수 있어요)`);
   try {
-    const lows = r.lows.map(({ month, ...l }) => l);
+    const had = new Set(MS.db.lows.filter(x => x.month === r.month && x.reason).map(x => x.key));   // 이미 적어둔 사유는 그대로 둠
+    const lows = r.lows.map(({ month, memo, ...l }) => memo && !had.has(l.key) ? { ...l, reason: memo, reasonBy: "상부정산 메모" } : l);
     const res = await gs("marginSave", r.month, r.summary, r.partners, r.categories, lows, ($("#mgMemo") || {}).value || "", r.partnerCats || []);
     MS.loaded = false; MS.month = r.month; MS.view = "month";
     $("#modal").hidden = true;
@@ -3173,10 +3197,9 @@ function mgBind() {
   document.querySelectorAll("textarea[data-memo]").forEach(t => t.onchange = () => mgSaveMemo(t));
   const tog = (set, k) => set.has(k) ? set.delete(k) : set.add(k);
   document.querySelectorAll("[data-lowp]").forEach(b => b.onclick = () => { tog(MS.openLow, b.dataset.lowp); render(); });
-  on("#mgOpenAll", () => { if (MS.openLow.size) MS.openLow.clear(); else mData(MS.month).partners.filter(p => p.lowCount).forEach(p => MS.openLow.add(p.partner)); render(); });
+  on("#mgOpenAll", () => { if (MS.openLow.size) MS.openLow.clear(); else mData(MS.month).partners.filter(p => p.lowCount && !p.ja).forEach(p => MS.openLow.add(p.partner)); render(); });
   on("#mgChartBtn", () => { MS.chartOpen = !MS.chartOpen; render(); });
-  const nh = $("#mgNegH"); if (nh) nh.onclick = (e) => { if (e.target.closest(".pills, button")) return; MS.negFold = !MS.negFold; lsSet("upche_neg_fold", MS.negFold ? "1" : null); render(); };
-  document.querySelectorAll('.pills[data-k="mgNegK"] button').forEach(b => b.onclick = () => { MS.negKind = b.dataset.v; render(); });
+  document.querySelectorAll("[data-ptab]").forEach(b => b.onclick = () => { MS.pTab = b.dataset.ptab; render(); });
   document.querySelectorAll('.pills[data-k="mgNegT"] button').forEach(b => b.onclick = () => { MS.negTodo = +b.dataset.v; render(); });
   on("#mgMxAll", () => { MS.mxAll = !MS.mxAll; render(); });
   document.querySelectorAll("textarea[data-reason]").forEach(t => t.onchange = () => mgSaveReason(t));

@@ -2661,8 +2661,9 @@ function analyze(sRows, jRows, month) {
     const hr = hqRuleOf(partner), hq = hr && isInternet(p) ? hr.perInternet : 0;   // 본점인센: 인터넷 1건당
     c.upper += up; c.total += tot; c.jaMargin += jm; c.hqIncentive += hq;
     c.shops.add(String(r['상부점']||'').trim()); c.carriers.add(carrierOf(p));
-    // 상품 건수: 인터넷·유선기타 = 유선, 모바일 = 무선, 렌탈 = 렌탈 (TV는 인터넷 없이 TV만 있을 때 유선 1건)
-    if (isInternet(p) || isWiredEtc(p)) c.lw++; else if (p.startsWith('모바일')) c.lm++; else if (p.startsWith('렌탈')) c.lr++; else if (/_TV/.test(p)) c.ltv++;
+    // 상품 건수: 인터넷 1회선 = 유선 1건, 모바일 = 무선, 렌탈 = 렌탈
+    // TV·CCTV·인터넷전화 등은 인터넷 없이 그것만 있을 때 유선 1건 (인터넷이 있으면 인터넷 건수만)
+    if (isInternet(p)) c.lw++; else if (p.startsWith('모바일')) c.lm++; else if (p.startsWith('렌탈')) c.lr++; else if (isWiredEtc(p) || /_TV/.test(p)) c.ltv++;
     const memo = String(r['정산 비고']||r['정산비고']||r['정산메모']||'').trim(); if (memo) c.memos.add(memo);   // 상부정산 정산 비고 → 사유로 가져옴
     c.prods.push(p + (up||tot ? '' : '(0원)')); c.rawProds.push(p);
   });

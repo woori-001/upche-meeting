@@ -2822,7 +2822,7 @@ function mgMonthHtml(d) {
     <div class="kpi accent"><div class="kt">총 유통마진</div><div class="kv ${s.margin >= 0 ? "" : "bad"}">${wonM(s.margin)}</div>
       <div class="ks">${deltaM(s.margin, p && p.margin)}</div><div class="ks"><span>${wonF(s.margin)}원 · 자점마진 ${wonM(s.jaMargin)}${s.hqIncentive ? ` · 본점인센 ${wonM(s.hqIncentive)}` : ""} 차감</span></div></div>
     <div class="kpi"><div class="kt">고객당 마진</div><div class="kv">${wonF(s.perCustomer)}<small>원</small></div>
-      <div class="ks">${deltaM(s.perCustomer, p && p.perCustomer, { won: true })}</div><div class="ks"><span>1만원 미만 고객 ${s.lowCount.toLocaleString()}명</span></div></div>
+      <div class="ks">${deltaM(s.perCustomer, p && p.perCustomer, { won: true })}</div><div class="ks"><span>1만원 미만 고객 ${lowOnly(s).toLocaleString()}명 · 역마진 ${s.negCount.toLocaleString()}명</span></div></div>
     <div class="kpi"><div class="kt">역마진 고객</div><div class="kv ${s.negCount ? "bad" : ""}">${s.negCount.toLocaleString()}<small>명</small></div>
       <div class="ks">${deltaM(s.negCount, p && p.negCount, { count: true, inverse: true })}</div><div class="ks"><span>유통마진 0원 미만</span></div></div>
   </div>`;
@@ -2832,30 +2832,32 @@ function mgMonthHtml(d) {
   // 협력점별 유통마진: 자점은 빼고 봄 (구분별 유통마진은 자점 포함 그대로)
   const ps = d.partners.filter(p => !p.ja), psSet = new Set(ps.map(p => p.partner));
   const dx = { ...d, partners: ps, lows: d.lows.filter(l => !l.ja), pcs: d.pcs.filter(c => psSet.has(c.partner)) };
-  const negN = dx.lows.filter(l => l.margin < 0).length, lowN = dx.lows.length, jaN = d.partners.length - ps.length;
+  const negN = dx.lows.filter(l => l.margin < 0).length, lowN = dx.lows.length - negN, jaN = d.partners.length - ps.length;
   const tab = MS.pTab;
-  const base = tab === "neg" ? dx.lows.filter(l => l.margin < 0) : dx.lows, todo = base.filter(l => !l.reason).length;
+  const base = tab === "neg" ? dx.lows.filter(l => l.margin < 0) : dx.lows.filter(l => l.margin >= 0), todo = base.filter(l => !l.reason).length;
   const tabs = `<div class="mgtabs">
       <button class="${tab === "all" ? "on" : ""}" data-ptab="all">${ic("users", 15)}협력점별<small>${ps.length}</small></button>
       <button class="${tab === "low" ? "on" : ""}" data-ptab="low">1만원 미만 고객<small>${lowN}</small></button>
       <button class="${tab === "neg" ? "on" : ""}" data-ptab="neg">역마진 고객<small>${negN}</small></button>
-      <span class="mgt-r">${tab === "all" ? `<button class="ghost sm${MS.chartOpen ? " on" : ""}" id="mgChartBtn">${ic("chart")}통신사별 마진표 ${MS.chartOpen ? "▴" : "▾"}</button>${lowN ? `<button class="ghost sm" id="mgOpenAll">${MS.openLow.size ? "모두 접기" : "1만원 미만 모두 펼치기"}</button>` : ""}`
+      <span class="mgt-r">${tab === "all" ? `<button class="ghost sm${MS.chartOpen ? " on" : ""}" id="mgChartBtn">${ic("chart")}통신사별 마진표 ${MS.chartOpen ? "▴" : "▾"}</button>${dx.lows.length ? `<button class="ghost sm" id="mgOpenAll">${MS.openLow.size ? "모두 접기" : "1만원 미만·역마진 모두 펼치기"}</button>` : ""}`
         : pill("mgNegT", MS.negTodo, [[0, "전체"], [1, `사유 미작성만 ${todo}`]])}</span></div>`;
   let body;
   if (tab === "all") {
     const memoN = ps.filter(x => x.memo).length, todoAll = dx.lows.filter(l => !l.reason).length;
-    body = `<p class="sub mgt-sub">${ps.length}개 협력점 · 메모 ${memoN}건 · 1만원 미만 ${lowN}명 (사유 미작성 <b class="${todoAll ? "warnt" : ""}">${todoAll}</b>) · ▸ 나 1만원 미만 숫자를 누르면 고객 목록이 펼쳐져요</p>
+    body = `<p class="sub mgt-sub">${ps.length}개 협력점 · 메모 ${memoN}건 · 1만원 미만 ${lowN}명 · 역마진 ${negN}명 (사유 미작성 <b class="${todoAll ? "warnt" : ""}">${todoAll}</b>) · ▸ 를 누르면 그 협력점의 1만원 미만·역마진 고객이 펼쳐져요</p>
       ${MS.chartOpen ? mgMatrixHtml(dx) : ""}<div class="tw tall"><table class="t mt">${mgPartnerTable(dx)}</table></div>`;
   } else body = mgLowListHtml(base, tab);
   const part = `<section class="card mgpart"><div class="card-h"><div><h2>협력점별 유통마진</h2><p class="sub">자점 ${jaN}곳은 빼고 봐요 (구분별 유통마진·위 숫자에는 포함)</p></div></div>
     ${tabs}${body}</section>`;
   return [kpi, cat + part];
 }
+// 1만원 미만(0원~1만원 미만) = 저장된 1만원 미만 수에서 역마진(0원 미만)을 뺀 수
+const lowOnly = (o) => Math.max(0, (o.lowCount || 0) - (o.negCount || 0));
 // 1만원 미만 / 역마진 탭: 협력점 상관없이 고객을 마진 낮은 순으로 모아 사유 입력
 function mgLowListHtml(base, tab) {
   const ls = base.filter(l => !MS.negTodo || !l.reason).slice().sort((a, b) => a.margin - b.margin);
   const sum = base.reduce((a, l) => a + l.margin, 0), todo = base.filter(l => !l.reason).length, auto = base.filter(l => l.reasonBy === "상부정산 메모").length;
-  const kb = tab === "low";   // 1만원 미만 탭에서만 역마진/1만원 미만 표시
+  const kb = false;
   const rows = ls.map(l => `<tr>${kb ? `<td><span class="badge ${l.margin < 0 ? "red" : "orange"}">${l.margin < 0 ? "역마진" : "1만원 미만"}</span></td>` : ""}
       <td class="nm"><b>${esc(l.partner)}</b>${hqTag(l.partner)}</td>
       <td class="nm"><div class="ls-t"><b>${esc(l.name)}</b><small>${esc(l.phone)} · ${esc(l.upperShop)}</small></div></td>
@@ -2863,7 +2865,7 @@ function mgLowListHtml(base, tab) {
       <td class="n">${wonF(l.upper)}</td><td class="n">${wonF(l.total)}</td>
       <td class="n b ${l.margin < 0 ? "bad" : "warnt"}">${wonF(l.margin)}</td>
       <td class="memo"><textarea rows="1" data-reason="${esc(l.key)}" placeholder="사유 입력">${esc(l.reason || "")}</textarea>${l.reasonBy ? `<small class="${l.reasonBy === "상부정산 메모" ? "auto" : ""}">${esc(l.reasonBy)}${l.reasonAt ? ` · ${esc(l.reasonAt)}` : ""}</small>` : ""}</td></tr>`).join("");
-  return `<p class="sub mgt-sub">${tab === "neg" ? "유통마진 0원 미만" : "건당 마진 1만원 미만 (역마진 포함)"} ${base.length}명 · 합계 <b class="${sum < 0 ? "bad" : ""}">${wonF(sum)}원</b> · 사유 미작성 <b class="${todo ? "warnt" : ""}">${todo}명</b>${auto ? ` · 상부정산 메모에서 가져온 사유 ${auto}건` : ""} · 마진 낮은 순 · 사유는 칸 밖을 누르면 저장돼요</p>
+  return `<p class="sub mgt-sub">${tab === "neg" ? "유통마진 0원 미만 (마이너스)" : "유통마진 0원 ~ 1만원 미만"} ${base.length}명 · 합계 <b class="${sum < 0 ? "bad" : ""}">${wonF(sum)}원</b> · 사유 미작성 <b class="${todo ? "warnt" : ""}">${todo}명</b>${auto ? ` · 상부정산 메모에서 가져온 사유 ${auto}건` : ""} · 마진 낮은 순 · 사유는 칸 밖을 누르면 저장돼요</p>
     <div class="tw tall"><table class="t mt negt"><thead><tr>${kb ? "<th></th>" : ""}<th>협력점</th><th>고객</th><th>구분 · 상품</th><th class="n">상부정산</th><th class="n">전체정산</th><th class="n">유통마진</th><th>사유</th></tr></thead>
       <tbody>${rows || `<tr><td colspan="8" class="none">${MS.negTodo ? "사유를 모두 적었어요 👍" : "해당 고객이 없어요"}</td></tr>`}</tbody></table></div>`;
 }
@@ -2885,7 +2887,7 @@ function mgCatTable(cats) {
   const row = (c, foot) => `<tr${foot ? ' class="tfoot"' : ""}><td class="nm">${foot ? "합계" : esc(c.category) + (c.category === MG.WIRED_ETC ? ' <span class="tag">별도</span>' : "")}</td>
     <td class="n">${c.customers.toLocaleString()}</td><td class="n">${wonF(c.upper)}</td><td class="n dim">${c.jaMargin ? wonF(c.jaMargin) : "-"}</td><td class="n dim">${c.hqIncentive ? wonF(c.hqIncentive) : "-"}</td>
     <td class="n">${wonF(c.total)}</td><td class="n b ${c.margin < 0 ? "bad" : ""}">${wonF(c.margin)}</td><td class="n">${c.customers ? wonF(c.margin / c.customers) : "-"}</td>
-    <td class="n ${c.lowCount ? "warnt" : "dim"}">${c.lowCount || "-"}</td><td class="n ${c.negCount ? "bad" : "dim"}">${c.negCount || "-"}</td></tr>`;
+    <td class="n ${lowOnly(c) ? "warnt" : "dim"}">${lowOnly(c) || "-"}</td><td class="n ${c.negCount ? "bad" : "dim"}">${c.negCount || "-"}</td></tr>`;
   return `<thead><tr><th>구분</th><th class="n">건수</th><th class="n">상부정산</th><th class="n">자점마진</th><th class="n">본점인센</th><th class="n">전체정산</th><th class="n">유통마진</th><th class="n">건당 마진</th><th class="n">1만원 미만</th><th class="n">역마진</th></tr></thead>
     <tbody>${cats.map(c => row(c)).join("")}${row(t, true)}</tbody>`;
 }
@@ -2904,7 +2906,7 @@ function mgPartnerTable(d) {
     let h = `<tr class="${lo ? "opened" : ""}"><td class="nm">${tg}${esc(p.partner)}${jaTag(p.ja)}${hqTag(p.partner)}</td><td class="n b">${p.customers.toLocaleString()}</td>
       <td class="n">${wonF(p.upper)}</td><td class="n dim">${p.jaMargin ? wonF(p.jaMargin) : "-"}</td><td class="n dim">${p.hqIncentive ? wonF(p.hqIncentive) : "-"}</td><td class="n">${wonF(p.total)}</td>
       <td class="n b ${p.margin < 0 ? "bad" : ""}">${wonF(p.margin)}</td><td class="n b ${p.perCustomer < MG.LOW_MARGIN ? "bad" : ""}">${wonF(p.perCustomer)}</td>
-      <td class="n">${p.lowCount ? `<button class="lnk${lo ? " on" : ""}" data-lowp="${esc(p.partner)}" title="1만원 미만 고객 펼치기/접기">${p.lowCount}명<i>${lo ? "▴" : "▾"}</i></button>` : `<span class="dim">-</span>`}</td>
+      <td class="n">${lowOnly(p) ? `<button class="lnk${lo ? " on" : ""}" data-lowp="${esc(p.partner)}" title="1만원 미만·역마진 고객 펼치기/접기">${lowOnly(p)}명<i>${lo ? "▴" : "▾"}</i></button>` : `<span class="dim">-</span>`}</td>
       <td class="n ${p.negCount ? "bad" : "dim"}">${p.negCount || "-"}</td>
       <td class="memo"><textarea rows="1" data-memo="${esc(p.partner)}" placeholder="메모">${esc(p.memo || "")}</textarea>${p.memoBy ? `<small>${esc(p.memoBy)} · ${esc(p.memoAt)}</small>` : ""}</td></tr>`;
     if (lo) {
@@ -2921,7 +2923,7 @@ function mgPartnerTable(d) {
   return `<thead><tr>${cols.map(([k, l], i) => `<th class="sortable${i ? " n" : ""}${key === k ? " on" : ""}" data-msort="${k}">${l}${key === k ? (asc ? " ↑" : " ↓") : ""}</th>`).join("")}<th>메모</th></tr></thead>
     <tbody>${body}
       <tr class="tfoot"><td class="nm">합계 (${rows.length}개)</td><td class="n">${t.customers.toLocaleString()}</td><td class="n">${wonF(t.upper)}</td><td class="n">${wonF(t.jaMargin)}</td><td class="n">${wonF(t.hqIncentive)}</td><td class="n">${wonF(t.total)}</td>
-      <td class="n b ${t.margin < 0 ? "bad" : ""}">${wonF(t.margin)}</td><td class="n">${t.customers ? wonF(t.margin / t.customers) : "-"}</td><td class="n">${t.lowCount}</td><td class="n">${t.negCount}</td><td></td></tr></tbody>`;
+      <td class="n b ${t.margin < 0 ? "bad" : ""}">${wonF(t.margin)}</td><td class="n">${t.customers ? wonF(t.margin / t.customers) : "-"}</td><td class="n">${lowOnly(t)}</td><td class="n">${t.negCount}</td><td></td></tr></tbody>`;
 }
 // 협력점 × 통신사(구분) 마진표: 칸 = 건당 마진(색 진하기), 작은 글씨 = 건수
 function mgMatrixHtml(d) {
@@ -2945,7 +2947,7 @@ function mgMatrixHtml(d) {
     <tbody>${shown.map(p => `<tr><td class="nm stick">${esc(p.partner)}${jaTag(p.ja)}</td><td class="n">${p.customers}</td>
       <td class="n per"><div class="pbar"><b class="${per(p) < 0 ? "neg" : ""}" style="width:${Math.abs(per(p)) / maxPer * 100}%"></b><span class="${per(p) < MG.LOW_MARGIN ? "bad" : ""}">${wonF(per(p))}</span></div></td>
       ${cats.map(c => { const x = cell.get(p.partner + "\u0000" + c); if (!x) return `<td class="n mxc empty">·</td>`; const v = x.customers ? x.margin / x.customers : 0;
-        return `<td class="n mxc" style="background:${bg(v)}" title="${esc(p.partner)} · ${esc(c)}&#10;${x.customers}건 · 마진 ${wonF(x.margin)}원&#10;건당 ${wonF(v)}원${x.lowCount ? ` · 1만원 미만 ${x.lowCount}건` : ""}"><b>${wonF(v)}</b><small>${x.customers}건</small></td>`; }).join("")}
+        return `<td class="n mxc" style="background:${bg(v)}" title="${esc(p.partner)} · ${esc(c)}&#10;${x.customers}건 · 마진 ${wonF(x.margin)}원&#10;건당 ${wonF(v)}원${lowOnly(x) ? ` · 1만원 미만 ${lowOnly(x)}건` : ""}"><b>${wonF(v)}</b><small>${x.customers}건</small></td>`; }).join("")}
       <td class="n b ${p.margin < 0 ? "bad" : ""}">${wonF(p.margin)}</td></tr>`).join("")}
       <tr class="tfoot"><td class="nm stick">전체 평균</td><td class="n">${d.summary.customers}</td><td class="n per">${wonF(d.summary.perCustomer)}</td>${totals.map(t => `<td class="n">${t.n ? wonF(t.m / t.n) : "-"}<small class="dim"> ${t.n}건</small></td>`).join("")}<td class="n">${wonF(d.summary.margin)}</td></tr></tbody></table></div>
     ${parts.length > 15 ? `<div class="more"><button class="ghost sm" id="mgMxAll">${MS.mxAll ? "상위 15개만 보기" : `전체 ${parts.length}개 협력점 보기`}</button></div>` : ""}</div>`;
@@ -2970,7 +2972,7 @@ function mgTrendHtml() {
       <div class="kpi"><div class="kt">기간 누적 고객수</div><div class="kv">${tot.customers.toLocaleString()}<small>명</small></div><div class="ks"><span>월평균 ${wonF(tot.customers / ms.length)}명</span></div></div>
       <div class="kpi accent"><div class="kt">기간 누적 유통마진</div><div class="kv ${tot.margin < 0 ? "bad" : ""}">${wonM(tot.margin)}</div><div class="ks"><span>월평균 ${wonM(tot.margin / ms.length)}</span></div></div>
       <div class="kpi"><div class="kt">기간 고객당 마진</div><div class="kv">${wonF(tot.customers ? tot.margin / tot.customers : 0)}<small>원</small></div><div class="ks"><span>누적 마진 ÷ 누적 고객</span></div></div>
-      <div class="kpi"><div class="kt">1만원 미만 / 역마진</div><div class="kv">${tot.lowCount.toLocaleString()} / ${tot.negCount.toLocaleString()}<small>명</small></div><div class="ks"><span>${monthLabel(ms[0])} ~ ${monthLabel(ms[ms.length - 1])}</span></div></div>
+      <div class="kpi"><div class="kt">1만원 미만 / 역마진</div><div class="kv">${lowOnly(tot).toLocaleString()} / ${tot.negCount.toLocaleString()}<small>명</small></div><div class="ks"><span>${monthLabel(ms[0])} ~ ${monthLabel(ms[ms.length - 1])}</span></div></div>
     </div>`, `<div class="charts">
       <section class="card wide"><h2>월별 유통마진</h2><div class="chartbox" style="height:280px"><canvas id="mgT1"></canvas></div></section>
       <section class="card"><h2>월별 유통 고객수 <span class="lg"><i style="background:#4c82f7"></i>외부 <i style="background:#F97316"></i>자점</span></h2><div class="chartbox"><canvas id="mgT2"></canvas></div></section>
@@ -3102,7 +3104,7 @@ function mgPreviewHtml(r) {
   const s = r.summary;
   return `<div class="prev"><h4>${mLabel(r.month)} 계산 결과 <span class="badge orange">미저장</span></h4>
     <div class="pgrid"><div><span>유통 고객수</span><b>${s.customers.toLocaleString()}명</b></div><div><span>총 유통마진</span><b>${wonF(s.margin)}원</b></div>
-      <div><span>고객당 마진</span><b>${wonF(s.perCustomer)}원</b></div><div><span>1만원 미만 / 역마진</span><b>${s.lowCount} / <span class="bad">${s.negCount}</span>명</b></div></div>
+      <div><span>고객당 마진</span><b>${wonF(s.perCustomer)}원</b></div><div><span>1만원 미만 / 역마진</span><b>${lowOnly(s)} / <span class="bad">${s.negCount}</span>명</b></div></div>
     <p class="sub">상부정산 ${wonF(s.upper)} − 자점마진 ${wonF(s.jaMargin)} − 본점인센 ${wonF(s.hqIncentive)} − 전체정산 ${wonF(s.total)} · 협력점 ${r.partners.length}곳${r.unmatched ? ` · 전체정산에서 짝을 못 찾은 행 ${r.unmatched}건은 0원으로 계산` : ""}</p>
     <div class="upm"><input type="text" id="mgMemo" placeholder="메모 (선택) — 예: 9월 24일 기준, 마감 전"><button class="primary" id="mgSave">${ic("upload")}서버에 저장</button></div></div>`;
 }
@@ -3156,7 +3158,7 @@ async function mgSaveReason(t) {
 
 // ---------- 엑셀 (원본과 같은 시트 구성) ----------
 const mgPartnerAoa = (ps) => [["협력점", "반영", "고객수", "상부정산", "자점마진", "본점인센", "전체정산", "유통마진", "고객당마진", "1만원미만", "역마진", "메모"],
-  ...ps.map(p => [p.partner, [p.ja ? "자점마진반영" : "", MG.isHq(p.partner) ? "본점인센반영" : ""].filter(Boolean).join(", "), p.customers, p.upper, p.jaMargin, p.hqIncentive || 0, p.total, p.margin, p.customers ? Math.round(p.margin / p.customers) : 0, p.lowCount, p.negCount, p.memo || ""])];
+  ...ps.map(p => [p.partner, [p.ja ? "자점마진반영" : "", MG.isHq(p.partner) ? "본점인센반영" : ""].filter(Boolean).join(", "), p.customers, p.upper, p.jaMargin, p.hqIncentive || 0, p.total, p.margin, p.customers ? Math.round(p.margin / p.customers) : 0, lowOnly(p), p.negCount, p.memo || ""])];
 const mgLowAoa = (ls) => [["마진구분", "상품구분", "고객명", "연락처", "협력점", "반영", "상부점", "통신사", "상품", "상부정산", "자점마진", "본점인센", "전체정산", "유통마진", "사유", "사유작성자"],
   ...ls.map(l => [l.margin < 0 ? "역마진" : "1만원 미만", l.category || "", l.name, l.phone, l.partner, [l.ja ? "자점마진반영" : "", MG.isHq(l.partner) ? "본점인센반영" : ""].filter(Boolean).join(", "), l.upperShop, l.carrier, l.products, l.upper, l.jaMargin, l.hqIncentive || 0, l.total, l.margin, l.reason || "", l.reasonBy || ""])];
 const mgSheet = (aoa, w) => { const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = w.map(x => ({ wch: x })); return ws; };
@@ -3164,12 +3166,12 @@ function mgExcelMonth() {
   const d = mData(MS.month); if (!d) return;
   const s = d.summary, wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, mgSheet([["월", d.month], ["유통 고객수", s.customers], ["외부 협력점 고객", s.extCustomers], ["자점 고객 (자점마진반영)", s.jaCustomers],
-    ["상부정산", s.upper], ["자점마진", s.jaMargin], ["본점인센", s.hqIncentive || 0], ["전체정산", s.total], ["유통마진", s.margin], ["고객당 마진", s.perCustomer], ["1만원 미만 고객", s.lowCount], ["역마진 고객", s.negCount]], [24, 16]), "요약");
+    ["상부정산", s.upper], ["자점마진", s.jaMargin], ["본점인센", s.hqIncentive || 0], ["전체정산", s.total], ["유통마진", s.margin], ["고객당 마진", s.perCustomer], ["1만원 미만 고객", lowOnly(s)], ["역마진 고객", s.negCount]], [24, 16]), "요약");
   XLSX.utils.book_append_sheet(wb, mgSheet([["구분", "건수", "상부정산", "자점마진", "본점인센", "전체정산", "유통마진", "건당마진", "1만원미만", "역마진"],
-    ...d.categories.map(c => [c.category, c.customers, c.upper, c.jaMargin, c.hqIncentive || 0, c.total, c.margin, c.customers ? Math.round(c.margin / c.customers) : 0, c.lowCount, c.negCount])], [12, 8, 14, 12, 12, 14, 14, 12, 10, 8]), "구분별");
+    ...d.categories.map(c => [c.category, c.customers, c.upper, c.jaMargin, c.hqIncentive || 0, c.total, c.margin, c.customers ? Math.round(c.margin / c.customers) : 0, lowOnly(c), c.negCount])], [12, 8, 14, 12, 12, 14, 14, 12, 10, 8]), "구분별");
   XLSX.utils.book_append_sheet(wb, mgSheet(mgPartnerAoa(d.partners), [26, 18, 8, 14, 12, 12, 14, 14, 12, 10, 8, 40]), "협력점별");
   if (d.pcs.length) XLSX.utils.book_append_sheet(wb, mgSheet([["협력점", "구분", "건수", "상부정산", "자점마진", "본점인센", "전체정산", "유통마진", "건당마진", "1만원미만", "역마진"],
-    ...d.pcs.slice().sort((a, b) => a.partner.localeCompare(b.partner) || a.category.localeCompare(b.category)).map(c => [c.partner, c.category, c.customers, c.upper, c.jaMargin, c.hqIncentive || 0, c.total, c.margin, c.customers ? Math.round(c.margin / c.customers) : 0, c.lowCount, c.negCount])],
+    ...d.pcs.slice().sort((a, b) => a.partner.localeCompare(b.partner) || a.category.localeCompare(b.category)).map(c => [c.partner, c.category, c.customers, c.upper, c.jaMargin, c.hqIncentive || 0, c.total, c.margin, c.customers ? Math.round(c.margin / c.customers) : 0, lowOnly(c), c.negCount])],
     [26, 10, 8, 14, 12, 12, 14, 14, 12, 10, 8]), "협력점x구분");
   XLSX.utils.book_append_sheet(wb, mgSheet(mgLowAoa(d.lows), [10, 10, 10, 16, 24, 18, 24, 12, 40, 12, 10, 10, 12, 12, 40, 10]), "1만원미만_역마진");
   XLSX.writeFile(wb, `유통마진_${d.month}.xlsx`);
@@ -3178,7 +3180,7 @@ function mgExcelAll() {
   const ms = mMonths(); if (!ms.length) return;
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, mgSheet([["월", "유통 고객수", "외부 고객", "자점 고객", "상부정산", "자점마진", "본점인센", "전체정산", "유통마진", "고객당 마진", "1만원 미만", "역마진"],
-    ...ms.map(m => { const s = mData(m).summary; return [m, s.customers, s.extCustomers, s.jaCustomers, s.upper, s.jaMargin, s.hqIncentive || 0, s.total, s.margin, s.perCustomer, s.lowCount, s.negCount]; })], [10, 10, 10, 10, 14, 12, 12, 14, 14, 12, 10, 8]), "월별요약");
+    ...ms.map(m => { const s = mData(m).summary; return [m, s.customers, s.extCustomers, s.jaCustomers, s.upper, s.jaMargin, s.hqIncentive || 0, s.total, s.margin, s.perCustomer, lowOnly(s), s.negCount]; })], [10, 10, 10, 10, 14, 12, 12, 14, 14, 12, 10, 8]), "월별요약");
   ms.slice().reverse().forEach(m => XLSX.utils.book_append_sheet(wb, mgSheet(mgPartnerAoa(mData(m).partners), [26, 18, 8, 14, 12, 12, 14, 14, 12, 10, 8, 40]), m));
   XLSX.writeFile(wb, `유통마진_전체_${ms[0]}_${ms[ms.length - 1]}.xlsx`);
 }

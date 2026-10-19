@@ -765,6 +765,7 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
 .mgtabs .mgt-r{margin-left:auto;display:flex;gap:8px;align-items:center}
 .mgt-sub{margin:0 0 10px}
 .t.negt td.memo small.auto{color:#EA580C}
+.t.mt td.wm{color:#4a5263}
 </style>
 </head>
 <body>
@@ -2893,17 +2894,23 @@ function mgCatTable(cats) {
 }
 const SUMK = ["customers", "upper", "jaMargin", "hqIncentive", "total", "margin", "lowCount", "negCount"];
 function mgPartnerTable(d) {
-  const rows = d.partners.map(p => ({ ...p, perCustomer: p.customers ? p.margin / p.customers : 0 }));
+  // 유선·무선·렌탈 건수 (협력점×구분 자료로: 모바일만 = 무선, 렌탈만 = 렌탈, 나머지(인터넷·TV·유선기타, 결합 포함) = 유선)
+  const wm = new Map(); d.pcs.forEach(c => { let o = wm.get(c.partner); if (!o) wm.set(c.partner, o = { w: 0, m: 0, r: 0 });
+    if (c.category === "모바일") o.m += c.customers; else if (c.category === "렌탈") o.r += c.customers; else o.w += c.customers; });
+  const hasWM = d.pcs.length > 0, hasR = hasWM && [...wm.values()].some(o => o.r);
+  const rows = d.partners.map(p => { const o = wm.get(p.partner) || { w: 0, m: 0, r: 0 }; return { ...p, wired: o.w, mobile: o.m, rental: o.r, perCustomer: p.customers ? p.margin / p.customers : 0 }; });
   const { key, asc } = MS.partnerSort;
   rows.sort((a, b) => (key === "partner" ? a.partner.localeCompare(b.partner) : (a[key] - b[key]) || (a.margin - b.margin)) * (asc ? 1 : -1));
-  const cols = [["partner", "협력점"], ["customers", "고객수"], ["upper", "상부정산"], ["jaMargin", "자점마진"], ["hqIncentive", "본점인센"], ["total", "전체정산"], ["margin", "유통마진"], ["perCustomer", "고객당 마진"], ["lowCount", "1만원 미만"], ["negCount", "역마진"]];
-  const t = rows.reduce((a, p) => { SUMK.forEach(k => a[k] += (p[k] || 0)); return a; }, Object.fromEntries(SUMK.map(k => [k, 0])));
+  const cols = [["partner", "협력점"], ["customers", "고객수"], ...(hasWM ? [["wired", "유선"], ["mobile", "무선"], ...(hasR ? [["rental", "렌탈"]] : [])] : []), ["upper", "상부정산"], ["jaMargin", "자점마진"], ["hqIncentive", "본점인센"], ["total", "전체정산"], ["margin", "유통마진"], ["perCustomer", "고객당 마진"], ["lowCount", "1만원 미만"], ["negCount", "역마진"]];
+  const t = rows.reduce((a, p) => { [...SUMK, "wired", "mobile", "rental"].forEach(k => a[k] += (p[k] || 0)); return a; }, Object.fromEntries([...SUMK, "wired", "mobile", "rental"].map(k => [k, 0])));
+  const wmTd = (o, cls = "") => hasWM ? `<td class="n wm ${cls}">${o.wired || "-"}</td><td class="n wm ${cls}">${o.mobile || "-"}</td>${hasR ? `<td class="n wm ${cls}">${o.rental || "-"}</td>` : ""}` : "";
+  const wmEmpty = hasWM ? "<td></td><td></td>" + (hasR ? "<td></td>" : "") : "";
   const lowBy = new Map(); d.lows.forEach(l => { if (!lowBy.has(l.partner)) lowBy.set(l.partner, []); lowBy.get(l.partner).push(l); });
   const NC = cols.length + 1;
   const body = rows.map(p => {
     const lo = MS.openLow.has(p.partner);
     const tg = p.lowCount ? `<button class="tg${lo ? " on" : ""}" data-lowp="${esc(p.partner)}" title="1만원 미만 고객 펼치기/접기">▸</button>` : `<span class="tg-sp"></span>`;
-    let h = `<tr class="${lo ? "opened" : ""}"><td class="nm">${tg}${esc(p.partner)}${jaTag(p.ja)}${hqTag(p.partner)}</td><td class="n b">${p.customers.toLocaleString()}</td>
+    let h = `<tr class="${lo ? "opened" : ""}"><td class="nm">${tg}${esc(p.partner)}${jaTag(p.ja)}${hqTag(p.partner)}</td><td class="n b">${p.customers.toLocaleString()}</td>${wmTd(p)}
       <td class="n">${wonF(p.upper)}</td><td class="n dim">${p.jaMargin ? wonF(p.jaMargin) : "-"}</td><td class="n dim">${p.hqIncentive ? wonF(p.hqIncentive) : "-"}</td><td class="n">${wonF(p.total)}</td>
       <td class="n b ${p.margin < 0 ? "bad" : ""}">${wonF(p.margin)}</td><td class="n b ${p.perCustomer < MG.LOW_MARGIN ? "bad" : ""}">${wonF(p.perCustomer)}</td>
       <td class="n">${lowOnly(p) ? `<button class="lnk${lo ? " on" : ""}" data-lowp="${esc(p.partner)}" title="1만원 미만·역마진 고객 펼치기/접기">${lowOnly(p)}명<i>${lo ? "▴" : "▾"}</i></button>` : `<span class="dim">-</span>`}</td>
@@ -2914,7 +2921,7 @@ function mgPartnerTable(d) {
       h += `<tr class="lowsub lowcap"><td colspan="${NC}"><span class="lc">1만원 미만 고객 <b>${ls.length}명</b> · 역마진 <b class="bad">${ng}</b> · 사유 미작성 <b class="${td ? "warnt" : ""}">${td}</b><small>사유는 오른쪽 칸에 적고 칸 밖을 누르면 저장돼요</small></span></td></tr>`;
       h += ls.map(l => `<tr class="lowsub"><td class="nm"><div class="ls"><span class="badge ${l.margin < 0 ? "red" : "orange"}">${l.margin < 0 ? "역마진" : "1만원 미만"}</span>
           <div class="ls-t"><b>${esc(l.name)}</b><small>${esc(l.phone)} · ${esc(l.upperShop)}</small><small class="pr" title="${esc(l.products)}">${esc(l.category || l.carrier)}${l.category === MG.WIRED_ETC || !l.carrier ? "" : ` · ${esc(l.carrier)}`} · ${esc(l.products)}</small></div></div></td>
-        <td></td><td class="n">${wonF(l.upper)}</td><td class="n dim">${l.jaMargin ? wonF(l.jaMargin) : "-"}</td><td class="n dim">${l.hqIncentive ? wonF(l.hqIncentive) : "-"}</td><td class="n">${wonF(l.total)}</td>
+        <td></td>${wmEmpty}<td class="n">${wonF(l.upper)}</td><td class="n dim">${l.jaMargin ? wonF(l.jaMargin) : "-"}</td><td class="n dim">${l.hqIncentive ? wonF(l.hqIncentive) : "-"}</td><td class="n">${wonF(l.total)}</td>
         <td class="n b ${l.margin < 0 ? "bad" : "warnt"}">${wonF(l.margin)}</td><td></td><td></td><td></td>
         <td class="memo"><textarea rows="1" data-reason="${esc(l.key)}" placeholder="사유 입력">${esc(l.reason || "")}</textarea>${l.reasonBy ? `<small>${esc(l.reasonBy)} · ${esc(l.reasonAt)}</small>` : ""}</td></tr>`).join("");
     }
@@ -2922,7 +2929,7 @@ function mgPartnerTable(d) {
   }).join("");
   return `<thead><tr>${cols.map(([k, l], i) => `<th class="sortable${i ? " n" : ""}${key === k ? " on" : ""}" data-msort="${k}">${l}${key === k ? (asc ? " ↑" : " ↓") : ""}</th>`).join("")}<th>메모</th></tr></thead>
     <tbody>${body}
-      <tr class="tfoot"><td class="nm">합계 (${rows.length}개)</td><td class="n">${t.customers.toLocaleString()}</td><td class="n">${wonF(t.upper)}</td><td class="n">${wonF(t.jaMargin)}</td><td class="n">${wonF(t.hqIncentive)}</td><td class="n">${wonF(t.total)}</td>
+      <tr class="tfoot"><td class="nm">합계 (${rows.length}개)</td><td class="n">${t.customers.toLocaleString()}</td>${wmTd(t)}<td class="n">${wonF(t.upper)}</td><td class="n">${wonF(t.jaMargin)}</td><td class="n">${wonF(t.hqIncentive)}</td><td class="n">${wonF(t.total)}</td>
       <td class="n b ${t.margin < 0 ? "bad" : ""}">${wonF(t.margin)}</td><td class="n">${t.customers ? wonF(t.margin / t.customers) : "-"}</td><td class="n">${lowOnly(t)}</td><td class="n">${t.negCount}</td><td></td></tr></tbody>`;
 }
 // 협력점 × 통신사(구분) 마진표: 칸 = 건당 마진(색 진하기), 작은 글씨 = 건수

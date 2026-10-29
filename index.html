@@ -1554,8 +1554,15 @@ const IC = {
 const ic = (k, s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
 const SEG_META = { 협력점: { icon: "users", tone: "blue", desc: "협력점_* 정산그룹" }, 판매점: { icon: "store", tone: "green", desc: "판매점_* 정산그룹" }, 제휴: { icon: "link", tone: "violet", desc: "제휴 지정 업체" } };
 
+// 화면에 보이는 이름은 협력점정보(원장)의 최신 이름. 접수 데이터와는 기호·(휴)를 떼고 맞춰 봄
+function dispName(n) {
+  if (!D) return n;
+  const p = D.partners.get(n); if (p && p.name) return p.name;
+  const m = D.MI && D.MI.lookup(n); return m && m.name ? m.name : n;
+}
 function nameHtml(name, grade) {
-  return `<a class="pn" data-p="${esc(name)}">${esc(name)}</a>${grade ? `<span class="tag">${esc(grade)}</span>` : ""}`;
+  const dn = dispName(name);
+  return `<a class="pn" data-p="${esc(name)}"${dn !== name ? ` title="접수 데이터 이름: ${esc(name)}"` : ""}>${esc(dn)}</a>${grade ? `<span class="tag">${esc(grade)}</span>` : ""}`;
 }
 function pill(k, cur, opts, small) {
   return `<div class="pills${small ? " sm" : ""}" data-k="${k}">${opts.map(([v, l]) => `<button class="${String(cur) === String(v) ? "on" : ""}" data-v="${v}">${l}</button>`).join("")}</div>`;
@@ -2024,7 +2031,7 @@ function openDetail(name) {
     return `<tr><td>${monthLabel(s.m)}</td><td class="n">${fmtN(s.W)}</td><td class="n">${fmtN(s.M)}</td><td class="n">${fmtN(s.R)}</td><td class="n">${fmtR(r.cancel)}</td><td class="n">${fmtR(r.term)}</td><td class="n">${fmtR(r.fresh)}</td></tr>`;
   }).join("");
   $("#drawer").innerHTML = `<div class="dr-h"><div><div class="dr-tags"><span class="badge ${SEG_META[info.seg] ? SEG_META[info.seg].tone : "blue"}">${esc(info.seg || "-")}</span>${info.grade ? `<span class="tag">${esc(info.grade)}</span>` : ""}${info.trade && info.trade !== "거래중" ? `<span class="badge red">${esc(info.trade)}</span>` : ""}</div>
-      <h3>${esc(name)}</h3><p class="sub">정산그룹 ${esc(info.group || "-")} · 등록일 ${esc(info.reg || "-")}</p></div>
+      <h3>${esc(dispName(name))}</h3><p class="sub">${dispName(name) !== name ? `접수 데이터 이름 ${esc(name)} · ` : ""}정산그룹 ${esc(info.group || "-")} · 등록일 ${esc(info.reg || "-")}</p></div>
       <button class="icon" id="dclose" aria-label="닫기">${ic("x", 18)}</button></div>
     <div class="dr-stats"><div><span>보유 기간 접수</span><b>${fmtN(tot.n)}건</b></div><div><span>취소율</span><b>${fmtR(rt.cancel)}</b></div><div><span>해지율</span><b>${fmtR(rt.term)}</b></div><div><span>신규가입</span><b>${fmtR(rt.fresh)}</b></div></div>
     <h4>월별 접수</h4>${chart}
@@ -2092,7 +2099,7 @@ function decListHtml(M) {
   const items = list.map(d => {
     const p = D.partners.get(d.partner) || {};
     return `<div class="bcard ditem" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" title="눌러서 고치기">
-      <div class="di-top">${d.telco === DEC_ALL ? "" : `<span class="dtel">${esc(d.telco)}</span>`}<b class="di-n">${esc(d.partner)}</b>${p.seg ? `<span class="dim small">${esc(p.seg)}</span>` : ""}</div>
+      <div class="di-top">${d.telco === DEC_ALL ? "" : `<span class="dtel">${esc(d.telco)}</span>`}<b class="di-n">${esc(dispName(d.partner))}</b>${p.seg ? `<span class="dim small">${esc(p.seg)}</span>` : ""}</div>
       <div class="di-act">${decWhat(d)}</div>
       ${d.memo ? `<div class="di-memo">${esc(d.memo)}</div>` : ""}
       <div class="di-by">${esc(whoShort(d.by))} · ${atShort(d.at)}${DEC_CHANGE(d) ? `<span class="di-done">${d.admin ? `<i class="on">어드민</i>` : `<i>어드민</i>`}${d.kakao ? `<i class="on">카톡</i>` : `<i>카톡</i>`}</span>` : ""}</div></div>`;
@@ -2182,7 +2189,7 @@ function kakaoText(m) {
   if (!list.length) return "";
   const line = (d) => {
     const g = d.action === "grade" ? ` : ${d.gradeFrom || "?"} → ${d.gradeTo || "?"}` : d.gradeFrom ? ` (${d.gradeFrom})` : "";
-    return `· ${d.partner}${g}${d.memo ? `\n   └ ${d.memo}` : ""}`;
+    return `· ${dispName(d.partner)}${g}${d.memo ? `\n   └ ${d.memo}` : ""}`;
   };
   return `[${mLabel(m)} 실적 회의 결과]\n` + SHARE_ORDER.map(([k, l]) => {
     const xs = list.filter(d => d.action === k).sort((a, b) => a.partner.localeCompare(b.partner));
@@ -2208,7 +2215,7 @@ function resultHtml() {
     const xs = list.filter(d => d.action === k).sort((a, b) => a.partner.localeCompare(b.partner) || telOrder(a.telco) - telOrder(b.telco));
     if (!xs.length) return "";
     return `<tr class="rgh"><td colspan="7"><span class="dchip k-${k}">${l}</span><span class="dim">${xs.length}건</span></td></tr>` + xs.map(d => { const p = D.partners.get(d.partner) || {};
-      return `<tr><td class="nm"><a class="pn" data-p="${esc(d.partner)}">${esc(d.partner)}</a></td><td><span class="dim">${esc(p.seg || "-")}</span></td>
+      return `<tr><td class="nm"><a class="pn" data-p="${esc(d.partner)}">${esc(dispName(d.partner))}</a></td><td><span class="dim">${esc(p.seg || "-")}</span></td>
         <td><button class="dbtn done" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}">${d.action === "grade" ? `<span class="dg">${esc(d.gradeFrom || "?")}</span><span class="dar">→</span><span class="dchip k-grade">${esc(d.gradeTo || "?")}</span>` : d.gradeFrom ? `<span class="dg">${esc(d.gradeFrom)}</span>` : `<span class="dim">고치기</span>`}</button></td>
         <td class="memo">${esc(d.memo) || `<span class="dim">-</span>`}</td><td class="small" title="${esc(d.at)}">${esc(whoShort(d.by))} <span class="dim">${atShort(d.at)}</span></td>${ck(d, "admin")}${ck(d, "kakao")}</tr>`; }).join("");
   }).join("");
@@ -2254,7 +2261,7 @@ function openDecision(name, telco, month) {
   const tels = telcoRows(dn, D.months.filter(m => m <= M)).filter(t => t !== "미상" && t !== "렌탈");
   const box = $("#modal");
   box.innerHTML = `<div class="mbox decbox"><button class="icon x" id="mclose">${ic("x", 18)}</button>
-    <h3>회의 결정 기록</h3><p class="sub"><b class="dname">${esc(name)}</b>${info.seg ? ` · ${esc(info.seg)}` : ""} · ${mLabel(M)} 실적 회의 · 통신사 상관없이 협력점 기준</p>
+    <h3>회의 결정 기록</h3><p class="sub"><b class="dname">${esc(dispName(name))}</b>${info.seg ? ` · ${esc(info.seg)}` : ""} · ${mLabel(M)} 실적 회의 · 통신사 상관없이 협력점 기준</p>
     <div class="dform">
       <label><span>현재 등급</span><input id="dFrom" list="dGrades" value="${esc(cur ? cur.gradeFrom : info.grade || "")}"></label>
       <p class="dctx">이번 달 접수 <b>${fmtN(curN)}건</b> · 마지막 접수 <b>${lastM ? monthLabel(lastM) : "없음"}</b>${tels.length ? ` · 거래 통신사 ${tels.map(esc).join(", ")}` : ""}${cur && cur.telco !== DEC_ALL ? `<br><span class="warnt">예전에 ${esc(cur.telco)}로 적은 결정이에요. 저장하면 협력점 기준으로 바뀌어요.</span>` : ""}</p>
@@ -2284,7 +2291,7 @@ function openDecision(name, telco, month) {
       const r = await gs("decSave", M, name, DEC_ALL, st.action, $("#dFrom").value.trim(), $("#dTo").value.trim(), $("#dMemo").value);
       if (cur && cur.telco !== DEC_ALL) { try { await gs("decDelete", M, name, cur.telco); } catch (e) {} S.dec = S.dec.filter(d => decKey(d) !== decKey(cur)); }   // 예전 통신사별 결정은 협력점 기준으로 바꿈
       S.dec = S.dec.filter(d => decKey(d) !== decKey(r)); S.dec.push(r);
-      after(); toast(`${esc(name)} 결정을 저장했어요.`);
+      after(); toast(`${esc(dispName(name))} 결정을 저장했어요.`);
     } catch (e) { $("#dErr").textContent = e.message; $("#dSave").disabled = false; }
   };
   if (cur) $("#dDel").onclick = async () => {
@@ -2336,7 +2343,7 @@ function bindDecPages() {
     const rows = [["실적월", "통신사", "업체", "구분", "결정", "현재 등급", "바꿀 등급", "메모", "결정한 사람", "결정 일시", "어드민 반영", "어드민 반영자", "어드민 반영 일시", "카톡방 반영", "카톡방 반영자", "카톡방 반영 일시"]];
     decsOf(m).sort((a, b) => telOrder(a.telco) - telOrder(b.telco) || a.partner.localeCompare(b.partner)).forEach(d => {
       const p = D.partners.get(d.partner) || {};
-      rows.push([m, d.telco, d.partner, p.seg || "", (DEC_ACT[d.action] || {}).l, d.gradeFrom, d.gradeTo, d.memo, whoShort(d.by), d.at,
+      rows.push([m, d.telco, dispName(d.partner), p.seg || "", (DEC_ACT[d.action] || {}).l, d.gradeFrom, d.gradeTo, d.memo, whoShort(d.by), d.at,
         DEC_CHANGE(d) ? yn(d.admin) : "-", d.adminBy ? whoShort(d.adminBy) : "", d.adminAt, DEC_CHANGE(d) ? yn(d.kakao) : "-", d.kakaoBy ? whoShort(d.kakaoBy) : "", d.kakaoAt]);
     });
     const ws = XLSX.utils.aoa_to_sheet(rows); ws["!cols"] = rows[0].map((h, i) => ({ wch: [8, 9, 18, 8, 9, 9, 9, 30][i] || 14 }));

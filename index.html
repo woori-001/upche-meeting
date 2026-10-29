@@ -1006,6 +1006,8 @@ const EXCL_RE = /약정갱신|재약정|약갱|업셀링|전환|부가상품|부
 const ADMIN_RE = /정산|추가지급|민원/;
 // 제휴 강제 지정 (원장상 자점이지만 실제 제휴처)
 const FORCE_ALLY = new Set(["●케이티텔레캅 충북지사", "★큐스코●", "●패스앤슈팅", "☆삼쩜삼"]);
+// 분석에서 아예 빼는 업체 (테스트로 만든 계정 등). 기호를 뺀 이름으로 비교
+const FORCE_EXCLUDE = new Set(["Test"]);
 const SYM_RE = /^[●♥♡○★☆■□◆◇◎]+/;
 const PARTNER_SYMBOL_RE = /[●♥♡○★☆■□◆◇◎]/g;
 const RESUB_DAYS = 60; // 취소 후 이 기간 안에 같은 고객·같은 구분 접수가 있으면 재접수
@@ -1054,6 +1056,7 @@ function gradeOf(name, group) {
   return s.replace(/^(협력점_|판매점_)/, ""); // 표에 없는 새 정산그룹: 원문 표시(담당자 확인 필요)
 }
 function segmentOf(name, group) {
+  if (FORCE_EXCLUDE.has(String(name || "").replace(/[●♥♡○★☆■□◆◇◎]/g, "").trim())) return null;
   if (FORCE_ALLY.has(name)) return "제휴";
   const s = String(group || "").replace(SYM_RE, "").trim();
   if (!s.startsWith("판매점_") && !s.startsWith("협력점_")) return null; // 자점·본점·상부점 등 → 분석 제외

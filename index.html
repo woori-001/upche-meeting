@@ -766,6 +766,21 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
 .mgt-sub{margin:0 0 10px}
 .t.negt td.memo small.auto{color:#EA580C}
 .t.mt td.wm{color:#4a5263}
+/* 이탈 사유 고르기 */
+.cn-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.cn-tag{font-size:11.5px;font-weight:600;background:#ffe3e3;color:#c94a5c;border-radius:6px;padding:2px 7px;line-height:1.4}
+.cn-tag.man{background:#f3f5f9;color:#4a5263;font-weight:500}
+.cn-btn{display:inline-flex;align-items:center;gap:5px;border:1px dashed #f1c4ca;background:#fffafa;color:#d0566a;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.cn-btn:hover{background:#fff0f1;border-style:solid}
+.cnbox{max-width:480px;position:relative}
+.cn-list{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.cn-opt{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line2);border-radius:10px;padding:9px 12px;cursor:pointer;font-size:13.5px;user-select:none}
+.cn-opt input{position:absolute;opacity:0;pointer-events:none}
+.cn-opt i{width:18px;height:18px;flex:none;border-radius:6px;border:1.5px solid #c9d0db;display:grid;place-items:center;color:transparent;background:#fff}
+.cn-opt.on{border-color:#ef6f82;background:#fff5f6}.cn-opt.on i{background:#ef6f82;border-color:#ef6f82;color:#fff}
+.cn-opt:hover{border-color:#f0a3ae}
+#cnMan{width:100%;margin-top:10px;font:inherit;font-size:13px;border:1px solid var(--line2);border-radius:10px;padding:8px 10px;outline:0;resize:vertical}
+#cnMan:focus{border-color:#ef6f82}
 </style>
 </head>
 <body>
@@ -1451,21 +1466,24 @@ function derive() {
   }
   // 4) 협력점 정보 결합
   const partners = new Map(); // name -> info (구분 있는 곳만)
-  const excludedNames = { 자점상부: 0, 미등록: 0 };
+  const excludedNames = { 자점상부: 0, 미등록: 0, 휴면: 0 };
+  const isDorm = (n) => /\(휴\)/.test(String(n || ""));   // 상호에 (휴)가 붙은 곳 = 휴면 → 분석에서 빼고 휴면 목록에만
   for (const p of activeAll.keys()) {
     const info = MI.lookup(p);
     if (!info) { unknown.set(p, lastAny.get(p)); excludedNames.미등록++; continue; }
     if (!info.seg) { excludedNames.자점상부++; continue; }
+    if (isDorm(info.name) || isDorm(p)) continue;
     partners.set(p, { ...info, dataName: p });
   }
   // 원장에 있지만 접수 이력이 없는 곳도 등록 업체로 포함
-  const registered = [];
+  const registered = [], dormant = [];
   for (const [name, group, trade, flag, reg] of MI.rows) {
     const seg = segmentOf(name, group);
     if (!seg || trade !== "거래중") continue;
+    if (isDorm(name)) { dormant.push({ name, seg, grade: gradeOf(name, group), reg, group }); excludedNames.휴면++; continue; }
     registered.push({ name, seg, grade: gradeOf(name, group), reg, group });
   }
-  D = { months, stats, lastAny, partners, registered, unknown, excludedNames, MI, totalUnits: all.length, all, noTelco, activeAll, statsT };
+  D = { months, stats, lastAny, partners, registered, dormant, unknown, excludedNames, MI, totalUnits: all.length, all, noTelco, activeAll, statsT };
 }
 
 function cell(p, m, g) {
@@ -1675,6 +1693,7 @@ function render() {
   try {
     // 다시 그려도 화면·표 스크롤 위치가 튀지 않도록 기억했다가 되돌린다
     const keep = [...document.querySelectorAll("#main .tw")].map(el => [el.scrollTop, el.scrollLeft]);
+    const keepCol = [...document.querySelectorAll("#main .col-b")].map(el => el.scrollTop);   // 신규·재거래·이탈·결정 목록 안쪽 스크롤
     const wy = window.scrollY, sy = (document.querySelector(".side-mid") || {}).scrollTop || 0, helpEl = document.querySelector(".side-help");
     if (helpEl) S.helpOpen = helpEl.open;
     const mg = S.mode === "margin";
@@ -1683,6 +1702,7 @@ function render() {
     $("#side").innerHTML = mg ? mgSideHtml() : sideHtml();
     $("#main").innerHTML = mg ? mgMainHtml() : D && D.months.length ? mainHtml() : emptyHtml();
     document.querySelectorAll("#main .tw").forEach((el, i) => { if (keep[i]) { el.scrollTop = keep[i][0]; el.scrollLeft = keep[i][1]; } });
+    document.querySelectorAll("#main .col-b").forEach((el, i) => { if (keepCol[i]) el.scrollTop = keepCol[i]; });
     window.scrollTo(0, wy); const smid = document.querySelector(".side-mid"); if (smid) smid.scrollTop = sy;
     bindCommon();
     if (mg) mgBind(); else bindMain();
@@ -1756,7 +1776,7 @@ function mainHtml() {
   const M = S.month;
   if (S.view === "telco") return telcoHtml(M);
   if (S.view === "result") return resultHtml();
-  return headerHtml(M) + summaryHtml(M) + boardHtml(M) + growHtml(M) + qualityHtml(M) + footHtml();
+  return headerHtml(M) + summaryHtml(M) + boardHtml(M) + growHtml(M) + qualityHtml(M) + dormHtml(M) + footHtml();
 }
 function headerHtml(M) {
   return `<div class="top">
@@ -1846,10 +1866,48 @@ function boardHtml(M) {
     ${decColHtml(M)}
   </div>`;
 }
-// 이탈 사유 칸 (적어두면 다음 달에도 그대로 보임)
+// 이탈 사유: 아래 목록에서 여러 개 고르고, 없으면 수기입력 (적어두면 다음 달에도 그대로 보임)
+const CHURN_REASONS = ["휴/폐업", "거래중단_정책협의불가", "거래중단_폐업은 아니나 영업 종료(채널운영,광고 등)", "거래중단_협력 관계 부적합/상호 존중 결여",
+  "거래중단_거래 리스크/적합성 미달(TM물량 등)", "거래중단_소통 방식 부적절", "거래중단_간헐적 접수(거래량 저조)"];
+const CN_SEP = " · ";
+// 저장된 글 → 고른 사유 + 수기 글
+function cnoteParse(note) {
+  const picks = [], rest = [];
+  for (const t of String(note || "").split(CN_SEP).map(x => x.trim()).filter(Boolean)) (CHURN_REASONS.includes(t) ? picks : rest).push(t);
+  return { picks, manual: rest.join(CN_SEP) };
+}
 function cnoteHtml(name) {
-  const n = S.cnotes.get(name);
-  return `<div class="bc-note"><textarea rows="1" data-cnote="${esc(name)}" placeholder="이탈 사유 적기">${esc(n ? n.note : "")}</textarea>${n && n.note ? `<small>${n.month ? `${+n.month.slice(5)}월 실적 회의 · ` : ""}${esc(whoShort(n.by))} · ${atShort(n.at)}</small>` : ""}</div>`;
+  const n = S.cnotes.get(name), p = cnoteParse(n && n.note);
+  const tags = [...p.picks.map(x => `<span class="cn-tag">${esc(x.replace(/^거래중단_/, "거래중단 · "))}</span>`), ...(p.manual ? [`<span class="cn-tag man">${esc(p.manual)}</span>`] : [])].join("");
+  return `<div class="bc-note">${tags ? `<div class="cn-tags">${tags}</div>` : ""}<button class="cn-btn" data-cnote="${esc(name)}">${ic("edit", 12)}${tags ? "사유 고치기" : "이탈 사유 고르기"}</button>${n && n.note ? `<small>${n.month ? `${+n.month.slice(5)}월 실적 회의 · ` : ""}${esc(whoShort(n.by))} · ${atShort(n.at)}</small>` : ""}</div>`;
+}
+function openCnote(name) {
+  const n = S.cnotes.get(name), p = cnoteParse(n && n.note);
+  const box = $("#modal");
+  box.innerHTML = `<div class="mbox cnbox"><button class="icon x" id="mclose">${ic("x", 18)}</button>
+    <h3>이탈 사유</h3><p class="sub"><b class="dname">${esc(name)}</b> · 여러 개 고를 수 있어요</p>
+    <div class="cn-list">${[...CHURN_REASONS, "수기입력"].map((r, i) => { const on = r === "수기입력" ? !!p.manual : p.picks.includes(r);
+      return `<label class="cn-opt${on ? " on" : ""}"><input type="checkbox" value="${esc(r)}"${on ? " checked" : ""}><i>${ic("check2", 12)}</i><span>${esc(r)}</span></label>`; }).join("")}</div>
+    <textarea id="cnMan" rows="2" placeholder="사유를 직접 적어주세요" ${p.manual ? "" : "hidden"}>${esc(p.manual)}</textarea>
+    <p class="loginerr" id="cnErr"></p>
+    <div class="mfoot"><button class="ghost" id="cnCancel">취소</button><button class="primary" id="cnSave">저장</button></div></div>`;
+  box.hidden = false;
+  const close = () => box.hidden = true; $("#mclose").onclick = close; $("#cnCancel").onclick = close;
+  box.querySelectorAll(".cn-opt input").forEach(c => c.onchange = () => {
+    c.parentElement.classList.toggle("on", c.checked);
+    if (c.value === "수기입력") { $("#cnMan").hidden = !c.checked; if (c.checked) $("#cnMan").focus(); }
+  });
+  $("#cnSave").onclick = async () => {
+    const picks = [...box.querySelectorAll(".cn-opt input:checked")].map(c => c.value).filter(v => v !== "수기입력");
+    const man = box.querySelector('.cn-opt input[value="수기입력"]').checked ? $("#cnMan").value.trim().replace(/\s*·\s*/g, ", ") : "";
+    const note = [...picks, ...(man ? [man] : [])].join(CN_SEP);
+    $("#cnSave").disabled = true;
+    try {
+      const r = await gs("cnoteSave", name, S.month, note);
+      if (r.note) S.cnotes.set(name, r); else S.cnotes.delete(name);
+      close(); render(); toast(r.note ? "이탈 사유를 저장했어요." : "이탈 사유를 지웠어요.", 2500);
+    } catch (e) { $("#cnSave").disabled = false; $("#cnErr").textContent = /함수가 아직 없어요/.test(e.message) ? "이탈 사유를 저장하려면 Supabase 설정이 한 번 더 필요해요." : e.message; }
+  };
 }
 const isOpen = (name) => S.openAll || S.open.has(name);
 const tgBtn = (name, has) => has ? `<button class="tg${isOpen(name) ? " on" : ""}" data-open="${esc(name)}" title="통신사별 펼치기/접기">▸</button>` : `<span class="tg-sp"></span>`;
@@ -1916,9 +1974,25 @@ function qualityHtml(M) {
     <tbody>${body || `<tr><td colspan="8" class="none">${S.qOnlyBad ? "주의 업체가 없어요" : "접수 업체가 없어요"}</td></tr>`}</tbody></table></div>
   </section>`;
 }
+// 휴면 업체 (상호에 (휴)): 다른 목록에서는 빼고 여기에만 모아서
+function dormHtml(M) {
+  const list = D.dormant.filter(x => x.seg === S.seg && matchSearch(x.name)).map(x => {
+    const dn = dataNameOf(x.name);
+    return { x, dn, last: dn ? lastActive(dn, M) : null, cur: dn ? sumCells(dn, [M], ALLG).n : 0 };
+  }).sort((a, b) => b.cur - a.cur || String(b.last || "").localeCompare(String(a.last || "")) || a.x.name.localeCompare(b.x.name));
+  if (!list.length) return "";
+  const open = S.fold.dormOpen, back = list.filter(r => r.cur).length;
+  return `<section class="card fcard${open ? "" : " folded"}">
+    <div class="card-h" data-fold="dormOpen" title="눌러서 접기/펼치기"><div><h2><span class="ib c2">${ic("box")}</span>휴면 업체 <span class="segb">${esc(S.seg)} ${list.length}곳</span></h2>
+      <p class="sub">상호에 (휴)가 붙은 곳 · 신규·재거래·이탈·증감·품질·통신사별 점검에서는 빠져요${back ? ` · <b class="warnt">이번 달 접수가 있는 곳 ${back}곳</b>` : ""}</p></div>
+      <div class="hbtns"><span class="cchev">▾</span></div></div>
+    <div class="tw"><table class="t"><thead><tr><th>업체 · 등급</th><th>등록일</th><th class="n">마지막 접수</th><th class="n">${monthLabel(M)} 접수</th></tr></thead>
+    <tbody>${list.map(r => `<tr><td class="nm">${r.dn ? nameHtml(r.dn, r.x.grade) : `${esc(r.x.name)}${r.x.grade ? `<span class="tag">${esc(r.x.grade)}</span>` : ""}`}</td><td class="dim">${esc(r.x.reg || "-")}</td>
+      <td class="n">${r.last ? monthLabel(r.last) : `<span class="dim">이력 없음</span>`}</td><td class="n">${r.cur ? `<b class="warnt">${fmtN(r.cur)}건</b>` : `<span class="dim">-</span>`}</td></tr>`).join("")}</tbody></table></div></section>`;
+}
 function footHtml() {
   const e = D.excludedNames, unk = [...D.unknown.keys()];
-  return `<p class="foot">분석 제외: 자점·본점·상부점 ${e.자점상부}곳${unk.length ? ` · 협력점정보에 없는 업체 ${unk.length}곳 (${unk.slice(0, 8).map(esc).join(", ")}${unk.length > 8 ? " 외" : ""}) — 협력점정보를 최신으로 올려주세요` : ""}</p>`;
+  return `<p class="foot">분석 제외: 자점·본점·상부점 ${e.자점상부}곳 · 휴면(상호에 (휴)) ${e.휴면}곳${unk.length ? ` · 협력점정보에 없는 업체 ${unk.length}곳 (${unk.slice(0, 8).map(esc).join(", ")}${unk.length > 8 ? " 외" : ""}) — 협력점정보를 최신으로 올려주세요` : ""}</p>`;
 }
 
 function matchSearch(name) { return !S.search || String(name).toLowerCase().includes(S.search.toLowerCase()); }
@@ -1989,7 +2063,9 @@ const DEC_CHANGE = (d) => d.action === "grade" || d.action === "stop";   // 어�
 const whoShort = (s) => String(s || "").replace(/\(.*\)$/, "");
 const atShort = (s) => s ? `${+s.slice(5, 7)}/${+s.slice(8, 10)} ${s.slice(11, 16)}` : "";
 const decKey = (d) => `${d.month}|${d.partner}|${d.telco}`;
-function decOf(m, p, t) { return S.dec.find(d => d.month === m && d.partner === p && d.telco === t) || null; }
+const DEC_ALL = "전체";   // 회의 결정은 통신사와 상관없이 협력점 기준
+// 그 달 그 업체의 결정 (협력점 기준 결정이 먼저, 예전에 통신사별로 적은 것도 찾아줌)
+function decOf(m, p, t) { return S.dec.find(d => d.month === m && d.partner === p && d.telco === DEC_ALL) || S.dec.find(d => d.month === m && d.partner === p && (!t || d.telco === t)) || null; }
 function decsOf(m) { return S.dec.filter(d => d.month === m); }
 function telOrder(t) { const i = DEC_TELCOS.indexOf(t); return i < 0 ? 99 : i; }
 // "협의 → 정책중단" 같은 한 줄 설명
@@ -2016,7 +2092,7 @@ function decListHtml(M) {
   const items = list.map(d => {
     const p = D.partners.get(d.partner) || {};
     return `<div class="bcard ditem" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" title="눌러서 고치기">
-      <div class="di-top"><span class="dtel">${esc(d.telco)}</span><b class="di-n">${esc(d.partner)}</b>${p.seg ? `<span class="dim small">${esc(p.seg)}</span>` : ""}</div>
+      <div class="di-top">${d.telco === DEC_ALL ? "" : `<span class="dtel">${esc(d.telco)}</span>`}<b class="di-n">${esc(d.partner)}</b>${p.seg ? `<span class="dim small">${esc(p.seg)}</span>` : ""}</div>
       <div class="di-act">${decWhat(d)}</div>
       ${d.memo ? `<div class="di-memo">${esc(d.memo)}</div>` : ""}
       <div class="di-by">${esc(whoShort(d.by))} · ${atShort(d.at)}${DEC_CHANGE(d) ? `<span class="di-done">${d.admin ? `<i class="on">어드민</i>` : `<i>어드민</i>`}${d.kakao ? `<i class="on">카톡</i>` : `<i>카톡</i>`}</span>` : ""}</div></div>`;
@@ -2031,7 +2107,7 @@ function decColHtml(M, side) {
   const fold = !side && S.fold.board;
   return `<div class="col t-dec${side ? " dside" : ""}${fold ? " folded" : ""}"><div class="hero"${side ? "" : ` data-fold="board" title="눌러서 네 목록 모두 접기/펼치기"`}><span class="hico">${ic("check", 18)}</span>
       <div class="hh"><h3>이번 회의 결정 <span class="hnum">${fmtN(list.length)}<small>건</small></span></h3><span class="hr">${side ? "" : `<button class="hgo" data-view="${S.view === "telco" ? "result" : "telco"}">${S.view === "telco" ? "결과" : "점검"} ›</button><span class="hchev">▾</span>`}</span></div>
-      ${side ? "" : `<div class="hpills"><span class="hnote">업체 × 통신사별 결정</span></div>`}
+      ${side ? "" : `<div class="hpills"><span class="hnote">협력점 기준 결정</span></div>`}
       <p class="col-s">${monthLabel(M)} 실적 회의 · 반영할 변경 <b>${ch}건</b>${side ? " · 카드를 누르면 고쳐요" : ""}</p></div>
     <div class="col-b">${decListHtml(M)}</div></div>`;
 }
@@ -2063,7 +2139,8 @@ function telcoHtml(M) {
   const G = calcTelGap(M, t);
   const rows = G.rows.filter(r => matchSearch(r.p.dataName));
   const prev = addMonths(M, -1);
-  const holds = S.dec.filter(d => d.month === prev && d.action === "hold" && d.telco === t && matchSearch(d.partner));
+  const holds = S.dec.filter(d => d.month === prev && d.action === "hold" && matchSearch(d.partner)
+    && (d.telco === t || (d.telco === DEC_ALL && sumCellsT(d.partner, t, D.months, ALLG).n > 0)));   // 협력점 기준 유예는 그 통신사로 거래한 적 있는 탭에 보임
   const tabCnt = (x) => { const s = S.tTel; S.tTel = x; const n = calcTelGap(M, x).rows.length; S.tTel = s; return n; };
   const decCell = (name) => {
     const d = decOf(M, name, t);
@@ -2169,22 +2246,18 @@ function topTelco(name) {
 function openDecision(name, telco, month) {
   if (S.decErr) { toast(esc(S.decErr), 6000); return; }
   const M = month || S.month;
-  const t = telco || topTelco(name);
-  const cur = decOf(M, name, t);
+  const cur = decOf(M, name, telco || "");   // 협력점 기준 결정 (없으면 예전 통신사별 결정)
   const info = D.partners.get(name) || (D.MI && D.MI.lookup(name)) || {};
-  const tels = [...new Set([...DEC_TELCOS, t])];
   const st = { action: cur ? cur.action : "" };
-  const lastN = sumCellsT(name, t, [M], ALLG).n;
-  const lastM = D.months.filter(m => m <= M && sumCellsT(name, t, [m], ALLG).n > 0).pop();
+  const dn = D.activeAll.has(name) ? name : dataNameOf(name) || name;
+  const curN = sumCells(dn, [M], ALLG).n, lastM = lastActive(dn, M);
+  const tels = telcoRows(dn, D.months.filter(m => m <= M)).filter(t => t !== "미상" && t !== "렌탈");
   const box = $("#modal");
   box.innerHTML = `<div class="mbox decbox"><button class="icon x" id="mclose">${ic("x", 18)}</button>
-    <h3>회의 결정 기록</h3><p class="sub"><b class="dname">${esc(name)}</b>${info.seg ? ` · ${esc(info.seg)}` : ""} · ${mLabel(M)} 실적 회의</p>
+    <h3>회의 결정 기록</h3><p class="sub"><b class="dname">${esc(name)}</b>${info.seg ? ` · ${esc(info.seg)}` : ""} · ${mLabel(M)} 실적 회의 · 통신사 상관없이 협력점 기준</p>
     <div class="dform">
-      <div class="drow2">
-        <label>통신사<select id="dTel">${tels.map(x => `<option${x === t ? " selected" : ""}>${esc(x)}</option>`).join("")}</select></label>
-        <label><span>현재 등급 <small>· 통신사별로 다르면 고쳐요</small></span><input id="dFrom" list="dGrades" value="${esc(cur ? cur.gradeFrom : info.grade || "")}"></label>
-      </div>
-      <p class="dctx">${esc(t)} 접수 · 이번 달 <b>${fmtN(lastN)}건</b> · 마지막 접수 <b>${lastM ? monthLabel(lastM) : "없음"}</b></p>
+      <label><span>현재 등급</span><input id="dFrom" list="dGrades" value="${esc(cur ? cur.gradeFrom : info.grade || "")}"></label>
+      <p class="dctx">이번 달 접수 <b>${fmtN(curN)}건</b> · 마지막 접수 <b>${lastM ? monthLabel(lastM) : "없음"}</b>${tels.length ? ` · 거래 통신사 ${tels.map(esc).join(", ")}` : ""}${cur && cur.telco !== DEC_ALL ? `<br><span class="warnt">예전에 ${esc(cur.telco)}로 적은 결정이에요. 저장하면 협력점 기준으로 바뀌어요.</span>` : ""}</p>
       <div class="dacts">${Object.entries(DEC_ACT).map(([k, a]) => `<button type="button" class="dact k-${k}${st.action === k ? " on" : ""}" data-a="${k}"><b>${a.l}</b><small>${a.d}</small></button>`).join("")}</div>
       <label id="dToW" ${st.action === "grade" ? "" : "hidden"}>바꿀 등급<input id="dTo" list="dGrades" value="${esc(cur ? cur.gradeTo : "")}" placeholder="예: B"></label>
       <label><span>메모 <small>· 한 줄</small></span><input id="dMemo" maxlength="200" value="${esc(cur ? cur.memo : "")}" placeholder="예: 영업 담당 통화 후 다음 달 재확인"></label>
@@ -2196,7 +2269,6 @@ function openDecision(name, telco, month) {
   box.hidden = false;
   const close = () => box.hidden = true;
   $("#mclose").onclick = close; $("#dCancel").onclick = close;
-  $("#dTel").onchange = () => openDecision(name, $("#dTel").value, M);
   box.querySelectorAll(".dact").forEach(b => b.onclick = () => {
     st.action = b.dataset.a;
     box.querySelectorAll(".dact").forEach(x => x.classList.toggle("on", x === b));
@@ -2209,13 +2281,14 @@ function openDecision(name, telco, month) {
     if (st.action === "grade" && !$("#dTo").value.trim()) { $("#dErr").textContent = "바꿀 등급을 적어주세요."; return; }
     $("#dSave").disabled = true;
     try {
-      const r = await gs("decSave", M, name, $("#dTel").value, st.action, $("#dFrom").value.trim(), $("#dTo").value.trim(), $("#dMemo").value);
+      const r = await gs("decSave", M, name, DEC_ALL, st.action, $("#dFrom").value.trim(), $("#dTo").value.trim(), $("#dMemo").value);
+      if (cur && cur.telco !== DEC_ALL) { try { await gs("decDelete", M, name, cur.telco); } catch (e) {} S.dec = S.dec.filter(d => decKey(d) !== decKey(cur)); }   // 예전 통신사별 결정은 협력점 기준으로 바꿈
       S.dec = S.dec.filter(d => decKey(d) !== decKey(r)); S.dec.push(r);
-      after(); toast(`${esc(name)} · ${esc(r.telco)} 결정을 저장했어요.`);
+      after(); toast(`${esc(name)} 결정을 저장했어요.`);
     } catch (e) { $("#dErr").textContent = e.message; $("#dSave").disabled = false; }
   };
   if (cur) $("#dDel").onclick = async () => {
-    try { await gs("decDelete", M, name, t); S.dec = S.dec.filter(d => decKey(d) !== decKey(cur)); after(); toast("결정을 지웠어요."); }
+    try { await gs("decDelete", M, name, cur.telco); S.dec = S.dec.filter(d => decKey(d) !== decKey(cur)); after(); toast("결정을 지웠어요."); }
     catch (e) { $("#dErr").textContent = e.message; }
   };
 }
@@ -2224,7 +2297,7 @@ function detailDecHtml(name) {
   if (S.decErr) return "";
   const M = S.month, now = S.dec.filter(d => d.partner === name && d.month === M).sort((a, b) => telOrder(a.telco) - telOrder(b.telco));
   const old = S.dec.filter(d => d.partner === name && d.month !== M).sort((a, b) => b.month.localeCompare(a.month) || telOrder(a.telco) - telOrder(b.telco));
-  const row = (d) => `<div class="drd" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}"><span class="dtel">${esc(d.telco)}</span><span class="drd-a">${decWhat(d)}</span>${d.memo ? `<span class="drd-m">${esc(d.memo)}</span>` : ""}</div>`;
+  const row = (d) => `<div class="drd" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}">${d.telco === DEC_ALL ? "" : `<span class="dtel">${esc(d.telco)}</span>`}<span class="drd-a">${decWhat(d)}</span>${d.memo ? `<span class="drd-m">${esc(d.memo)}</span>` : ""}</div>`;
   return `<h4 class="dh4">회의 결정 <span class="sub">${monthLabel(M)} 실적 회의</span><button class="ghost sm" data-dp="${esc(name)}" data-dt="">${ic("edit", 13)}결정 기록</button></h4>
     <div class="drdl">${now.length ? now.map(row).join("") : `<p class="sub">이번 회의 결정이 없어요</p>`}</div>
     ${old.length ? `<details class="drold"><summary>지난 결정 ${old.length}건</summary>${old.map(d => `<div class="drold-r"><span class="dim">${monthLabel(d.month)}</span>${row(d)}</div>`).join("")}</details>` : ""}`;
@@ -2310,16 +2383,7 @@ function bindMain() {
     render();
   });
   document.querySelectorAll("a.pn").forEach(a => a.onclick = () => openDetail(a.dataset.p));
-  document.querySelectorAll("textarea[data-cnote]").forEach(t => t.onchange = async () => {
-    const name = t.dataset.cnote;
-    try {
-      const r = await gs("cnoteSave", name, S.month, t.value);
-      if (r.note) S.cnotes.set(name, r); else S.cnotes.delete(name);
-      t.classList.add("saved"); toast(r.note ? "이탈 사유를 저장했어요." : "이탈 사유를 지웠어요.", 2500);
-      const sm = t.parentElement.querySelector("small"); if (sm) sm.remove();
-      if (r.note) t.insertAdjacentHTML("afterend", `<small>${+S.month.slice(5)}월 실적 회의 · ${esc(whoShort(r.by))} · ${atShort(r.at)}</small>`);
-    } catch (e) { toast(/함수가 아직 없어요/.test(e.message) ? "이탈 사유를 저장하려면 Supabase 설정이 한 번 더 필요해요." : `<b>저장 실패</b> ${esc(e.message)}`, 0); }
-  });
+  document.querySelectorAll("button.cn-btn[data-cnote]").forEach(b => b.onclick = (e) => { e.stopPropagation(); openCnote(b.dataset.cnote); });
   // 통신사 펼치기/접기
   document.querySelectorAll("button.tg").forEach(b => b.onclick = () => {
     const n = b.dataset.open;

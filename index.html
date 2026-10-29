@@ -1888,6 +1888,27 @@ function cnoteHtml(name) {
   const tags = [...p.picks.map(x => `<span class="cn-tag">${esc(x.replace(/^거래중단_/, "거래중단 · "))}</span>`), ...(p.manual ? [`<span class="cn-tag man">${esc(p.manual)}</span>`] : [])].join("");
   return `<div class="bc-note">${tags ? `<div class="cn-tags">${tags}</div>` : ""}<button class="cn-btn" data-cnote="${esc(name)}">${ic("edit", 12)}${tags ? "사유 고치기" : "이탈 사유 고르기"}</button>${n && n.note ? `<small>${n.month ? `${+n.month.slice(5)}월 실적 회의 · ` : ""}${esc(whoShort(n.by))} · ${atShort(n.at)}</small>` : ""}</div>`;
 }
+// 거래중단_ 사유가 고른 업체는 그 달 회의 결정을 "정책중단"으로 자동 기록
+async function autoStopFromNote(name, note, month) {
+  const picks = cnoteParse(note).picks.filter(x => x.startsWith("거래중단_"));
+  if (!picks.length || !month || S.decErr) return false;
+  const dn = D.activeAll.has(name) ? name : dataNameOf(name) || name;
+  const cur = decOf(month, dn, "");
+  if (cur && cur.action === "stop") return false;
+  const info = D.partners.get(dn) || (D.MI && D.MI.lookup(name)) || {};
+  const memo = cur && cur.memo ? cur.memo : picks.map(x => x.replace(/^거래중단_/, "")).join(", ");
+  const r = await gs("decSave", month, dn, DEC_ALL, "stop", cur ? cur.gradeFrom : info.grade || "", "", memo);
+  if (cur && cur.telco !== DEC_ALL) { try { await gs("decDelete", month, dn, cur.telco); } catch (e) {} }
+  S.dec = S.dec.filter(d => !(d.month === month && d.partner === dn)); S.dec.push(r);
+  return true;
+}
+// 이미 적어둔 거래중단 사유도 그 달 결정에 없으면 채움 (불러올 때 한 번)
+async function syncAutoStops() {
+  if (S.decErr) return;
+  let n = 0;
+  for (const [name, x] of S.cnotes) { try { if (await autoStopFromNote(name, x.note, x.month)) n++; } catch (e) {} }
+  if (n) { render(); toast(`거래중단 사유가 있는 ${n}곳을 회의 결정에 정책중단으로 넣었어요.`, 5000); }
+}
 function openCnote(name) {
   const n = S.cnotes.get(name), p = cnoteParse(n && n.note);
   const box = $("#modal");
@@ -1912,7 +1933,8 @@ function openCnote(name) {
     try {
       const r = await gs("cnoteSave", name, S.month, note);
       if (r.note) S.cnotes.set(name, r); else S.cnotes.delete(name);
-      close(); render(); toast(r.note ? "이탈 사유를 저장했어요." : "이탈 사유를 지웠어요.", 2500);
+      let auto = false; try { auto = await autoStopFromNote(name, r.note, S.month); } catch (e) { toast(`<b>회의 결정 자동 기록 실패</b> ${esc(e.message)}`, 0); }
+      close(); render(); toast(r.note ? `이탈 사유를 저장했어요.${auto ? " 회의 결정에 <b>정책중단</b>으로 넣었어요." : ""}` : "이탈 사유를 지웠어요.", auto ? 5000 : 2500);
     } catch (e) { $("#cnSave").disabled = false; $("#cnErr").textContent = /함수가 아직 없어요/.test(e.message) ? "이탈 사유를 저장하려면 Supabase 설정이 한 번 더 필요해요." : e.message; }
   };
 }
@@ -3484,6 +3506,7 @@ async function loadAll() {
   derive();
   if (D.months.length) S.month = D.months[D.months.length - 1];
   render();
+  if (D.months.length) syncAutoStops();
 }
 
 async function init() {

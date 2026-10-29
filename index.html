@@ -3491,7 +3491,10 @@ async function init() {
   pick("#fData", onDataFiles); pick("#fMaster", onMasterFile);
   document.addEventListener("keydown", e => { if (e.key === "Escape") { closeDetail(); $("#modal").hidden = true; } });
   $("#scrim").onclick = closeDetail;
-  $("#modal").onclick = (e) => { if (e.target.id === "modal") $("#modal").hidden = true; };
+  // 바깥(어두운 곳)을 눌렀을 때만 닫음. 창 안에서 드래그하다 바깥에서 손을 떼도 닫히지 않게 누른 곳도 확인
+  let downOut = false;
+  $("#modal").addEventListener("mousedown", (e) => { downOut = e.target.id === "modal"; });
+  $("#modal").onclick = (e) => { if (e.target.id === "modal" && downOut) $("#modal").hidden = true; downOut = false; };
   $("#toast").onclick = (e) => { if (e.target.tagName !== "A") $("#toast").hidden = true; };
   document.addEventListener("dragover", e => e.preventDefault());
   document.addEventListener("drop", e => { e.preventDefault(); if (!lsGet(LS_KEY.token)) return; if (S.mode === "margin") mgOpenUpload(); else onDataFiles([...e.dataTransfer.files]); });

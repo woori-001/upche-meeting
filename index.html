@@ -1987,7 +1987,7 @@ function dormHtml(M) {
       <p class="sub">상호에 (휴)가 붙은 곳 · 신규·재거래·이탈·증감·품질·통신사별 점검에서는 빠져요${back ? ` · <b class="warnt">이번 달 접수가 있는 곳 ${back}곳</b>` : ""}</p></div>
       <div class="hbtns"><span class="cchev">▾</span></div></div>
     <div class="tw"><table class="t"><thead><tr><th>업체 · 등급</th><th>등록일</th><th class="n">마지막 접수</th><th class="n">${monthLabel(M)} 접수</th></tr></thead>
-    <tbody>${list.map(r => `<tr><td class="nm">${r.dn ? nameHtml(r.dn, r.x.grade) : `${esc(r.x.name)}${r.x.grade ? `<span class="tag">${esc(r.x.grade)}</span>` : ""}`}</td><td class="dim">${esc(r.x.reg || "-")}</td>
+    <tbody>${list.map(r => `<tr><td class="nm">${r.dn ? `<a class="pn" data-p="${esc(r.dn)}">${esc(r.x.name)}</a>` : esc(r.x.name)}${r.x.grade ? `<span class="tag">${esc(r.x.grade)}</span>` : ""}${r.dn && r.dn !== r.x.name ? `<span class="dim small"> 접수 데이터엔 ${esc(r.dn)}</span>` : ""}</td><td class="dim">${esc(r.x.reg || "-")}</td>
       <td class="n">${r.last ? monthLabel(r.last) : `<span class="dim">이력 없음</span>`}</td><td class="n">${r.cur ? `<b class="warnt">${fmtN(r.cur)}건</b>` : `<span class="dim">-</span>`}</td></tr>`).join("")}</tbody></table></div></section>`;
 }
 function footHtml() {

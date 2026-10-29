@@ -781,6 +781,13 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
 .cn-opt:hover{border-color:#f0a3ae}
 #cnMan{width:100%;margin-top:10px;font:inherit;font-size:13px;border:1px solid var(--line2);border-radius:10px;padding:8px 10px;outline:0;resize:vertical}
 #cnMan:focus{border-color:#ef6f82}
+/* 결정 창 정책중단 사유 */
+.drs-h{font-size:12.5px;font-weight:600;color:#4a5263;margin-bottom:6px}.drs-h small{font-weight:500;color:var(--dim)}
+.drs{display:flex;flex-direction:column;gap:5px}
+.cn-opt.sm{padding:7px 10px;font-size:12.5px;gap:8px;line-height:1.35}
+.cn-opt.sm i{width:16px;height:16px}
+#dRsW[hidden]{display:none}
+.dform label.cn-opt{flex-direction:row;align-items:center;gap:8px;font-weight:500;color:var(--text);font-size:12.5px}
 </style>
 </head>
 <body>
@@ -2272,12 +2279,24 @@ function topTelco(name) {
   for (const t of DEC_TELCOS) { const n = sumCellsT(name, t, D.months, ALLG).n; if (n > bn) { bn = n; best = t; } }
   return best;
 }
+// 정책중단 메모: "사유(짧게), 사유, 수기 메모" 형태로 저장. 다시 열 때 사유와 수기 메모로 나눔
+const rShort = (x) => x.replace(/^거래중단_/, "");
+function decMemoParse(memo) {
+  const picks = [], rest = [];
+  for (const t of String(memo || "").split(", ").map(x => x.trim()).filter(Boolean)) { const r = CHURN_REASONS.find(x => rShort(x) === t || x === t); r ? picks.push(r) : rest.push(t); }
+  return { picks, manual: rest.join(", ") };
+}
 function openDecision(name, telco, month) {
   if (S.decErr) { toast(esc(S.decErr), 6000); return; }
   const M = month || S.month;
   const cur = decOf(M, name, telco || "");   // 협력점 기준 결정 (없으면 예전 통신사별 결정)
   const info = D.partners.get(name) || (D.MI && D.MI.lookup(name)) || {};
   const st = { action: cur ? cur.action : "" };
+  const masterName = (info && info.name) || dispName(name);
+  // 사유: 이탈 사유로 적어둔 게 있으면 그걸, 없으면 결정 메모에서
+  const cn = S.cnotes.get(masterName);
+  const mp = cur && cur.action === "stop" ? decMemoParse(cur.memo) : { picks: [], manual: cur ? cur.memo : "" };
+  if (!mp.picks.length && cn && cn.note) { const c = cnoteParse(cn.note); mp.picks = c.picks; if (!mp.manual) mp.manual = c.manual; }
   const dn = D.activeAll.has(name) ? name : dataNameOf(name) || name;
   const curN = sumCells(dn, [M], ALLG).n, lastM = lastActive(dn, M);
   const tels = telcoRows(dn, D.months.filter(m => m <= M)).filter(t => t !== "미상" && t !== "렌탈");
@@ -2289,7 +2308,9 @@ function openDecision(name, telco, month) {
       <p class="dctx">이번 달 접수 <b>${fmtN(curN)}건</b> · 마지막 접수 <b>${lastM ? monthLabel(lastM) : "없음"}</b>${tels.length ? ` · 거래 통신사 ${tels.map(esc).join(", ")}` : ""}${cur && cur.telco !== DEC_ALL ? `<br><span class="warnt">예전에 ${esc(cur.telco)}로 적은 결정이에요. 저장하면 협력점 기준으로 바뀌어요.</span>` : ""}</p>
       <div class="dacts">${Object.entries(DEC_ACT).map(([k, a]) => `<button type="button" class="dact k-${k}${st.action === k ? " on" : ""}" data-a="${k}"><b>${a.l}</b><small>${a.d}</small></button>`).join("")}</div>
       <label id="dToW" ${st.action === "grade" ? "" : "hidden"}>바꿀 등급<input id="dTo" list="dGrades" value="${esc(cur ? cur.gradeTo : "")}" placeholder="예: B"></label>
-      <label><span>메모 <small>· 한 줄</small></span><input id="dMemo" maxlength="200" value="${esc(cur ? cur.memo : "")}" placeholder="예: 영업 담당 통화 후 다음 달 재확인"></label>
+      <div id="dRsW" ${st.action === "stop" ? "" : "hidden"}><div class="drs-h">정책중단 사유 <small>· 여러 개 고를 수 있어요 · 목록에 없으면 아래 메모에 적어주세요</small></div>
+        <div class="drs">${CHURN_REASONS.map(r => `<label class="cn-opt sm${mp.picks.includes(r) ? " on" : ""}"><input type="checkbox" value="${esc(r)}"${mp.picks.includes(r) ? " checked" : ""}><i>${ic("check2", 11)}</i><span>${esc(r)}</span></label>`).join("")}</div></div>
+      <label><span id="dMemoL">${st.action === "stop" ? "수기입력" : "메모"} <small>· 한 줄</small></span><input id="dMemo" maxlength="200" value="${esc(mp.manual)}" placeholder="예: 영업 담당 통화 후 다음 달 재확인"></label>
       <datalist id="dGrades">${gradeOptions().map(g => `<option value="${esc(g)}">`).join("")}</datalist>
       ${cur ? `<p class="dim small">${esc(whoShort(cur.by))} · ${atShort(cur.at)} 기록${DEC_CHANGE(cur) && (cur.admin || cur.kakao) ? " · 결정을 바꾸면 반영 체크가 풀려요" : ""}</p>` : ""}
       <p class="loginerr" id="dErr"></p>
@@ -2298,10 +2319,12 @@ function openDecision(name, telco, month) {
   box.hidden = false;
   const close = () => box.hidden = true;
   $("#mclose").onclick = close; $("#dCancel").onclick = close;
+  box.querySelectorAll("#dRsW .cn-opt input").forEach(c => c.onchange = () => c.parentElement.classList.toggle("on", c.checked));
   box.querySelectorAll(".dact").forEach(b => b.onclick = () => {
     st.action = b.dataset.a;
     box.querySelectorAll(".dact").forEach(x => x.classList.toggle("on", x === b));
     $("#dToW").hidden = st.action !== "grade";
+    $("#dRsW").hidden = st.action !== "stop"; $("#dMemoL").innerHTML = `${st.action === "stop" ? "수기입력" : "메모"} <small>· 한 줄</small>`;
     if (st.action === "grade") $("#dTo").focus();
   });
   const after = () => { close(); render(); if (document.body.classList.contains("dr-open")) openDetail(name); };
@@ -2310,7 +2333,13 @@ function openDecision(name, telco, month) {
     if (st.action === "grade" && !$("#dTo").value.trim()) { $("#dErr").textContent = "바꿀 등급을 적어주세요."; return; }
     $("#dSave").disabled = true;
     try {
-      const r = await gs("decSave", M, name, DEC_ALL, st.action, $("#dFrom").value.trim(), $("#dTo").value.trim(), $("#dMemo").value);
+      const picks = st.action === "stop" ? [...box.querySelectorAll("#dRsW input:checked")].map(c => c.value) : [];
+      const man = $("#dMemo").value.trim();
+      const memo = [...picks.map(rShort), ...(man ? [man] : [])].join(", ");
+      const r = await gs("decSave", M, name, DEC_ALL, st.action, $("#dFrom").value.trim(), $("#dTo").value.trim(), memo);
+      if (st.action === "stop" && (picks.length || man)) {   // 이탈 사유에도 같이 남겨서 다음 달 이탈 목록에서도 보이게
+        try { const c = await gs("cnoteSave", masterName, M, [...picks, ...(man ? [man.replace(/\s*·\s*/g, ", ")] : [])].join(CN_SEP)); if (c.note) S.cnotes.set(masterName, c); } catch (e) {}
+      }
       if (cur && cur.telco !== DEC_ALL) { try { await gs("decDelete", M, name, cur.telco); } catch (e) {} S.dec = S.dec.filter(d => decKey(d) !== decKey(cur)); }   // 예전 통신사별 결정은 협력점 기준으로 바꿈
       S.dec = S.dec.filter(d => decKey(d) !== decKey(r)); S.dec.push(r);
       after(); toast(`${esc(dispName(name))} 결정을 저장했어요.`);

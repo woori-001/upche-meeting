@@ -1888,9 +1888,9 @@ function cnoteHtml(name) {
   const tags = [...p.picks.map(x => `<span class="cn-tag">${esc(x.replace(/^거래중단_/, "거래중단 · "))}</span>`), ...(p.manual ? [`<span class="cn-tag man">${esc(p.manual)}</span>`] : [])].join("");
   return `<div class="bc-note">${tags ? `<div class="cn-tags">${tags}</div>` : ""}<button class="cn-btn" data-cnote="${esc(name)}">${ic("edit", 12)}${tags ? "사유 고치기" : "이탈 사유 고르기"}</button>${n && n.note ? `<small>${n.month ? `${+n.month.slice(5)}월 실적 회의 · ` : ""}${esc(whoShort(n.by))} · ${atShort(n.at)}</small>` : ""}</div>`;
 }
-// 거래중단_ 사유가 고른 업체는 그 달 회의 결정을 "정책중단"으로 자동 기록
+// 휴/폐업·거래중단_ 사유를 고른 업체는 그 달 회의 결정을 "정책중단"으로 자동 기록
 async function autoStopFromNote(name, note, month) {
-  const picks = cnoteParse(note).picks.filter(x => x.startsWith("거래중단_"));
+  const picks = cnoteParse(note).picks.filter(x => x.startsWith("거래중단_") || x === "휴/폐업");   // 휴/폐업·거래중단 → 정책중단
   if (!picks.length || !month || S.decErr) return false;
   const dn = D.activeAll.has(name) ? name : dataNameOf(name) || name;
   const cur = decOf(month, dn, "");
@@ -1907,7 +1907,7 @@ async function syncAutoStops() {
   if (S.decErr) return;
   let n = 0;
   for (const [name, x] of S.cnotes) { try { if (await autoStopFromNote(name, x.note, x.month)) n++; } catch (e) {} }
-  if (n) { render(); toast(`거래중단 사유가 있는 ${n}곳을 회의 결정에 정책중단으로 넣었어요.`, 5000); }
+  if (n) { render(); toast(`휴/폐업·거래중단 사유가 있는 ${n}곳을 회의 결정에 정책중단으로 넣었어요.`, 5000); }
 }
 function openCnote(name) {
   const n = S.cnotes.get(name), p = cnoteParse(n && n.note);

@@ -576,6 +576,7 @@ create table if not exists public.upche_decisions (
   primary key (month, partner, telco)
 );
 comment on table public.upche_decisions is '업체회의 · 회의 결정 (업체 × 통신사, 어드민·카톡 반영 체크)';
+alter table public.upche_decisions add column if not exists share_hide boolean not null default false;   -- 회의 공유에서만 뺌
 alter table public.upche_decisions enable row level security;
 revoke all on public.upche_decisions from anon, authenticated;
 
@@ -584,7 +585,7 @@ language sql stable set search_path = '' as $$
   select jsonb_build_object('month', d.month, 'partner', d.partner, 'telco', d.telco, 'action', d.action,
     'gradeFrom', d.grade_from, 'gradeTo', d.grade_to, 'memo', d.memo, 'by', d.decided_by, 'at', private.upche_fmt(d.decided_at),
     'admin', d.admin_done, 'adminBy', d.admin_by, 'adminAt', private.upche_fmt(d.admin_at),
-    'kakao', d.kakao_done, 'kakaoBy', d.kakao_by, 'kakaoAt', private.upche_fmt(d.kakao_at))
+    'kakao', d.kakao_done, 'kakaoBy', d.kakao_by, 'kakaoAt', private.upche_fmt(d.kakao_at), 'shareOff', d.share_hide)
 $$;
 revoke all on function private.upche_dec_json(public.upche_decisions) from public, anon, authenticated;
 
@@ -622,6 +623,18 @@ begin
   perform private.upche_auth(p_token);
   delete from public.upche_decisions where month = p_month and partner = p_partner and telco = p_telco;
   return true;
+end $$;
+
+-- 회의 공유에서 빼기/넣기 (여러 건 한 번에: p_keys = [[업체, 통신사], ...])
+create or replace function public.upche_decision_share(p_token text, p_month text, p_keys jsonb, p_hide boolean) returns integer
+language plpgsql security definer set search_path = '' as $$
+declare n integer;
+begin
+  perform private.upche_auth(p_token);
+  update public.upche_decisions d set share_hide = coalesce(p_hide, false)
+   where d.month = p_month and exists (select 1 from jsonb_array_elements(coalesce(p_keys, '[]'::jsonb)) k where k->>0 = d.partner and k->>1 = d.telco);
+  get diagnostics n = row_count;
+  return n;
 end $$;
 
 -- 어드민 / 카톡방 반영 체크

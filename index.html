@@ -1325,6 +1325,7 @@ const RPC = {
   decList: ["upche_decision_list", []],
   decSave: ["upche_decision_save", ["p_month", "p_partner", "p_telco", "p_action", "p_from", "p_to", "p_memo"]],
   decDelete: ["upche_decision_delete", ["p_month", "p_partner", "p_telco"]],
+  decShare: ["upche_decision_share", ["p_month", "p_keys", "p_hide"]],
   decCheck: ["upche_decision_check", ["p_month", "p_partner", "p_telco", "p_field", "p_done"]],
   cnoteList: ["upche_churn_note_list", []],
   cnoteSave: ["upche_churn_note_save", ["p_partner", "p_month", "p_note"]],
@@ -2250,11 +2251,23 @@ function telcoHtml(M) {
 function resultMonths() { return [...new Set([S.month, ...S.dec.map(d => d.month)])].filter(Boolean).sort().reverse(); }
 // 회의 공유 문구: 결정 항목별(등급변경 → 정책중단 → 유예 → 유지)로 전체 결정
 const SHARE_ORDER = [["grade", "등급변경"], ["stop", "정책중단(휴면)"], ["hold", "유예 (한 달 더)"], ["keep", "유지"]];
-// 회의 공유에서만 뺄 결정 (결정은 그대로, 이 브라우저에 기억)
-const shareOff = (() => { try { return new Set(JSON.parse(localStorage.getItem("upche_share_off") || "[]")); } catch (e) { return new Set(); } })();
-const saveShareOff = () => lsSet("upche_share_off", JSON.stringify([...shareOff]));
+// 회의 공유에서만 뺀 결정 (결정은 그대로, 서버에 저장돼서 팀원 모두 같이 봄)
+const isShareOff = (d) => !!d.shareOff;
+async function setShareOff(ds, hide) {
+  if (!ds.length) return;
+  await gs("decShare", ds[0].month, ds.map(d => [d.partner, d.telco]), hide);
+  ds.forEach(d => d.shareOff = hide);
+}
+// 예전에 이 브라우저에만 기억해둔 '공유에서 뺌'은 처음 한 번 서버로 옮김
+async function migrateShareOff() {
+  let keys = []; try { keys = JSON.parse(localStorage.getItem("upche_share_off") || "[]"); } catch (e) {}
+  if (!keys.length || S.decErr) return;
+  const ds = S.dec.filter(d => keys.includes(decKey(d)) && !d.shareOff), by = {};
+  ds.forEach(d => (by[d.month] = by[d.month] || []).push(d));
+  try { for (const m in by) await setShareOff(by[m], true); lsSet("upche_share_off", null); } catch (e) {}
+}
 function kakaoText(m) {
-  const list = decsOf(m).filter(d => !shareOff.has(decKey(d)));
+  const list = decsOf(m).filter(d => !isShareOff(d));
   if (!list.length) return "";
   const line = (d) => {
     const g = d.action === "grade" ? ` : ${d.gradeFrom || "?"} → ${d.gradeTo || "?"}` : d.gradeFrom ? ` (${d.gradeFrom})` : "";
@@ -2283,10 +2296,10 @@ function resultHtml() {
   const rowsHtml = SHARE_ORDER.map(([k, l]) => {
     const xs = list.filter(d => d.action === k).sort((a, b) => a.partner.localeCompare(b.partner) || telOrder(a.telco) - telOrder(b.telco));
     if (!xs.length) return "";
-    const offN = xs.filter(d => shareOff.has(decKey(d))).length;
+    const offN = xs.filter(d => isShareOff(d)).length;
     return `<tr class="rgh"><td colspan="8"><span class="dchip k-${k}">${l}</span><span class="dim">${xs.length}건${offN ? ` · 공유에서 뺌 ${offN}` : ""}</span>
       <button class="sh-all" data-shg="${k}">${offN === xs.length ? "모두 공유에 넣기" : "모두 공유에서 빼기"}</button></td></tr>` + xs.map(d => { const p = D.partners.get(d.partner) || {};
-      const off = shareOff.has(decKey(d));
+      const off = isShareOff(d);
       return `<tr class="${off ? "shoff" : ""}"><td class="shc"><label class="shsw${off ? "" : " on"}" title="${off ? "회의 공유에서 빠져 있어요" : "회의 공유에 들어가요"}"><input type="checkbox" data-shk="${esc(decKey(d))}"${off ? "" : " checked"}><i></i></label></td><td class="nm"><a class="pn" data-p="${esc(d.partner)}">${esc(dispName(d.partner))}</a></td><td><span class="dim">${esc(p.seg || "-")}</span></td>
         <td><button class="dbtn done" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}">${d.action === "grade" ? `<span class="dg">${esc(d.gradeFrom || "?")}</span><span class="dar">→</span><span class="dchip k-grade">${esc(d.gradeTo || "?")}</span>` : d.gradeFrom ? `<span class="dg">${esc(d.gradeFrom)}</span>` : `<span class="dim">고치기</span>`}</button></td>
         <td class="memo">${esc(d.memo) || `<span class="dim">-</span>`}</td><td class="small" title="${esc(d.at)}">${esc(whoShort(d.by))} <span class="dim">${atShort(d.at)}</span></td>${ck(d, "admin")}${ck(d, "kakao")}</tr>`; }).join("");
@@ -2304,7 +2317,7 @@ function resultHtml() {
       <div class="rs"><span>카톡방 반영</span><b>${kk}<small>/${chg.length}</small></b><div class="gauge"><b style="width:${chg.length ? kk / chg.length * 100 : 0}%"></b></div></div>
     </div>
     <div class="tlay"><div class="tl-main">${groups || `<div class="card"><p class="none">${mLabel(m)} 실적 회의 결정이 아직 없어요</p></div>`}</div>
-      <aside class="tl-side"><div class="card kcard"><div class="kc-h"><b>${ic("chat", 15)}회의 공유</b><span class="dim small">${(() => { const n = list.filter(d => shareOff.has(decKey(d))).length; return n ? `${list.length - n}건 공유 · <b class="warnt">${n}건 뺌</b>` : "결정 항목별 전체"; })()}</span></div>
+      <aside class="tl-side"><div class="card kcard"><div class="kc-h"><b>${ic("chat", 15)}회의 공유</b><span class="dim small">${(() => { const n = list.filter(d => isShareOff(d)).length; return n ? `${list.length - n}건 공유 · <b class="warnt">${n}건 뺌</b>` : "결정 항목별 전체"; })()}</span></div>
         <div class="kprev" id="kakaoCap">${kt ? `<pre>${prevTxt}</pre>` : `<p class="dim">아직 결정이 없어요</p>`}</div>
         <div class="kc-b"><button class="primary" id="bKakao" ${kt ? "" : "disabled"}>${ic("copy")}문구 복사</button><button class="ghost" id="bDecImg" ${kt ? "" : "disabled"}>${ic("image")}이미지 저장</button></div></div></aside></div>`}`;
 }
@@ -2411,10 +2424,12 @@ function bindDecPages() {
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = (e) => { e.stopPropagation(); S.view = b.dataset.view; closeDetail(); render(); window.scrollTo(0, 0); });
   document.querySelectorAll(".teltabs [data-tel]").forEach(b => b.onclick = () => { S.tTel = b.dataset.tel; render(); });
   document.querySelectorAll(".rmonths [data-rm]").forEach(b => b.onclick = () => { S.rMonth = b.dataset.rm; render(); });
-  document.querySelectorAll("input[data-shk]").forEach(c => c.onchange = () => { c.checked ? shareOff.delete(c.dataset.shk) : shareOff.add(c.dataset.shk); saveShareOff(); render(); });
+  const shareSave = async (ds, hide, el) => { if (el) el.disabled = true;
+    try { await setShareOff(ds, hide); render(); } catch (e) { toast(`<b>저장 실패</b> ${esc(e.message)}`, 0); render(); } };
+  document.querySelectorAll("input[data-shk]").forEach(c => c.onchange = () => { const d = S.dec.find(x => decKey(x) === c.dataset.shk); if (d) shareSave([d], !c.checked, c); });
   document.querySelectorAll("button[data-shg]").forEach(b => b.onclick = () => {
-    const xs = decsOf(S.rMonth).filter(d => d.action === b.dataset.shg).map(decKey), allOff = xs.every(k => shareOff.has(k));
-    xs.forEach(k => allOff ? shareOff.delete(k) : shareOff.add(k)); saveShareOff(); render();
+    const xs = decsOf(S.rMonth).filter(d => d.action === b.dataset.shg), allOff = xs.every(isShareOff);
+    shareSave(xs, !allOff, b);
   });
   document.querySelectorAll("input[data-ck]").forEach(c => c.onchange = async () => {
     c.disabled = true;
@@ -3588,7 +3603,7 @@ async function loadAll() {
   derive();
   if (D.months.length) S.month = D.months[D.months.length - 1];
   render();
-  if (D.months.length) syncAutoStops();
+  if (D.months.length) { await migrateShareOff(); syncAutoStops(); }
 }
 
 async function init() {

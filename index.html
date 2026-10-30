@@ -2412,7 +2412,11 @@ function bindDecPages() {
   on("#bDecImg", async () => {
     try {
       if (typeof html2canvas === "undefined") await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
-      const cv = await html2canvas($("#kakaoCap"), { backgroundColor: "#ffffff", scale: 2 });
+      // 미리보기 칸은 높이 제한(스크롤)이 있어서, 찍는 동안만 풀어서 전체가 다 나오게
+      const el = $("#kakaoCap"), old = [el.style.maxHeight, el.style.overflow];
+      el.style.maxHeight = "none"; el.style.overflow = "visible";
+      let cv; try { cv = await html2canvas(el, { backgroundColor: "#ffffff", scale: 2, height: el.scrollHeight, windowHeight: Math.max(window.innerHeight, el.scrollHeight + 200) }); }
+      finally { el.style.maxHeight = old[0]; el.style.overflow = old[1]; }
       const a = document.createElement("a"); a.href = cv.toDataURL("image/png"); a.download = `회의결과_${S.rMonth}.png`; a.click();
     } catch (e) { toast("이미지를 만들지 못했어요. 인터넷 연결을 확인해 주세요."); }
   });

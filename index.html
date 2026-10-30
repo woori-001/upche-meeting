@@ -1914,13 +1914,13 @@ function cnoteHtml(name) {
   const tags = [...p.picks.map(x => `<span class="cn-tag">${esc(x.replace(/^거래중단_/, "거래중단 · "))}</span>`), ...(p.manual ? [`<span class="cn-tag man">${esc(p.manual)}</span>`] : [])].join("");
   return `<div class="bc-note">${tags ? `<div class="cn-tags">${tags}</div>` : ""}<button class="cn-btn" data-cnote="${esc(name)}">${ic("edit", 12)}${tags ? "사유 고치기" : "이탈 사유 고르기"}</button>${n && n.note ? `<small>${n.month ? `${+n.month.slice(5)}월 실적 회의 · ` : ""}${esc(whoShort(n.by))} · ${atShort(n.at)}</small>` : ""}</div>`;
 }
-// 휴/폐업·거래중단_ 사유를 고른 업체는 그 달 회의 결정을 "정책중단"으로 자동 기록
+// 휴/폐업·거래중단_ 사유를 고른 업체는 그 달 회의 결정이 아직 없을 때만 "정책중단"으로 자동 기록
 async function autoStopFromNote(name, note, month) {
   const picks = cnoteParse(note).picks.filter(x => x.startsWith("거래중단_") || x === "휴/폐업");   // 휴/폐업·거래중단 → 정책중단
   if (!picks.length || !month || S.decErr) return false;
   const dn = D.activeAll.has(name) ? name : dataNameOf(name) || name;
   const cur = decOf(month, dn, "");
-  if (cur && cur.action === "stop") return false;
+  if (cur) return false;   // 이미 그 달 결정이 있으면(등급변경·유예 등 직접 고른 것 포함) 절대 덮어쓰지 않음
   const info = D.partners.get(dn) || (D.MI && D.MI.lookup(name)) || {};
   const memo = cur && cur.memo ? cur.memo : picks.map(x => x.replace(/^거래중단_/, "")).join(", ");
   const r = await gs("decSave", month, dn, DEC_ALL, "stop", cur ? cur.gradeFrom : info.grade || "", "", memo);
@@ -2137,6 +2137,13 @@ const DEC_CHANGE = (d) => d.action === "grade" || d.action === "stop";   // 어�
 const whoShort = (s) => String(s || "").replace(/\(.*\)$/, "");
 const atShort = (s) => s ? `${+s.slice(5, 7)}/${+s.slice(8, 10)} ${s.slice(11, 16)}` : "";
 const decKey = (d) => `${d.month}|${d.partner}|${d.telco}`;
+// 결정 메모를 줄 단위로: 고른 사유는 한 줄씩, 수기 메모는 마지막 한 줄
+function memoLines(d) {
+  if (!d.memo) return [];
+  const p = decMemoParse(d.memo);
+  return p.picks.length ? [...p.picks.map(rShort), ...(p.manual ? [p.manual] : [])] : [d.memo];
+}
+const memoHtml = (d) => memoLines(d).map(esc).join("<br>");
 const DEC_ALL = "전체";   // 회의 결정은 통신사와 상관없이 협력점 기준
 // 그 달 그 업체의 결정 (협력점 기준 결정이 먼저, 예전에 통신사별로 적은 것도 찾아줌)
 function decOf(m, p, t) { return S.dec.find(d => d.month === m && d.partner === p && d.telco === DEC_ALL) || S.dec.find(d => d.month === m && d.partner === p && (!t || d.telco === t)) || null; }
@@ -2168,7 +2175,7 @@ function decListHtml(M) {
     return `<div class="bcard ditem" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" title="눌러서 고치기">
       <div class="di-top">${d.telco === DEC_ALL ? "" : `<span class="dtel">${esc(d.telco)}</span>`}<b class="di-n">${esc(dispName(d.partner))}</b>${p.seg ? `<span class="dim small">${esc(p.seg)}</span>` : ""}</div>
       <div class="di-act">${decWhat(d)}</div>
-      ${d.memo ? `<div class="di-memo">${esc(d.memo)}</div>` : ""}
+      ${d.memo ? `<div class="di-memo">${memoHtml(d)}</div>` : ""}
       <div class="di-by">${esc(whoShort(d.by))} · ${atShort(d.at)}${DEC_CHANGE(d) ? `<span class="di-done">${d.admin ? `<i class="on">어드민</i>` : `<i>어드민</i>`}${d.kakao ? `<i class="on">카톡</i>` : `<i>카톡</i>`}</span>` : ""}</div></div>`;
   }).join("");
   const prevHold = S.dec.filter(d => d.month === addMonths(M, -1) && d.action === "hold").length;
@@ -2218,7 +2225,7 @@ function telcoHtml(M) {
   const tabCnt = (x) => { const s = S.tTel; S.tTel = x; const n = calcTelGap(M, x).rows.length; S.tTel = s; return n; };
   const decCell = (name) => {
     const d = decOf(M, name, t);
-    return d ? `<td class="dcell"><button class="dbtn done" data-dp="${esc(name)}" data-dt="${esc(t)}">${decWhat(d)}</button>${d.memo ? `<div class="dmemo">${esc(d.memo)}</div>` : ""}</td>`
+    return d ? `<td class="dcell"><button class="dbtn done" data-dp="${esc(name)}" data-dt="${esc(t)}">${decWhat(d)}</button>${d.memo ? `<div class="dmemo">${memoHtml(d)}</div>` : ""}</td>`
       : `<td class="dcell"><button class="dbtn" data-dp="${esc(name)}" data-dt="${esc(t)}">${ic("edit", 13)}결정</button></td>`;
   };
   const holdHtml = holds.length ? `<div class="holdbox"><div class="hb-h">${ic("rotate", 14)}<b>지난달 유예</b><span>${monthLabel(prev)} 회의에서 “한 달 더 보기”로 한 곳 · 이번 달 ${esc(t)} 접수를 확인하세요</span></div>
@@ -2271,7 +2278,7 @@ function kakaoText(m) {
   if (!list.length) return "";
   const line = (d) => {
     const g = d.action === "grade" ? ` : ${d.gradeFrom || "?"} → ${d.gradeTo || "?"}` : d.gradeFrom ? ` (${d.gradeFrom})` : "";
-    return `· ${dispName(d.partner)}${g}${d.memo ? `\n   └ ${d.memo}` : ""}`;
+    return `· ${dispName(d.partner)}${g}${memoLines(d).map(x => `\n   └ ${x}`).join("")}`;
   };
   return `[${mLabel(m)} 실적 회의 결과]\n` + SHARE_ORDER.map(([k, l]) => {
     const xs = list.filter(d => d.action === k).sort((a, b) => a.partner.localeCompare(b.partner));
@@ -2302,7 +2309,7 @@ function resultHtml() {
       const off = isShareOff(d);
       return `<tr class="${off ? "shoff" : ""}"><td class="shc"><label class="shsw${off ? "" : " on"}" title="${off ? "회의 공유에서 빠져 있어요" : "회의 공유에 들어가요"}"><input type="checkbox" data-shk="${esc(decKey(d))}"${off ? "" : " checked"}><i></i></label></td><td class="nm"><a class="pn" data-p="${esc(d.partner)}">${esc(dispName(d.partner))}</a></td><td><span class="dim">${esc(p.seg || "-")}</span></td>
         <td><button class="dbtn done" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}">${d.action === "grade" ? `<span class="dg">${esc(d.gradeFrom || "?")}</span><span class="dar">→</span><span class="dchip k-grade">${esc(d.gradeTo || "?")}</span>` : d.gradeFrom ? `<span class="dg">${esc(d.gradeFrom)}</span>` : `<span class="dim">고치기</span>`}</button></td>
-        <td class="memo">${esc(d.memo) || `<span class="dim">-</span>`}</td><td class="small" title="${esc(d.at)}">${esc(whoShort(d.by))} <span class="dim">${atShort(d.at)}</span></td>${ck(d, "admin")}${ck(d, "kakao")}</tr>`; }).join("");
+        <td class="memo">${memoHtml(d) || `<span class="dim">-</span>`}</td><td class="small" title="${esc(d.at)}">${esc(whoShort(d.by))} <span class="dim">${atShort(d.at)}</span></td>${ck(d, "admin")}${ck(d, "kakao")}</tr>`; }).join("");
   }).join("");
   const groups = rowsHtml ? `<section class="card rgrp"><div class="tw free"><table class="t rtab"><thead><tr><th title="끄면 회의 공유(문구·이미지)에서만 빠져요">공유</th><th>업체</th><th>구분</th><th>등급</th><th>메모</th><th>결정한 사람</th><th>어드민 반영</th><th>카톡방 반영</th></tr></thead><tbody>${rowsHtml}</tbody></table></div></section>` : "";
   const kt = kakaoText(m);
@@ -2411,7 +2418,7 @@ function detailDecHtml(name) {
   if (S.decErr) return "";
   const M = S.month, now = S.dec.filter(d => d.partner === name && d.month === M).sort((a, b) => telOrder(a.telco) - telOrder(b.telco));
   const old = S.dec.filter(d => d.partner === name && d.month !== M).sort((a, b) => b.month.localeCompare(a.month) || telOrder(a.telco) - telOrder(b.telco));
-  const row = (d) => `<div class="drd" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}">${d.telco === DEC_ALL ? "" : `<span class="dtel">${esc(d.telco)}</span>`}<span class="drd-a">${decWhat(d)}</span>${d.memo ? `<span class="drd-m">${esc(d.memo)}</span>` : ""}</div>`;
+  const row = (d) => `<div class="drd" data-dp="${esc(d.partner)}" data-dt="${esc(d.telco)}" data-dm="${d.month}">${d.telco === DEC_ALL ? "" : `<span class="dtel">${esc(d.telco)}</span>`}<span class="drd-a">${decWhat(d)}</span>${d.memo ? `<span class="drd-m">${memoHtml(d)}</span>` : ""}</div>`;
   return `<h4 class="dh4">회의 결정 <span class="sub">${monthLabel(M)} 실적 회의</span><button class="ghost sm" data-dp="${esc(name)}" data-dt="">${ic("edit", 13)}결정 기록</button></h4>
     <div class="drdl">${now.length ? now.map(row).join("") : `<p class="sub">이번 회의 결정이 없어요</p>`}</div>
     ${old.length ? `<details class="drold"><summary>지난 결정 ${old.length}건</summary>${old.map(d => `<div class="drold-r"><span class="dim">${monthLabel(d.month)}</span>${row(d)}</div>`).join("")}</details>` : ""}`;

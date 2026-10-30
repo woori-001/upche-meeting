@@ -1090,7 +1090,8 @@ function gradeOf(name, group) {
   if (s === "협력점_B") return "B";
   if (s === "협력점_C") return "C";
   if (s === "협력점_D" || s.startsWith("협력점_D_")) return "D";
-  if (s.startsWith("협력점_S_") || s === "협력점_컨택") return "협의";
+  if (s === "협력점_컨택") return "컨택";
+  if (s.startsWith("협력점_S_")) return "협의";
   if (s === "상부점") return "상부점";
   return s.replace(/^(협력점_|판매점_)/, ""); // 표에 없는 새 정산그룹: 원문 표시(담당자 확인 필요)
 }

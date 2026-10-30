@@ -788,6 +788,12 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
 .cn-opt.sm i{width:16px;height:16px}
 #dRsW[hidden]{display:none}
 .dform label.cn-opt{flex-direction:row;align-items:center;gap:8px;font-weight:500;color:var(--text);font-size:12.5px}
+/* 검색 결과 */
+.shits{padding:14px 18px;margin-bottom:16px}
+.sh-h{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}.sh-h svg{color:var(--pri)}
+.sh-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 0;border-top:1px solid #f1f3f6}
+.sh-r .pn{font-weight:700}
+.sh-seg{border:0;cursor:pointer}
 </style>
 </head>
 <body>
@@ -1790,7 +1796,7 @@ function mainHtml() {
   const M = S.month;
   if (S.view === "telco") return telcoHtml(M);
   if (S.view === "result") return resultHtml();
-  return headerHtml(M) + summaryHtml(M) + boardHtml(M) + growHtml(M) + qualityHtml(M) + dormHtml(M) + footHtml();
+  return headerHtml(M) + searchHitsHtml(M) + summaryHtml(M) + boardHtml(M) + growHtml(M) + qualityHtml(M) + dormHtml(M) + footHtml();
 }
 function headerHtml(M) {
   return `<div class="top">
@@ -2009,6 +2015,22 @@ function qualityHtml(M) {
       <tr>${gs3(g => th("q", "c" + g, G_LABEL[g], "n sub2"))}${gs3(g => th("q", "t" + g, G_LABEL[g], "n sub2"))}</tr></thead>
     <tbody>${body || `<tr><td colspan="8" class="none">${S.qOnlyBad ? "주의 업체가 없어요" : "접수 업체가 없어요"}</td></tr>`}</tbody></table></div>
   </section>`;
+}
+// 검색했을 때: 구분(협력점·판매점·제휴)·휴면 상관없이 찾은 업체와 지금 상태를 한 줄씩
+function searchHitsHtml(M) {
+  const q = S.search.trim(); if (!q) return "";
+  const all = [...D.registered.map(x => ({ ...x, dorm: false })), ...D.dormant.map(x => ({ ...x, dorm: true }))].filter(x => matchSearch(x.name));
+  const rows = all.slice(0, 12).map(x => {
+    const dn = dataNameOf(x.name), last = dn ? lastActive(dn, M) : null, cur = dn ? sumCells(dn, [M], ALLG).n : 0;
+    const st = x.dorm ? `<span class="badge orange">휴면</span>` : cur ? `<span class="badge green">이번 달 ${fmtN(cur)}건</span>`
+      : last ? `<span class="badge red">${monthsBetween(last, M)}개월 공백</span>` : `<span class="badge">접수 이력 없음</span>`;
+    const where = x.dorm ? "맨 아래 휴면 업체" : cur ? "업체별 증감·품질 표" : last ? "이탈 목록" : "이탈 목록 아래 '접수 이력 없음'";
+    return `<div class="sh-r">${dn ? `<a class="pn" data-p="${esc(dn)}">${esc(x.name)}</a>` : `<b>${esc(x.name)}</b>`}${x.grade ? `<span class="tag">${esc(x.grade)}</span>` : ""}
+      ${x.seg === S.seg ? `<span class="segb">${esc(x.seg)}</span>` : `<button class="segb sh-seg" data-seg="${esc(x.seg)}" title="${esc(x.seg)} 화면으로">${esc(x.seg)} ›</button>`}
+      ${st}<span class="dim small">${last ? `마지막 접수 ${monthLabel(last)} · ` : ""}${x.seg === S.seg ? where + "에 있어요" : x.seg + " 화면에 있어요"}</span></div>`;
+  }).join("");
+  return `<div class="card shits"><div class="sh-h">${ic("search", 15)}<b>“${esc(q)}” 검색 결과 ${all.length}곳</b><span class="dim small">구분·휴면 상관없이 찾아요 · 협력점정보에 '거래중'인 곳만</span></div>
+    ${rows || `<p class="sub">협력점정보(거래중)에서 찾지 못했어요. 협력점정보에서 거래유무가 '거래안함'이거나 이름이 다를 수 있어요.</p>`}${all.length > 12 ? `<p class="sub">외 ${all.length - 12}곳 · 더 자세히 적어주세요</p>` : ""}</div>`;
 }
 // 휴면 업체 (상호에 (휴)): 다른 목록에서는 빼고 여기에만 모아서
 function dormHtml(M) {
@@ -2416,6 +2438,7 @@ function bindMain() {
   });
   document.querySelectorAll(".space[data-seg]").forEach(b => b.onclick = () => { S.seg = b.dataset.seg; S.view = "seg"; render(); });
   bindDecPages();
+  document.querySelectorAll(".sh-seg[data-seg]").forEach(b => b.onclick = () => { S.seg = b.dataset.seg; S.view = "seg"; render(); });
   const sm = $("#selMonth"); if (sm) sm.onchange = () => { S.month = sm.value; render(); };
   // 검색: 한글 조합 중에는 다시 그리지 않고, 입력이 0.25초 멈추면 한 번만 검색
   const se = $("#search");

@@ -794,6 +794,7 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
 .sh-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 0;border-top:1px solid #f1f3f6}
 .sh-r .pn{font-weight:700}
 .sh-seg{border:0;cursor:pointer}
+.badge.stopb{background:#3a4252;color:#fff}
 </style>
 </head>
 <body>
@@ -1489,14 +1490,15 @@ function derive() {
     partners.set(p, { ...info, dataName: p });
   }
   // 원장에 있지만 접수 이력이 없는 곳도 등록 업체로 포함
-  const registered = [], dormant = [];
+  const registered = [], dormant = [], stopped = [];   // stopped: 협력점정보에서 거래유무가 거래중이 아닌 곳 (검색용)
   for (const [name, group, trade, flag, reg] of MI.rows) {
     const seg = segmentOf(name, group);
-    if (!seg || trade !== "거래중") continue;
+    if (!seg) continue;
+    if (trade !== "거래중") { stopped.push({ name, seg, grade: gradeOf(name, group), reg, group, trade, dorm: isDorm(name) }); continue; }
     if (isDorm(name)) { dormant.push({ name, seg, grade: gradeOf(name, group), reg, group }); excludedNames.휴면++; continue; }
     registered.push({ name, seg, grade: gradeOf(name, group), reg, group });
   }
-  D = { months, stats, lastAny, partners, registered, dormant, unknown, excludedNames, MI, totalUnits: all.length, all, noTelco, activeAll, statsT };
+  D = { months, stats, lastAny, partners, registered, dormant, stopped, unknown, excludedNames, MI, totalUnits: all.length, all, noTelco, activeAll, statsT };
 }
 
 function cell(p, m, g) {
@@ -2019,18 +2021,21 @@ function qualityHtml(M) {
 // 검색했을 때: 구분(협력점·판매점·제휴)·휴면 상관없이 찾은 업체와 지금 상태를 한 줄씩
 function searchHitsHtml(M) {
   const q = S.search.trim(); if (!q) return "";
-  const all = [...D.registered.map(x => ({ ...x, dorm: false })), ...D.dormant.map(x => ({ ...x, dorm: true }))].filter(x => matchSearch(x.name));
+  const all = [...D.registered.map(x => ({ ...x, dorm: false })), ...D.dormant.map(x => ({ ...x, dorm: true })), ...(D.stopped || []).map(x => ({ ...x, stop: true }))].filter(x => matchSearch(x.name));
   const rows = all.slice(0, 12).map(x => {
     const dn = dataNameOf(x.name), last = dn ? lastActive(dn, M) : null, cur = dn ? sumCells(dn, [M], ALLG).n : 0;
-    const st = x.dorm ? `<span class="badge orange">휴면</span>` : cur ? `<span class="badge green">이번 달 ${fmtN(cur)}건</span>`
-      : last ? `<span class="badge red">${monthsBetween(last, M)}개월 공백</span>` : `<span class="badge">접수 이력 없음</span>`;
-    const where = x.dorm ? "맨 아래 휴면 업체" : cur ? "업체별 증감·품질 표" : last ? "이탈 목록" : "이탈 목록 아래 '접수 이력 없음'";
+    const dec = S.dec.filter(d => d.action === "stop" && (d.partner === dn || dispName(d.partner) === x.name)).sort((a, b) => b.month.localeCompare(a.month))[0];
+    const st = (x.stop ? `<span class="badge stopb">거래중단${x.trade && x.trade !== "거래안함" ? ` (${esc(x.trade)})` : ""}</span>` : "")
+      + (dec ? `<span class="badge red">정책중단 · ${monthLabel(dec.month)} 회의</span>` : "")
+      + (x.dorm ? `<span class="badge orange">휴면</span>` : x.stop ? "" : cur ? `<span class="badge green">이번 달 ${fmtN(cur)}건</span>`
+      : last ? `<span class="badge red">${monthsBetween(last, M)}개월 공백</span>` : `<span class="badge">접수 이력 없음</span>`);
+    const where = x.stop ? "협력점정보에서 거래중단이라 목록에는 없어요" : x.dorm ? "맨 아래 휴면 업체" : cur ? "업체별 증감·품질 표" : last ? "이탈 목록" : "이탈 목록 아래 '접수 이력 없음'";
     return `<div class="sh-r">${dn ? `<a class="pn" data-p="${esc(dn)}">${esc(x.name)}</a>` : `<b>${esc(x.name)}</b>`}${x.grade ? `<span class="tag">${esc(x.grade)}</span>` : ""}
       ${x.seg === S.seg ? `<span class="segb">${esc(x.seg)}</span>` : `<button class="segb sh-seg" data-seg="${esc(x.seg)}" title="${esc(x.seg)} 화면으로">${esc(x.seg)} ›</button>`}
-      ${st}<span class="dim small">${last ? `마지막 접수 ${monthLabel(last)} · ` : ""}${x.seg === S.seg ? where + "에 있어요" : x.seg + " 화면에 있어요"}</span></div>`;
+      ${st}<span class="dim small">${last ? `마지막 접수 ${monthLabel(last)} · ` : ""}${x.stop ? where : x.seg === S.seg ? where + "에 있어요" : x.seg + " 화면에 있어요"}</span></div>`;
   }).join("");
-  return `<div class="card shits"><div class="sh-h">${ic("search", 15)}<b>“${esc(q)}” 검색 결과 ${all.length}곳</b><span class="dim small">구분·휴면 상관없이 찾아요 · 협력점정보에 '거래중'인 곳만</span></div>
-    ${rows || `<p class="sub">협력점정보(거래중)에서 찾지 못했어요. 협력점정보에서 거래유무가 '거래안함'이거나 이름이 다를 수 있어요.</p>`}${all.length > 12 ? `<p class="sub">외 ${all.length - 12}곳 · 더 자세히 적어주세요</p>` : ""}</div>`;
+  return `<div class="card shits"><div class="sh-h">${ic("search", 15)}<b>“${esc(q)}” 검색 결과 ${all.length}곳</b><span class="dim small">구분·휴면·거래중단 상관없이 협력점정보 전체에서 찾아요</span></div>
+    ${rows || `<p class="sub">협력점정보에서 찾지 못했어요. 이름을 다르게 적어보거나 협력점정보를 최신으로 올려주세요.</p>`}${all.length > 12 ? `<p class="sub">외 ${all.length - 12}곳 · 더 자세히 적어주세요</p>` : ""}</div>`;
 }
 // 휴면 업체 (상호에 (휴)): 다른 목록에서는 빼고 여기에만 모아서
 function dormHtml(M) {

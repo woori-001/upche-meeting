@@ -1,7 +1,7 @@
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611031507';
-import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611031507';
-import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611031507';
-import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611031507';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611031531';
+import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611031531';
+import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611031531';
+import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611031531';
 
 // ---------- 서버 (업체회의 웹과 같은 로그인 · 같은 Supabase) ----------
 // 업체회의 웹에서 로그인한 토큰을 그대로 씀 (같은 주소라 브라우저 저장소를 같이 봄)
@@ -226,7 +226,7 @@ function acceptAdminFiles(data) {
 window.__pnlImport = acceptAdminFiles;   // 업체회의 웹(바깥 화면)이 부르는 입구
 // 따로 연 유통매출 창: 열린 업체회의 웹이 없을 때 중계 창이 보내는 유통매출 데이터를 여기서 받음
 if (!EMBED) {
-  import('./import-bus.js?v=202611031507').then(({ channel, takePending }) => {
+  import('./import-bus.js?v=202611031531').then(({ channel, takePending }) => {
     const ch = channel(), me = Math.random().toString(36).slice(2);
     ch.onmessage = async (m) => {
       const d = m.data || {};

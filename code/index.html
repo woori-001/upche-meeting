@@ -276,6 +276,52 @@ details.cfg>summary::after{color:var(--dim)}
 .savebar{border-radius:20px;padding:14px 18px;margin:0 0 20px}
 .savebar input[type=month]{font:inherit}
 @media (max-width:1100px){.summary-bar.kpis{grid-template-columns:1fr 1fr}}
+
+/* ===== 브랜드별 실적: 업체회의 보드와 같은 칸 ===== */
+.board-h{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:4px 0 4px}
+.board-h h2{font-size:17px;margin:0;font-weight:700}.board-h .sub{margin:2px 0 0}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;align-items:start;margin-bottom:24px}
+.col{border-radius:18px 40px 18px 18px;padding:0 8px 8px;margin-top:12px;display:flex;flex-direction:column;min-width:0}
+.col.t-sky{background:#eef4ff}.col.t-skb{background:#e7f7f2}.col.t-rental{background:#fff0ef}.col.t-biz{background:#f3f0ff}
+.hero{position:relative;border-radius:18px 40px 18px 18px;padding:18px 16px 12px 62px;color:#fff;margin:0 -8px 10px;cursor:pointer;user-select:none}
+.t-sky .hero{background:#4c82f7;box-shadow:0 10px 20px -14px rgba(76,130,247,.7)}
+.t-skb .hero{background:#3dbb9f;box-shadow:0 10px 20px -14px rgba(61,187,159,.7)}
+.t-rental .hero{background:#f27a8a;box-shadow:0 10px 20px -14px rgba(242,122,138,.7)}
+.t-biz .hero{background:#8b7cf6;box-shadow:0 10px 20px -14px rgba(139,124,246,.7)}
+.hero .hico{position:absolute;left:14px;top:16px;width:36px;height:36px;border-radius:12px;background:#fff;display:grid;place-items:center;box-shadow:0 6px 12px -6px rgba(20,30,50,.3)}
+.t-sky .hico{color:#4c82f7}.t-skb .hico{color:#2fae93}.t-rental .hico{color:#ef6f82}.t-biz .hico{color:#7a68f0}
+.hero .hh{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:28px}
+.hero h3{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px}
+.hero .sc-real-val,.hero .sc-real-val.pos,.hero .sc-real-val.neg{color:#fff;font-size:20px;line-height:1.1;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.hero .col-s{color:rgba(255,255,255,.88);margin:6px 0 0;font-size:12px;line-height:1.45}
+.hero .sc-sub{color:inherit;font-size:inherit;margin:0}.hero .sc-sub span{margin-right:6px}
+.hchev{color:#fff;opacity:.85;font-size:12px;transition:transform .15s}
+.board.folded .hchev{transform:rotate(-90deg)}
+.board.folded .col-b{display:none}
+.board.folded .hero{margin-bottom:0}.board.folded .col{padding-bottom:0}
+.col-b{display:flex;flex-direction:column;gap:10px;padding:2px 2px 0}
+.bcard{background:#fff;border-radius:16px;padding:14px 16px 10px;box-shadow:0 1px 2px rgba(20,30,50,.04)}
+.t-sky .bcard{border:1px solid #dbe7ff}.t-skb .bcard{border:1px solid #cdeee3}.t-rental .bcard{border:1px solid #ffdcdc}.t-biz .bcard{border:1px solid #e4defd}
+.bc-h{display:flex;flex-direction:column;gap:6px;padding-bottom:10px;border-bottom:1px dashed var(--line2);margin-bottom:4px}
+.bc-h .card-code{margin:0;color:var(--sub)}
+.bc-h .badge{align-self:flex-start;margin:0}
+.t-sky .result-row.highlight{background:#eef4ff}.t-skb .result-row.highlight{background:#e7f7f2}.t-rental .result-row.highlight{background:#fff0ef}.t-biz .result-row.highlight{background:#f3f0ff}
+@media (max-width:1200px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* 접었다 폈다 섹션 */
+details.fold-sec{padding:0}
+details.fold-sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:18px 22px;user-select:none}
+details.fold-sec>summary::-webkit-details-marker{display:none}
+.ib{flex:none;width:36px;height:36px;border-radius:12px;display:grid;place-items:center}
+.ib.c-or{background:#fff4e0;color:#e08a00}.ib.c-red{background:#ffeceb;color:#ef6f82}
+.fs-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.fs-t b{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px}
+.fs-t small{font-size:13px;color:var(--sub);font-weight:400}
+.fs-badge{font-style:normal;font-size:11.5px;font-weight:600;border-radius:6px;padding:2px 8px;background:#fff4e0;color:#b76e00}
+.fs-badge.ok{background:#e6f6ef;color:#1f9d6b}
+.fs-chev{color:var(--dim);font-size:13px;transition:transform .15s}
+details.fold-sec:not([open]) .fs-chev{transform:rotate(-90deg)}
+.fs-body{padding:0 22px 22px}
+#hwansu{margin-top:0}
 </style>
 </head>
 <body>
@@ -384,56 +430,43 @@ details.cfg>summary::after{color:var(--dim)}
     <div class="sb-r"><label class="sb-m">저장할 달 <input type="month" id="sbMonth"></label><button class="sb-btn" id="sbSave">이 달 결과 저장</button></div>
   </div>
   <div id="results">
-    <div class="summary-bar kpis">
-        <div class="summary-card sky">
-          <div class="sc-brand sky">SKYLIFE</div>
-          <div class="sc-real-label">실예상수익</div>
-          <div class="sc-real-val" id="sc-sky-real"></div>
-          <div class="sc-sub" id="sc-sky-sub"></div>
-        </div>
-        <div class="summary-card skb">
-          <div class="sc-brand skb">SKB</div>
-          <div class="sc-real-label">실예상수익</div>
-          <div class="sc-real-val" id="sc-skb-real"></div>
-          <div class="sc-sub" id="sc-skb-sub"></div>
-        </div>
-        <div class="summary-card rental">
-          <div class="sc-brand rental">SK매직 렌탈</div>
-          <div class="sc-real-label">실예상수익</div>
-          <div class="sc-real-val" id="sc-rental-real"></div>
-          <div class="sc-sub" id="sc-rental-sub"></div>
-        </div>
-        <div class="summary-card biz">
-          <div class="sc-brand biz">유선기타</div>
-          <div class="sc-real-label">수익(A-B)</div>
-          <div class="sc-real-val" id="sc-biz-real"></div>
-          <div class="sc-sub" id="sc-biz-sub"></div>
-        </div>
+    <div class="board-h"><div><h2>브랜드별 실적</h2><p class="sub" id="dash-month"></p></div>
+      <button class="tb ghost" onclick="downloadExcel()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>엑셀</button></div>
+    <div class="board" id="board">
+      <div class="col t-sky">
+        <div class="hero" data-fold title="눌러서 네 칸 모두 접기/펼치기"><span class="hico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg></span>
+          <div class="hh"><h3>SKYLIFE <span class="sc-real-val" id="sc-sky-real"></span></h3><span class="hchev">▾</span></div>
+          <p class="col-s">실예상수익 · <span class="sc-sub" id="sc-sky-sub"></span></p></div>
+        <div class="col-b"><div class="bcard">
+          <div class="bc-h"><span class="card-code" id="code-sky"></span></div>
+          <div id="sky-result"></div></div></div>
       </div>
-    <div class="section">
-      <div class="card-h"><div><h2>브랜드별 실적</h2><p class="sub" id="dash-month"></p></div>
-        <button class="tb ghost" onclick="downloadExcel()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>엑셀</button></div>
-      <div class="result-grid">
-      <div class="result-card">
-        <div class="result-card-title sky">SKYLIFE<span class="card-code" id="code-sky"></span></div>
-        <div id="sky-result"></div>
+      <div class="col t-skb">
+        <div class="hero" data-fold title="눌러서 네 칸 모두 접기/펼치기"><span class="hico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></span>
+          <div class="hh"><h3>SKB <span class="sc-real-val" id="sc-skb-real"></span></h3><span class="hchev">▾</span></div>
+          <p class="col-s">실예상수익 · <span class="sc-sub" id="sc-skb-sub"></span></p></div>
+        <div class="col-b"><div class="bcard">
+          <div class="bc-h"><span class="card-code" id="code-skb"></span></div>
+          <div id="skb-result"></div></div></div>
       </div>
-      <div class="result-card">
-        <div class="result-card-title skb">SKB<span class="card-code" id="code-skb"></span></div>
-        <div id="skb-result"></div>
+      <div class="col t-rental">
+        <div class="hero" data-fold title="눌러서 네 칸 모두 접기/펼치기"><span class="hico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></span>
+          <div class="hh"><h3>SK매직 렌탈 <span class="sc-real-val" id="sc-rental-real"></span></h3><span class="hchev">▾</span></div>
+          <p class="col-s">실예상수익 · <span class="sc-sub" id="sc-rental-sub"></span></p></div>
+        <div class="col-b"><div class="bcard">
+          <div class="bc-h"><span class="badge">유지수수료 없음</span><span class="card-code" id="code-rental"></span></div>
+          <div id="rental-result"></div></div></div>
       </div>
-      <div class="result-card">
-        <div class="result-card-title rental">SK매직 렌탈 <span class="badge">유지수수료 없음</span><span class="card-code" id="code-rental"></span></div>
-        <div id="rental-result"></div>
-      </div>
-      <div class="result-card">
-        <div class="result-card-title biz">유선기타 <span class="badge">자점마진·유지수수료 없음</span><span class="card-code" id="code-biz"></span></div>
-        <div id="biz-result"></div>
+      <div class="col t-biz">
+        <div class="hero" data-fold title="눌러서 네 칸 모두 접기/펼치기"><span class="hico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+          <div class="hh"><h3>유선기타 <span class="sc-real-val" id="sc-biz-real"></span></h3><span class="hchev">▾</span></div>
+          <p class="col-s">수익(A-B) · <span class="sc-sub" id="sc-biz-sub"></span></p></div>
+        <div class="col-b"><div class="bcard">
+          <div class="bc-h"><span class="badge">자점마진·유지수수료 없음</span><span class="card-code" id="code-biz"></span></div>
+          <div id="biz-result"></div></div></div>
       </div>
     </div>
-    </div>
-    <div class="section">
-      <div class="card-h"><div><h2>수익 요약</h2><p class="sub">수입 · 지출 · 예상관리를 브랜드별로 정리했어요</p></div></div>
+    <div hidden>
       <div class="detail-grid">
         <div class="detail-card">
           <div class="dc-head"><div class="dc-brand sky">SKYLIFE</div><div class="dc-cnt" id="dc-sky-cnt"></div></div>
@@ -453,8 +486,9 @@ details.cfg>summary::after{color:var(--dim)}
         </div>
       </div>
     </div>
-    <div class="section diag">
-      <div class="card-h"><div><h2>조건 체크 리포트</h2><p class="sub">어떤 행이 어느 브랜드로 분류됐는지, 무엇이 빠졌는지 확인해요</p></div></div>
+    <details class="section diag fold-sec" id="diagSec">
+      <summary><span class="ib c-or"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span><span class="fs-t"><b>조건 체크 리포트 <i class="fs-badge" id="diagBadge" hidden></i></b><small>어떤 행이 어느 브랜드로 분류됐는지, 무엇이 빠졌는지 확인해요</small></span><span class="fs-chev">▾</span></summary>
+      <div class="fs-body">
       <div id="diag-alerts"></div>
       <div class="diag-scroll"><table class="diag-table" id="diag-main"></table></div>
       <div class="cfg-sub">상품 분류별 건수 (행 단위 · 고객 단위 아님)</div>
@@ -466,11 +500,12 @@ details.cfg>summary::after{color:var(--dim)}
       <div class="cfg-sub">집계에서 빠진 상부점 (참고 · 상위 12개)</div>
       <div class="diag-scroll"><table class="diag-table" id="diag-other"></table></div>
     </div>
-
+    </details>
   </div>
 
-  <div class="section" id="hwansu">
-    <div class="card-h"><div><h2>환수 체크</h2><p class="sub">상부정산 · 우리 코드만 · 수익 계산과 별개</p></div></div>
+  <details class="section fold-sec" id="hwansu">
+    <summary><span class="ib c-red"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span><span class="fs-t"><b>환수 체크 <i class="fs-badge" id="hwBadge" hidden></i></b><small>상부정산 · 우리 코드만 · 수익 계산과 별개</small></span><span class="fs-chev">▾</span></summary>
+    <div class="fs-body">
     <div class="hw-note"><b>상부정산</b>에서 정산종류가 '환수'인 행 중 <b>우리 코드</b>(SKY-우리 · SKB-웨이브넷 · SK매직-우성)만 모아 금액을 따로 봅니다.
       위 수익(A−B)에는 영향을 주지 않으며, 해지·정산관련 제외 같은 집계 규칙은 적용하지 않습니다.</div>
     <div class="diag-scroll"><table class="diag-table" id="hw-sum"></table></div>
@@ -478,7 +513,8 @@ details.cfg>summary::after{color:var(--dim)}
     <div class="cfg-sub">환수 행 상세</div>
     <div class="diag-scroll hw-list"><table class="diag-table" id="hw-rows"></table></div>
     <button class="tb ghost hw-dl" onclick="downloadHwansu()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>환수 내역 엑셀</button>
-  </div>
+    </div>
+  </details>
 </div>
 
 <script>
@@ -1594,10 +1630,35 @@ function downloadExcel() {
       location.reload();
     }).catch(function (e) { alert('지우기 실패: ' + e.message); });
   };
+  // 브랜드 칸: 머리를 누르면 네 칸 모두 접기/펼치기
+  document.querySelectorAll('#board .hero').forEach(function (h) { h.onclick = function () { document.getElementById('board').classList.toggle('folded'); }; });
+  // 접힌 섹션 제목 옆에 요약 배지
+  function badges() {
+    var w = document.querySelectorAll('#diag-alerts .diag-warn').length ? document.querySelectorAll('#diag-alerts .diag-warn br').length + 1 : 0;
+    var db = document.getElementById('diagBadge');
+    db.hidden = false; db.className = 'fs-badge' + (w ? '' : ' ok'); db.textContent = w ? '확인할 것 ' + w + '개' : '이상 없음';
+    var hb = document.getElementById('hwBadge');
+    var h = (typeof lastHwansu !== 'undefined' && lastHwansu && lastHwansu.total) || null;
+    hb.hidden = !h; if (h) { hb.className = 'fs-badge' + (h.cnt ? '' : ' ok'); hb.textContent = h.cnt ? h.cnt + '건 · ' + Number(h.amt || 0).toLocaleString('ko-KR') + '원' : '없음'; }
+  }
+  function postState(st) { try { parent.postMessage(Object.assign({ type: 'code-state' }, st), location.origin); } catch (e) {} }
+  // 저장 (업체회의 사이드바의 [이 달 결과 저장] 버튼이 부름)
+  window.__codeSave = function (m) {
+    if (!/^\d{4}-\d{2}$/.test(m || '')) return Promise.reject(new Error('저장할 달을 골라주세요.'));
+    if (!lastResult) return Promise.reject(new Error('계산 결과가 없어요.'));
+    var hw = lastHwansu ? { by: lastHwansu.by, total: lastHwansu.total, skipped: lastHwansu.skipped, month: m } : {};
+    return rpc('upche_code_save', { p_month: m, p_result: strip(lastResult), p_diag: strip(Object.assign({}, lastDiag, { month: m })), p_hwansu: hw, p_source: source })
+      .then(function (r) {
+        head(ml(m) + ' 코드실적', '저장 ' + (r && r.savedAt ? r.savedAt + ' · ' + r.savedBy : ''), m);
+        try { parent.postMessage({ type: 'code-saved', month: m }, location.origin); } catch (e) {}
+        return r;
+      });
+  };
   window.__afterCalc = function () {
-    setBox(false);
+    setBox(false); badges();
+    postState({ state: 'calc', month: (lastDiag && lastDiag.month) || '', source: source });
     head((ml((lastDiag && lastDiag.month) || '') || '') + ' 코드실적', (source === '어드민' ? '어드민에서 가져온 파일로 계산 · ' : '올린 파일로 계산 · ') + '아직 저장 안 함');
-    bar.hidden = false; bar.classList.remove('saved'); btn.disabled = false; btn.hidden = false; mIn.parentElement.hidden = false;
+    bar.hidden = true; bar.classList.remove('saved'); btn.disabled = false; btn.hidden = false; mIn.parentElement.hidden = false;
     mIn.value = (lastDiag && lastDiag.month) || '';
     document.getElementById('sbTitle').textContent = (ml(mIn.value) || '계산 결과') + ' · 아직 저장 안 함';
     document.getElementById('sbSub').textContent = (source === '어드민' ? '어드민에서 가져온 파일로 계산했어요' : '올린 파일로 계산했어요') + ' · 확인 후 저장하면 달력에서 다시 볼 수 있어요';
@@ -1654,7 +1715,7 @@ function downloadExcel() {
         document.getElementById('hw-rows').innerHTML = '<tbody><tr><td colspan="8" style="color:#94a3b8;">저장된 결과에는 환수 상세 목록(고객 정보)을 남기지 않아요 · 합계만 보여요</td></tr></tbody>'; }
     } catch (e) { console.error(e); }
     document.getElementById('results').style.display = 'block';
-    bar.hidden = true; setBox(false);
+    bar.hidden = true; setBox(false); badges();
     head(ml(run.month) + ' 코드실적', '저장 ' + (run.savedAt || '') + ' · ' + (run.savedBy || '') + (run.source ? ' · ' + run.source + '에서 가져옴' : ''), run.month);
     document.getElementById('sbTitle').textContent = ml(run.month) + ' · 저장된 결과';
     document.getElementById('sbSub').textContent = (run.source ? run.source + ' · ' : '') + (run.savedBy || '') + ' · ' + (run.savedAt || '') + ' 저장';

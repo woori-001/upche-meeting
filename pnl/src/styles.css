@@ -611,69 +611,6 @@ details.panel.ev-more, .ev-panel { grid-template-columns: minmax(0, 1fr); }
 .mode3 button:hover:not(.on){background:#edf3ff}
 .mode3 button.on{background:var(--side);color:#fff;box-shadow:0 2px 6px rgba(17,24,39,.18)}
 
-/* ===== 업체회의 웹과 같은 사이드바 (흰 바탕 · 파란 전환 버튼) ===== */
-.side{background:#fff;color:#1c2230;border-right:1px solid #eaedf2;padding:24px 16px}
-.side .brand-title{display:none}
-.side .logo-plate img{max-width:150px}
-.side .divider{background:#eaedf2}
-.mode3{background:#4c82f7}
-.mode3 button{color:rgba(255,255,255,.85)}
-.mode3 button:hover:not(.on){background:rgba(255,255,255,.12)}
-.mode3 button.on{background:#fff;color:#3a6fe6;box-shadow:0 1px 4px rgba(20,30,50,.18)}
-/* 달력·정보 카드 */
-.side .rail .panel{background:#f6f8fb;border:0;box-shadow:none;backdrop-filter:none;color:#1c2230}
-.side .cal-mini,.side .rail-info{color:#1c2230}
-.side .cm-head b{color:#1c2230}
-.side .cm-nav{color:#7d8697}.side .cm-nav:hover{background:#eceff5;color:#1c2230}
-.side .cm-m{color:#3a4252;font-weight:600}
-.side .cm-m:hover:not(:disabled){background:#eceff5}
-.side .cm-m:disabled{color:#c5cbd5}
-.side .cm-m.now{box-shadow:inset 0 0 0 1.5px #dfe3ea}
-.side .cm-m.on{background:#4c82f7;color:#fff;box-shadow:0 4px 10px -4px rgba(76,130,247,.6)}
-.side .cm-m i{box-shadow:0 0 0 1.5px #f6f8fb}
-.side .cm-m i.calc{background:#4c82f7}.side .cm-m.on i.calc{background:#fff}
-.side .cm-legend{color:#7d8697}.side .cm-legend i.calc{background:#4c82f7}
-.side .rail-actions .small-btn{background:#fff;border:1px solid #dfe3ea;color:#3a4252}
-.side .rail-actions .small-btn:hover{border-color:#4c82f7;color:#3a6fe6;background:#fff}
-.side .icon-btn{background:#fff;border:1px solid #dfe3ea;color:#3a4252}
-.side .icon-btn:hover{border-color:#4c82f7;color:#3a6fe6;background:#fff}
-.side .icon-btn.primary{background:#4c82f7;border-color:#4c82f7;color:#fff}
-.side .rail-info h3,.side .rail-info b,.side .rail-info .ri-big{color:#1c2230}
-.side .rail-info .ri-sub{color:#3a4252}
-.side .rail-info .muted,.side .rail-info .ri-line,.side .rail-info .ri-big .muted{color:#7d8697}
-.side .rail-info .ri-checks{color:#7d8697;border-top-color:#eaedf2}
-.side .rail-info .okline{color:#1f9d6b}
-.side .rail-info .neg,.side .rail-info .neg span,.side .rail-info span.neg{color:#e5484d}
-.side .rail-info .ri-state{background:#eceff5;color:#3a4252}
-.side .rail-info .ri-state.ok{background:#e6f6ef;color:#1f9d6b;border-color:#c9ecdc}
-.side .rail-info .ri-state.warn{background:#fff4e5;color:#b45309;border-color:#fde3bf}
-.side .rail-info .ri-run{background:#fff;border:1px solid #dfe3ea;color:#3a4252}
-.side .rail-info .ri-run.on{background:#edf3ff;border-color:#4c82f7;color:#3a6fe6}
-.side .rail-info .ri-run i{box-shadow:none}
-.side .rail-info .link.danger{color:#e5484d}
-.side .rail-info .stt.big{background:#eceff5}
-.side .rail-info .stt.big button{color:#7d8697}
-/* 평가손익 바로가기 · 가져오기 버튼 · 계산 기준 */
-.side-go{background:#f6f8fb;border:1px solid transparent;color:#1c2230}
-.side-go:hover{background:#edf3ff;border-color:#dbe7ff}
-.side-go .sg-ic{background:#4c82f7;color:#fff}
-.side-go small{color:#7d8697}
-.side-go .sg-arrow{color:#7d8697}
-.bmbox{background:#f6f8fb;color:#1c2230}
-.bm-title{color:#3a4252}.bm-help{color:#7d8697}
-a.bm{background:#fff;color:#3a6fe6;border-color:#bcd0fb}
-.rulecard{background:#f6f8fb;color:#1c2230}
-.rulecard summary::after{border-color:#a8afbc}
-.rulecard .ri{border-color:#7d8697;color:#7d8697}
-.rules li{color:#5b6475;border-top-color:#e3e7ee}
-.rules li b{color:#1c2230}
-.rules li::before{box-shadow:0 0 0 2px #fff}
-.rules code{background:#edf3ff;color:#3a6fe6}
-.rules .c1{--c:#4c82f7}
-.who{color:#3a4252}
-.side{scrollbar-color:#d5dbe5 transparent}
-.side::-webkit-scrollbar-thumb{background-color:#d5dbe5}
-.side .cm-m.on:hover:not(:disabled){background:#3a6fe6;color:#fff}
 /* 크기도 업체회의 웹과 똑같이 (사이드바 236px · 로고 132px · 전환 버튼) */
 .app{grid-template-columns:236px minmax(0,1fr)}
 .side{padding:26px 14px 20px;gap:16px}
@@ -683,5 +620,15 @@ a.bm{background:#fff;color:#3a6fe6;border-color:#bcd0fb}
 .mode3{padding:4px;gap:0;border-radius:12px}
 .mode3 button{padding:8px 0;font-size:12.5px;font-weight:600;border-radius:9px;letter-spacing:-.01em}
 .mode3 button.on{font-weight:600}
-.mode3 button{height:auto;min-height:0;line-height:1.55;box-shadow:none}.mode3 button.on{box-shadow:0 1px 4px rgba(20,30,50,.18)}
+.mode3 button{height:auto;min-height:0;line-height:1.55;box-shadow:none}
 .side>*{flex-shrink:0}
+
+/* 유통마진과 같은 파란 사이드바 (#4c82f7) · 흰 바탕 전환 버튼 */
+:root{--side:#4c82f7;--side-deep:#3a6fe6}
+.side{border-right:0}
+.mode3{background:#fff}
+.mode3 button{color:rgba(58,111,230,.8)}
+.mode3 button:hover:not(.on){background:#edf3ff}
+.mode3 button.on{background:#4c82f7;color:#fff;box-shadow:0 2px 6px rgba(17,24,39,.18)}
+.side .brand-title{display:none}
+.side .cm-m.on:hover:not(:disabled){background:#fff;color:var(--side)}

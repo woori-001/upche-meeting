@@ -2619,7 +2619,7 @@ function showPnl(on) {
 const CS = { runs: null, loading: false, month: null, mpYear: 0, pending: null };
 function showCode(on) {
   let w = $("#codeWrap");
-  if (on && !w) { w = document.createElement("div"); w.id = "codeWrap"; w.innerHTML = `<iframe src="code/index.html?v=202611031554" title="코드실적"></iframe>`; document.body.appendChild(w); }
+  if (on && !w) { w = document.createElement("div"); w.id = "codeWrap"; w.innerHTML = `<iframe src="code/index.html?v=202611031601" title="코드실적"></iframe>`; document.body.appendChild(w); }
   if (w) w.hidden = !on;
   if (on && CS.runs === null && !CS.loading) codeLoad();
 }
@@ -2713,7 +2713,7 @@ function showRail(on) {
 async function setupBookmarklet() {
   try {
     const base = location.origin + location.pathname.replace(/[^/]*$/, "");
-    let code = await fetch("pnl/src/admin-pull.js?v=202611031554", { cache: "no-cache" }).then(r => r.text());
+    let code = await fetch("pnl/src/admin-pull.js?v=202611031601", { cache: "no-cache" }).then(r => r.text());
     code = code.replace(/^\/\*[\s\S]*?\*\/\s*/, "").replace("__CALC_URL__", base + "pnl/");
     $("#irBm").href = "javascript:" + encodeURIComponent(code);
   } catch (e) { $("#irBm").removeAttribute("href"); }
@@ -2721,7 +2721,7 @@ async function setupBookmarklet() {
 
 // ---------- 어드민에서 가져오기 (즐겨찾기 버튼 → 작은 중계 창 → 이 탭) ----------
 let importBus = null;
-const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611031554"));
+const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611031601"));
 async function listenImports() {
   try {
     const { channel, takePending } = await bus();

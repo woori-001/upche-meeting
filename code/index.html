@@ -1212,14 +1212,6 @@ function hwansuSheetRows() {
 }
 var HW_COLS = [{wch:12},{wch:22},{wch:24},{wch:30},{wch:22},{wch:14},{wch:12},{wch:14},{wch:30}];
 
-function downloadHwansu() {
-  if (!lastHwansu) return;
-  var wb = XLSX.utils.book_new();
-  var ws = XLSX.utils.aoa_to_sheet(hwansuSheetRows());
-  ws['!cols'] = HW_COLS;
-  XLSX.utils.book_append_sheet(wb, ws, '환수');
-  XLSX.writeFile(wb, '환수체크_' + (lastHwansu.month || '') + '.xlsx');
-}
 
 function showError(msg){ var el = document.getElementById('error-msg'); el.style.display='block'; el.textContent = msg; }
 function hideError(){ document.getElementById('error-msg').style.display='none'; }
@@ -1444,10 +1436,129 @@ function renderDiag(s, b, r, z) {
 /* ══════════════════════════════════════════════════════════════════
    엑셀 다운로드
    ══════════════════════════════════════════════════════════════════ */
+/* ═══ 엑셀 받기: 수동 정리본과 같은 모양 (색·테두리·숫자 서식·눈금선 숨김) ═══
+   서식은 xlsx-js-style(엑셀 받을 때만 불러옴)로 넣고, 못 불러오면 서식 없이 예전처럼 받음 */
+var XS_URL = 'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
+function loadStyleXlsx() {
+  if (window.__XS) return Promise.resolve(window.__XS);
+  return new Promise(function (ok, no) {
+    var keep = window.XLSX, sc = document.createElement('script');
+    sc.src = XS_URL;
+    sc.onload = function () { window.__XS = window.XLSX; window.XLSX = keep; window.__XS ? ok(window.__XS) : no(new Error('load')); };
+    sc.onerror = function () { window.XLSX = keep; no(new Error('load')); };
+    document.head.appendChild(sc);
+  });
+}
 function downloadExcel() {
   if (!lastResult) return;
+  loadStyleXlsx().then(function (X) { buildCodeExcel(X, true); })
+    .catch(function () { buildCodeExcel(XLSX, false); });
+}
+function downloadHwansu() {
+  if (!lastHwansu) return;
+  loadStyleXlsx().then(function (X) { hwBook(X, true); }).catch(function () { hwBook(XLSX, false); });
+}
+function hwBook(X, styled) {
+  var wb = X.utils.book_new(), hr = hwansuSheetRows(), ws = X.utils.aoa_to_sheet(hr);
+  ws['!cols'] = HW_COLS;
+  if (styled) styleHwansu(X, ws, hr);
+  X.utils.book_append_sheet(wb, ws, '환수');
+  saveBook(X, wb, '환수체크_' + (lastHwansu.month || '') + '.xlsx', styled);
+}
+var XC = { sky: 'C6D9F1', skb: 'CCC0DA', org: 'FCD5B4', lab: 'F2F2F2', line: 'D9D9D9', head: '0070C0' };
+var NUMF = '#,##0_ ;[Red]\\-#,##0\\ ';
+function xs(o) {
+  o = o || {};
+  var ln = { style: 'thin', color: { rgb: XC.line } }, bd = {};
+  (o.bd || '').split('').forEach(function (c) { bd[{ t: 'top', b: 'bottom', l: 'left', r: 'right' }[c]] = ln; });
+  var s = { font: { name: '맑은 고딕', sz: 10, bold: !!o.b, color: { rgb: o.fc || '000000' } },
+    alignment: { vertical: 'center', horizontal: o.al || undefined, wrapText: !!o.wrap }, border: bd };
+  if (o.fill) s.fill = { patternType: 'solid', fgColor: { rgb: o.fill } };
+  if (o.num) s.numFmt = NUMF;
+  return s;
+}
+function xput(X, ws, r, c, o) {
+  var a = X.utils.encode_cell({ r: r - 1, c: c });
+  if (!ws[a]) ws[a] = { t: 's', v: '' };
+  ws[a].s = xs(o);
+  var rg = X.utils.decode_range(ws['!ref'] || 'A1');
+  if (r - 1 > rg.e.r) rg.e.r = r - 1; if (c > rg.e.c) rg.e.c = c;
+  ws['!ref'] = X.utils.encode_range(rg);
+}
+// 첫 장: SKYLIFE·SKB 나란히, 아래 SK매직 렌탈·유선기타
+function styleMain(X, ws, nRows) {
+  var B = 1, C = 2, D = 3, F = 5, H = 7, I = 8, J = 9, L = 11, r, c;
+  for (r = 1; r <= nRows; r++) for (c = 1; c <= L; c++) xput(X, ws, r, c, {});
+  // SKYLIFE(B~F) · SKB(H~L) 묶음
+  [[B, C, D, F, XC.sky], [H, I, J, L, XC.skb]].forEach(function (g) {
+    var lb = g[0], v = g[1], d0 = g[2], d1 = g[3], col = g[4];
+    xput(X, ws, 3, lb, { fill: col, b: 1, bd: 'b', al: 'left' });
+    for (c = v; c <= d1; c++) xput(X, ws, 3, c, { bd: 'b' });
+    for (r = 4; r <= 13; r++) {
+      xput(X, ws, r, lb, r === 7 ? { bd: 'b' } : { fill: XC.lab, bd: 'tb', al: 'left' });
+      xput(X, ws, r, v, { bd: 'tb', num: r >= 8 });
+      for (c = d0; c <= d1; c++) xput(X, ws, r, c, { bd: 'tb', al: 'center', num: r === 13 });
+    }
+    xput(X, ws, 14, lb, { fill: col, b: 1, bd: 't', al: 'left' });
+    xput(X, ws, 14, v, { fill: col, b: 1, bd: 't', num: 1 });
+    for (c = d0; c <= d1; c++) xput(X, ws, 14, c, { bd: 't' });
+  });
+  ws['!merges'] = [{ s: { r: 5, c: B }, e: { r: 6, c: B } }, { s: { r: 5, c: H }, e: { r: 6, c: H } }, { s: { r: 24, c: C }, e: { r: 24, c: F } }];
+  // SK매직 렌탈 (18~24) · 유선기타 (25~)
+  var NUMR = { 20: 1, 21: 1, 23: 1, 27: 1, 28: 1 };
+  for (r = 18; r <= nRows; r++) {
+    var top = r === 18, prof = r === 31, tail = r > 31;
+    xput(X, ws, r, B, top ? { fill: XC.org, b: 1, bd: 'b' } : prof ? { fill: XC.org, b: 1, bd: 'tb' } : tail ? { bd: 'tb' } : { fill: XC.lab, bd: 'tb' });
+    xput(X, ws, r, C, top ? { bd: 'b' } : prof ? { fill: XC.org, b: 1, bd: 'tb', num: 1, fc: 'FF0000' } : r === 25 ? { bd: 'tb', al: 'left', wrap: 1 } : { bd: 'tb', num: !!NUMR[r] });
+    for (c = D; c <= F; c++) xput(X, ws, r, c, { bd: top ? 'b' : 'tb' });
+  }
+  ws['!rows'] = []; ws['!rows'][13] = { hpt: 18.75 }; ws['!rows'][24] = { hpt: 40.5 }; ws['!rows'][30] = { hpt: 18.75 };
+}
+// 목록형 장: 첫 줄 파란 머리, 빈 줄로 나뉜 묶음마다 마지막 줄 아래 선, 숫자는 천 단위 쉼표
+function styleList(X, ws, rows, o) {
+  var n = rows.length, r = 1;
+  while (r <= n) {
+    if (!(rows[r - 1] || []).length) { r++; continue; }
+    var g0 = r, w = 3;
+    while (r <= n && (rows[r - 1] || []).length) { w = Math.max(w, rows[r - 1].length); r++; }
+    for (var i = g0; i < r; i++) {
+      var row = rows[i - 1], last = i === r - 1;
+      for (var c = 0; c < w; c++) {
+        var v = row[c], isNum = typeof v === 'number';
+        if (i <= o.head) { xput(X, ws, i, c, { fill: XC.head, b: 1, fc: 'FFFFFF' }); continue; }
+        xput(X, ws, i, c, { bd: last ? 'b' : '', num: isNum && Math.abs(v) >= 1000, al: o.center && c >= 2 && isNum ? 'center' : undefined });
+      }
+    }
+  }
+}
+function styleHwansu(X, ws, rows) {
+  rows.forEach(function (row, i) {
+    if (!row.length) return;
+    var head = row[0] === '구분';
+    row.forEach(function (v, c) {
+      xput(X, ws, i + 1, c, head ? { fill: XC.head, b: 1, fc: 'FFFFFF' } : i === 0 ? { b: 1 } : { bd: 'b', num: typeof v === 'number' && Math.abs(v) >= 1000, b: row[0] === '합계' });
+    });
+  });
+}
+// 저장: 서식 있는 파일은 눈금선을 숨겨서 받음
+function saveBook(X, wb, name, styled) {
+  if (!styled) { X.writeFile(wb, name); return; }
+  var out = X.write(wb, { bookType: 'xlsx', type: 'array' });
+  try {
+    var cfb = X.CFB.read(new Uint8Array(out), { type: 'array' });
+    cfb.FullPaths.filter(function (p) { return /worksheets\/sheet\d+\.xml$/.test(p); }).forEach(function (p) {
+      var e = X.CFB.find(cfb, p), x = new TextDecoder().decode(e.content).replace(/<sheetView /g, '<sheetView showGridLines="0" ');
+      e.content = new TextEncoder().encode(x); e.size = e.content.length;
+    });
+    out = X.CFB.write(cfb, { fileType: 'zip', type: 'array' });
+  } catch (err) { console.warn(err); }
+  var blob = new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function buildCodeExcel(X, styled) {
   var s = lastResult.sky, b = lastResult.skb, r = lastResult.rental, z = lastResult.biz, D = lastDiag;
-  var wb = XLSX.utils.book_new();
+  var wb = X.utils.book_new();
 
   var rows = [
     [null, '코드실적 보고', D.month ? (D.month + ' 정산') : ''],
@@ -1464,7 +1575,7 @@ function downloadExcel() {
     [null,'수익(A-B)',s.profit, null,null,null, null,'수익(A-B)',b.profit],
     [null,'예상관리',s.mgmt,s.mgmtI,s.mgmtT,s.mgmtU, null,'예상관리',b.mgmt,b.mgmtI,b.mgmtT,b.mgmtU],
     [null,'실예상수익',s.real, null,null,null, null,'실예상수익',b.real],
-    [null],
+    [null],[null],[null],
     [null,'SK매직 렌탈', CONFIG.rental.code],
     [null,'개통 건수',r.cnt],
     [null,'수입(A)',r.incomeA],
@@ -1488,9 +1599,10 @@ function downloadExcel() {
   Object.keys(z.byProduct).forEach(function(k2) {
     rows.push([null,'  └ 대표 '+z.byProduct[k2].label, z.byProduct[k2].cnt + '건']);
   });
-  var ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:4},{wch:16},{wch:26},{wch:14},{wch:14},{wch:10},{wch:4},{wch:16},{wch:26},{wch:14},{wch:14},{wch:10}];
-  XLSX.utils.book_append_sheet(wb, ws, 'SKY,SKB,매직');
+  var ws = X.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:4},{wch:14},{wch:21},{wch:9},{wch:15},{wch:7},{wch:4},{wch:14},{wch:21},{wch:9},{wch:15},{wch:8}];
+  if (styled) styleMain(X, ws, rows.length);
+  X.utils.book_append_sheet(wb, ws, 'SKY,SKB,매직');
 
   var cfgRows = [
     ['구분','항목','값'],
@@ -1532,9 +1644,10 @@ function downloadExcel() {
                   pr.margin ? '적용' : '없음',
                   (pr.key==='internet'||pr.key==='tv'||pr.key==='usim') ? '적용' : '없음']);
   });
-  var ws2 = XLSX.utils.aoa_to_sheet(cfgRows);
-  ws2['!cols'] = [{wch:12},{wch:26},{wch:28},{wch:10},{wch:10},{wch:8}];
-  XLSX.utils.book_append_sheet(wb, ws2, '적용조건');
+  var ws2 = X.utils.aoa_to_sheet(cfgRows);
+  ws2['!cols'] = [{wch:13},{wch:27},{wch:29},{wch:11},{wch:10},{wch:9}];
+  if (styled) styleList(X, ws2, cfgRows, { head: 1 });
+  X.utils.book_append_sheet(wb, ws2, '적용조건');
 
   var dRows = [['브랜드','상부점','상부정산 매칭행','전체정산 매칭행','해지제외','수입(A)','지출(B)합계','실예상수익']];
   var ALLX = [['SKYLIFE',s],['SKB',b],['SK매직 렌탈',r],['SK-biz 기타',z]];
@@ -1566,17 +1679,19 @@ function downloadExcel() {
     var ex = p[1]._diag.excluded;
     Object.keys(ex).sort().forEach(function(pn) { dRows.push(['', p[0], pn, ex[pn].why, ex[pn].cnt, ex[pn].amt]); });
   });
-  var ws3 = XLSX.utils.aoa_to_sheet(dRows);
-  ws3['!cols'] = [{wch:14},{wch:30},{wch:16},{wch:16},{wch:10},{wch:16},{wch:16},{wch:16}];
-  XLSX.utils.book_append_sheet(wb, ws3, '조건체크');
+  var ws3 = X.utils.aoa_to_sheet(dRows);
+  ws3['!cols'] = [{wch:16},{wch:42},{wch:17},{wch:15},{wch:11},{wch:17},{wch:14},{wch:14},{wch:11},{wch:16}];
+  if (styled) styleList(X, ws3, dRows, { head: 1, center: true });
+  X.utils.book_append_sheet(wb, ws3, '조건체크');
 
   if (lastHwansu) {
-    var ws4 = XLSX.utils.aoa_to_sheet(hwansuSheetRows());
+    var hr = hwansuSheetRows(), ws4 = X.utils.aoa_to_sheet(hr);
     ws4['!cols'] = HW_COLS;
-    XLSX.utils.book_append_sheet(wb, ws4, '환수');
+    if (styled) styleHwansu(X, ws4, hr);
+    X.utils.book_append_sheet(wb, ws4, '환수');
   }
 
-  XLSX.writeFile(wb, '코드실적보고_' + (D.month || '') + '.xlsx');
+  saveBook(X, wb, '코드실적보고_' + (D.month || '') + '.xlsx', styled);
 }
 
 /* ── 조건표 초기 렌더 ── */

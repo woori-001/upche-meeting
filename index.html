@@ -2563,7 +2563,7 @@ function showPnl(on) {
 }
 // ---------- 어드민에서 가져오기 (즐겨찾기 버튼 → 작은 중계 창 → 이 탭) ----------
 let importBus = null;
-const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611030140"));
+const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611030359"));
 async function listenImports() {
   try {
     const { channel, takePending } = await bus();

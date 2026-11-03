@@ -1,7 +1,7 @@
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611030140';
-import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611030140';
-import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611030140';
-import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611030140';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611030359';
+import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611030359';
+import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611030359';
+import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611030359';
 
 // ---------- 서버 (업체회의 웹과 같은 로그인 · 같은 Supabase) ----------
 // 업체회의 웹에서 로그인한 토큰을 그대로 씀 (같은 주소라 브라우저 저장소를 같이 봄)
@@ -188,7 +188,7 @@ function acceptAdminFiles(data) {
 window.__pnlImport = acceptAdminFiles;   // 업체회의 웹(바깥 화면)이 부르는 입구
 // 따로 연 유통매출 창: 열린 업체회의 웹이 없을 때 중계 창이 보내는 유통매출 데이터를 여기서 받음
 if (!EMBED) {
-  import('./import-bus.js?v=202611030140').then(({ channel, takePending }) => {
+  import('./import-bus.js?v=202611030359').then(({ channel, takePending }) => {
     const ch = channel(), me = Math.random().toString(36).slice(2);
     ch.onmessage = async (m) => {
       const d = m.data || {};
@@ -570,7 +570,8 @@ function renderMonths() {
     const future = p > nowKey;
     const dot = calc ? 'calc' : r ? 'saved' : '';
     const tip = calc ? '계산 중 (저장 안 함)' : !r ? (future ? '' : '저장된 결과 없음') : st === '이전' ? '이전 기준으로 저장됨' : `저장됨 · ${Math.round(valOf(r, '유통사업부')).toLocaleString('ko-KR')}원`;
-    cells.push(`<button type="button" class="cm-m${p === state.period ? ' on' : ''}${p === nowKey ? ' now' : ''}" data-p="${p}" ${future ? 'disabled' : ''} title="${esc(`${m}월${tip ? ' · ' + tip : ''}`)}">${m}월${dot ? `<i class="${dot}"></i>` : ''}</button>`);
+    // 저장된 달 = 진하게, 저장 안 한 달 = 옅게 (점 표시 없음)
+    cells.push(`<button type="button" class="cm-m${p === state.period ? ' on' : ''}${p === nowKey ? ' now' : ''}${r ? ' sv' : ''}${calc ? ' calc' : ''}" data-p="${p}" ${future ? 'disabled' : ''} title="${esc(`${m}월${tip ? ' · ' + tip : ''}`)}">${m}월</button>`);
   }
   $('calGrid').innerHTML = cells.join('');
   $('calGrid').querySelectorAll('.cm-m').forEach(b => b.onclick = () => { state.selRun = null; openMonth(b.dataset.p); });

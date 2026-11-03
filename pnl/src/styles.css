@@ -696,8 +696,8 @@ body{font-family:var(--font);line-height:1.55;letter-spacing:-.01em}
 .top h1{font-size:24px;line-height:32px;font-weight:700;letter-spacing:-.02em}
 .panel-head h2{font-size:17px;font-weight:700}
 .panel{border-radius:20px}
-*{scrollbar-width:thin;scrollbar-color:rgba(120,130,150,.35) transparent}
-.side-mid{scrollbar-color:rgba(255,255,255,.35) transparent}
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.75) transparent}
+.side-mid{scrollbar-color:rgba(255,255,255,.45) transparent}
 
 /* 사이드바 맨 아래 접속 계정 */
 .me-foot{flex:none;display:flex;align-items:center;gap:10px;margin:auto -18px 0;padding:15px 18px 20px;border-top:1px solid rgba(255,255,255,.18)}
@@ -730,3 +730,14 @@ body{font-family:var(--font);line-height:1.55;letter-spacing:-.01em}
 .tb.primary{background:#4c82f7;border:1px solid #4c82f7;color:#fff}.tb.primary:hover{background:#3a6fe6}
 .tb.ghost{background:#fff;border:1px solid #dfe5ee;color:#3a4252}.tb.ghost:hover,.tb.ghost.on{border-color:#4c82f7;color:#3a6fe6}
 #tDel:hover{border-color:#e5484d;color:#e5484d}
+
+/* ===== 유통마진 화면과 같은 폭·간격·표 ===== */
+.main{padding:26px 32px 60px;gap:20px}
+.main > *, .main > .workspace{max-width:1376px}
+.top{margin-bottom:0}
+.panel{box-shadow:0 10px 26px -18px rgba(30,45,90,.28),0 1px 2px rgba(20,30,50,.04);border:0}
+.cmp-tbl{font-size:13.5px}
+.cmp-tbl thead th{background:#f8f9fb;color:var(--muted);font-weight:600;font-size:12.5px;border-bottom:1px solid var(--line)}
+.cmp-tbl tbody th{font-weight:600}
+table.grid,.detail-tbl{font-size:13.5px}
+table.grid th,.detail-tbl thead th{background:#f8f9fb;font-size:12.5px;font-weight:600}

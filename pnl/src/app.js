@@ -1,7 +1,7 @@
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611031456';
-import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611031456';
-import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611031456';
-import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611031456';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611031507';
+import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611031507';
+import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611031507';
+import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611031507';
 
 // ---------- 서버 (업체회의 웹과 같은 로그인 · 같은 Supabase) ----------
 // 업체회의 웹에서 로그인한 토큰을 그대로 씀 (같은 주소라 브라우저 저장소를 같이 봄)
@@ -226,7 +226,7 @@ function acceptAdminFiles(data) {
 window.__pnlImport = acceptAdminFiles;   // 업체회의 웹(바깥 화면)이 부르는 입구
 // 따로 연 유통매출 창: 열린 업체회의 웹이 없을 때 중계 창이 보내는 유통매출 데이터를 여기서 받음
 if (!EMBED) {
-  import('./import-bus.js?v=202611031456').then(({ channel, takePending }) => {
+  import('./import-bus.js?v=202611031507').then(({ channel, takePending }) => {
     const ch = channel(), me = Math.random().toString(36).slice(2);
     ch.onmessage = async (m) => {
       const d = m.data || {};
@@ -713,7 +713,7 @@ function renderRail() {
     html = `<h3>${monthLabel(state.period)}</h3><div class="ri-sub">저장된 결과${list.length > 1 ? ` · ${list.length}회 저장` : ''}</div>
       <div class="ri-big"><span>${won(legacy ? totalOf(run) : valOf(run, '유통사업부'))}<small>원</small></span><span class="muted small">${legacy ? '이전 기준 합계' : '유통사업부 매출'}</span></div>
       ${legacy ? '<div class="ri-state warn">이전 기준으로 저장된 결과예요 — 다시 계산해서 저장하세요</div>' : ''}
-      <div class="ri-line muted">${new Date(run.created_at).toLocaleString('ko-KR')} 저장<br>${esc(run.created_by || '')}</div>
+      <div class="ri-line muted">${stamp(run.created_at)} 저장<br>${esc(run.created_by || '')}</div>
       ${list.length > 1 ? `<div class="ri-runs"><div class="small muted">저장 기록</div>${list.map(x => `<button type="button" class="ri-run${x.id === run.id ? ' on' : ''}" data-run="${x.id}"><span>${new Date(x.created_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>${x.id === list[0].id ? '<small>최근</small>' : ''}</button>`).join('')}</div>` : ''}
 `;
   }

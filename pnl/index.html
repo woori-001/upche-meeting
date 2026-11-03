@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>유통매출 · 업체회의 누적분석</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-<link rel="stylesheet" href="src/styles.css?v=202611030417">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="src/styles.css?v=202611031444">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -17,7 +17,7 @@
       <div class="brand-title"><div class="brand-name">유통 손익매출</div><div class="brand-sub">유통사업부 계산기</div></div>
     </div>
 
-    <div class="mode3" id="modeSw" role="tablist"><button data-mode="meet">업체회의</button><button data-mode="margin">유통마진</button><button data-mode="pnl" class="on">유통매출</button><button data-mode="code">코드실적</button></div>
+    <div class="mode3" id="modeSw" role="tablist"><button data-mode="meet">업체회의</button><button data-mode="margin">유통마진</button><button data-mode="code">코드실적</button><button data-mode="pnl" class="on">유통매출</button></div>
 
     <div class="side-mid">
 
@@ -63,6 +63,7 @@
     </details>
 
     </div>
+    <div class="me-foot" id="meFoot" hidden></div>
     <div class="who" id="who" hidden>
       <b id="whoEmail"></b><button class="side-link" id="btnLogout">업체회의 웹으로</button>
       <span hidden id="ruleVer"></span><span hidden id="runCount"></span>
@@ -135,6 +136,6 @@
   });
 })();
 </script>
-<script type="module" src="src/app.js?v=202611030417"></script>
+<script type="module" src="src/app.js?v=202611031444"></script>
 </body>
 </html>

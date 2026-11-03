@@ -345,7 +345,7 @@ table.t.sm{font-size:13px}.t.sm th,.t.sm td{padding:7px 8px}
 .mode::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 4);border-radius:9px;background:#fff;box-shadow:0 1px 4px rgba(20,30,50,.18);transition:transform .25s ease}
 .mode button.on{color:var(--pri-d)}
 body.mode-margin .mode::before{transform:translateX(100%)}
-body.mode-code .mode::before{transform:translateX(300%)}
+body.mode-code .mode::before{transform:translateX(200%)}
 /* 유통마진 모드: 파란 사이드바 (컬러: Text #111827/#374151 · BG #EEF1F5/#F6F8FB · Primary #4c82f7(업체회의와 같은 파랑) · Accent #F97316) */
 body.mode-margin{--bg:#EEF1F5;--soft:#F6F8FB;--text:#111827;--pri:#4c82f7;--pri-d:#3a6fe6;--pri-w:#edf3ff;--pri-w2:#dbe7ff;--acc:#F97316;--acc-w:#FFF1E6}
 body.mode-margin #side{background:#4c82f7;border-right-color:#4c82f7;color:#fff}
@@ -823,11 +823,12 @@ body.mode-code .side-cal .mp-m:not(.sv):not(.on){color:rgba(255,255,255,.45)}
 .cd-new{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;border-radius:12px;padding:9px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;margin:2px 0 10px}
 .cd-new:hover{background:rgba(255,255,255,.22)}
 .cd-del{margin-top:8px;border:0;background:none;color:#ffd0d0;text-decoration:underline;font:inherit;font-size:12px;cursor:pointer;padding:0}
-:root{--sideW:264px;--railW:236px}
+:root{--sideW:264px;--railBox:236px;--railW:236px}
+body.rail-closed{--railW:0px}
 .app{grid-template-columns:var(--sideW) minmax(0,1fr)}
 body.has-rail .app{margin-right:var(--railW)}
 body.has-rail #pnlWrap{right:var(--railW)}
-#importRail{position:fixed;top:0;right:0;bottom:0;width:var(--railW);z-index:21;background:#fff;border-left:1px solid #e3e7ee;padding:20px 14px;overflow-y:auto}
+#importRail{position:fixed;top:0;right:0;bottom:0;width:var(--railBox);transition:transform .2s ease;z-index:21;background:#fff;border-left:1px solid #e3e7ee;padding:20px 14px;overflow-y:auto}
 #importRail[hidden]{display:none}
 .ir-card{background:#4c82f7;color:#fff;border-radius:16px;padding:16px 14px;display:flex;flex-direction:column;gap:10px}
 .ir-h{display:flex;align-items:center;gap:7px;font-size:14px}
@@ -836,6 +837,16 @@ body.has-rail #pnlWrap{right:var(--railW)}
 .ir-tip{margin:0;font-size:11.5px;line-height:1.5;color:rgba(255,255,255,.8)}
 .ir-list{margin:0;padding:10px 12px;list-style:none;background:rgba(255,255,255,.12);border-radius:12px;display:flex;flex-direction:column;gap:6px;font-size:11.5px;line-height:1.45;color:rgba(255,255,255,.88)}
 .ir-list b{color:#fff;margin-right:4px}
+/* 오른쪽 바 접기 탭 (인덱스) */
+body.rail-closed #importRail{transform:translateX(100%)}
+#irTab{position:fixed;top:96px;right:var(--railW);z-index:22;width:22px;height:58px;border:0;border-radius:10px 0 0 10px;background:#4c82f7;color:#fff;cursor:pointer;box-shadow:-2px 2px 8px rgba(20,30,50,.15);display:grid;place-items:center;padding:0;transition:right .2s ease}
+#irTab[hidden]{display:none}
+#irTab::before{content:"";width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:6px solid #fff}
+body.rail-closed #irTab::before{border-left:0;border-right:6px solid #fff}
+#irTab:hover{background:#3a6fe6}
+.app,#pnlWrap,#codeWrap{transition:right .2s ease,margin-right .2s ease}
+/* 스크롤바: 얇고 옅게 */
+*{scrollbar-width:thin;scrollbar-color:rgba(120,130,150,.35) transparent}
 </style>
 </head>
 <body>
@@ -2585,6 +2596,12 @@ function setMode(m) {
 }
 // 유통매출 화면(안에 열린 계산기)에서 전환 버튼을 누르면 이쪽으로 알려줌
 window.addEventListener("message", (e) => { if (e.origin === location.origin && e.data && e.data.type === "upche-mode") setMode(e.data.mode); });
+// 유통매출 화면 사이드바의 계정 버튼 → 여기서 처리
+window.addEventListener("message", (e) => {
+  if (e.origin !== location.origin || !e.data || e.data.type !== "upche-act") return;
+  const a = e.data.act;
+  if (a === "pw") openPwModal(); else if (a === "acc") { if (S.user && S.user.role === "admin") openAccountModal(); } else if (a === "logout") logout();
+});
 // 유통매출: 손익매출 계산기(pnl/)를 화면 가득 띄움. 한 번 열면 계산 중인 내용이 남도록 지우지 않고 숨기기만
 function showPnl(on) {
   document.body.classList.toggle("mode-pnl", on);
@@ -2596,7 +2613,7 @@ function showPnl(on) {
 const CS = { runs: null, loading: false, month: null, mpYear: 0, pending: null };
 function showCode(on) {
   let w = $("#codeWrap");
-  if (on && !w) { w = document.createElement("div"); w.id = "codeWrap"; w.innerHTML = `<iframe src="code/index.html?v=202611030417" title="코드실적"></iframe>`; document.body.appendChild(w); }
+  if (on && !w) { w = document.createElement("div"); w.id = "codeWrap"; w.innerHTML = `<iframe src="code/index.html?v=202611031444" title="코드실적"></iframe>`; document.body.appendChild(w); }
   if (w) w.hidden = !on;
   if (on && CS.runs === null && !CS.loading) codeLoad();
 }
@@ -2667,11 +2684,19 @@ function showRail(on) {
     $("#irBm").onclick = (e) => { e.preventDefault(); toast("누르지 말고 즐겨찾기 막대로 끌어다 놓아 주세요."); };
   }
   if (r) r.hidden = !on;
+  let t = $("#irTab");
+  if (on && !t) {
+    t = document.createElement("button"); t.id = "irTab"; t.title = "어드민 가져오기 접기/펼치기";
+    t.onclick = () => { const c = !document.body.classList.contains("rail-closed"); document.body.classList.toggle("rail-closed", c); lsSet("upche_rail_closed", c ? "1" : null); };
+    document.body.appendChild(t);
+    document.body.classList.toggle("rail-closed", lsGet("upche_rail_closed") === "1");
+  }
+  if (t) t.hidden = !on;
 }
 async function setupBookmarklet() {
   try {
     const base = location.origin + location.pathname.replace(/[^/]*$/, "");
-    let code = await fetch("pnl/src/admin-pull.js?v=202611030417", { cache: "no-cache" }).then(r => r.text());
+    let code = await fetch("pnl/src/admin-pull.js?v=202611031444", { cache: "no-cache" }).then(r => r.text());
     code = code.replace(/^\/\*[\s\S]*?\*\/\s*/, "").replace("__CALC_URL__", base + "pnl/");
     $("#irBm").href = "javascript:" + encodeURIComponent(code);
   } catch (e) { $("#irBm").removeAttribute("href"); }
@@ -2679,7 +2704,7 @@ async function setupBookmarklet() {
 
 // ---------- 어드민에서 가져오기 (즐겨찾기 버튼 → 작은 중계 창 → 이 탭) ----------
 let importBus = null;
-const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611030417"));
+const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611031444"));
 async function listenImports() {
   try {
     const { channel, takePending } = await bus();
@@ -3157,7 +3182,7 @@ async function mgLoad(force) {
 
 // ---------- 사이드바 ----------
 function modeSwitchHtml() {
-  return `<div class="mode" role="tablist"><button class="${S.mode === "meet" ? "on" : ""}" data-mode="meet">업체회의</button><button class="${S.mode === "margin" ? "on" : ""}" data-mode="margin">유통마진</button><button class="${S.mode === "pnl" ? "on" : ""}" data-mode="pnl">유통매출</button><button class="${S.mode === "code" ? "on" : ""}" data-mode="code">코드실적</button></div>`;
+  return `<div class="mode" role="tablist"><button class="${S.mode === "meet" ? "on" : ""}" data-mode="meet">업체회의</button><button class="${S.mode === "margin" ? "on" : ""}" data-mode="margin">유통마진</button><button class="${S.mode === "code" ? "on" : ""}" data-mode="code">코드실적</button><button class="${S.mode === "pnl" ? "on" : ""}" data-mode="pnl">유통매출</button></div>`;
 }
 function mgSideHtml() {
   const ms = mMonths();

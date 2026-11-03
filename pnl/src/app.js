@@ -1,7 +1,7 @@
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611030417';
-import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611030417';
-import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611030417';
-import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611030417';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611031444';
+import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611031444';
+import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611031444';
+import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611031444';
 
 // ---------- 서버 (업체회의 웹과 같은 로그인 · 같은 Supabase) ----------
 // 업체회의 웹에서 로그인한 토큰을 그대로 씀 (같은 주소라 브라우저 저장소를 같이 봄)
@@ -80,12 +80,32 @@ async function boot() {
 function userInfo() { try { return JSON.parse(localStorage.getItem(USER_KEY) || 'null') || { name: '', id: '' }; } catch { return { name: '', id: '' }; } }
 let booted = false;
 async function onSession(user) {
-  if (!user) { $('who').hidden = true; show('viewLogin'); booted = false; return; }
+  if (!user) { $('who').hidden = true; $('meFoot').hidden = true; show('viewLogin'); booted = false; return; }
   if (booted) return; booted = true;
+  renderMe(user);
   $('who').hidden = EMBED; $('whoEmail').textContent = user.name || user.id || ''; $('whoEmail').title = user.id || ''; $('ruleVer').textContent = RULES.version;
   show('viewApp');
   await loadRuns();
   if (pendingAdmin) applyAdmin(); else openMonth(state.period);
+}
+// 사이드바 맨 아래 접속 계정 (업체회의 화면과 같은 모양) — 버튼은 바깥 업체회의 화면이 처리
+const SVG = p => `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const ICO = {
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2"/><path d="m16 7 3 3"/><path d="m19 4 2 2"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>'
+};
+function renderMe(user) {
+  const box = $('meFoot'); if (!user) { box.hidden = true; return; }
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const nm = user.name || user.id || '';
+  box.innerHTML = `<span class="avatar">${esc(nm[0] || '?')}</span><span class="me-n"><b>${esc(nm)}</b><small>${esc(user.id || '')}</small></span>
+    <span class="me-a">${user.role === 'admin' ? `<button class="icon" data-act="acc" title="계정 관리 · 데이터 옮기기" aria-label="계정 관리">${SVG(ICO.users)}</button>` : ''}<button class="icon" data-act="pw" title="비밀번호 변경" aria-label="비밀번호 변경">${SVG(ICO.key)}</button><button class="icon" data-act="logout" title="로그아웃" aria-label="로그아웃">${SVG(ICO.logout)}</button></span>`;
+  box.hidden = false;
+  box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
+    if (EMBED) parent.postMessage({ type: 'upche-act', act: b.dataset.act }, location.origin);
+    else location.href = '../';
+  });
 }
 $('btnLogout').onclick = () => { location.href = '../'; };   // 따로 연 창에서는 업체회의 웹으로
 
@@ -189,7 +209,7 @@ function acceptAdminFiles(data) {
 window.__pnlImport = acceptAdminFiles;   // 업체회의 웹(바깥 화면)이 부르는 입구
 // 따로 연 유통매출 창: 열린 업체회의 웹이 없을 때 중계 창이 보내는 유통매출 데이터를 여기서 받음
 if (!EMBED) {
-  import('./import-bus.js?v=202611030417').then(({ channel, takePending }) => {
+  import('./import-bus.js?v=202611031444').then(({ channel, takePending }) => {
     const ch = channel(), me = Math.random().toString(36).slice(2);
     ch.onmessage = async (m) => {
       const d = m.data || {};

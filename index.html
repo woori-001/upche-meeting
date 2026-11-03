@@ -340,9 +340,9 @@ table.t.sm{font-size:13px}.t.sm th,.t.sm td{padding:7px 8px}
 .me-a .icon:hover{background:var(--soft);color:var(--pri-d)}
 .me-a .icon.out:hover{background:var(--up-w);color:var(--up)}
 /* 업체회의 / 유통마진 전환 */
-.mode{display:grid;grid-template-columns:1fr 1fr;background:var(--pri);border-radius:12px;padding:4px;margin:0 0 18px;position:relative}
+.mode{display:grid;grid-template-columns:repeat(3,1fr);background:var(--pri);border-radius:12px;padding:4px;margin:0 0 18px;position:relative}
 .mode button{position:relative;z-index:1;border:0;background:none;border-radius:9px;padding:8px 0;font-size:13.5px;font-weight:600;color:rgba(255,255,255,.82);cursor:pointer;transition:color .2s}
-.mode::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:9px;background:#fff;box-shadow:0 1px 4px rgba(20,30,50,.18);transition:transform .25s ease}
+.mode::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 3);border-radius:9px;background:#fff;box-shadow:0 1px 4px rgba(20,30,50,.18);transition:transform .25s ease}
 .mode button.on{color:var(--pri-d)}
 body.mode-margin .mode::before{transform:translateX(100%)}
 /* 유통마진 모드: 파란 사이드바 (컬러: Text #111827/#374151 · BG #EEF1F5/#F6F8FB · Primary #4c82f7(업체회의와 같은 파랑) · Accent #F97316) */
@@ -805,6 +805,12 @@ th.sortable{cursor:pointer}th.sortable.on{color:var(--pri-d)}
 .rtab tr.shoff td:not(.shc){opacity:.42}
 .sh-all{margin-left:10px;border:1px solid var(--line2);background:#fff;border-radius:8px;padding:2px 9px;font-size:11.5px;font-weight:600;color:var(--sub);cursor:pointer}
 .sh-all:hover{border-color:var(--pri);color:var(--pri-d)}
+/* 유통매출(손익매출 계산기) 화면 */
+body.mode-pnl .app,body.mode-pnl #drawer,body.mode-pnl #scrim{display:none}
+#pnlWrap{position:fixed;inset:0;z-index:20;background:#f3f5f9}
+#pnlWrap[hidden]{display:none}
+#pnlWrap iframe{width:100%;height:100%;border:0;display:block}
+.mode button{font-size:12.5px}
 </style>
 </head>
 <body>
@@ -1390,7 +1396,7 @@ async function pool(items, k, fn) {
 // ---------- 상태 ----------
 const S = {
   fold: (() => { try { return JSON.parse(localStorage.getItem("upche_fold") || "{}"); } catch (e) { return {}; } })(),   // 신규·재거래·이탈 목록 접힘
-  mode: (() => { try { return localStorage.getItem("upche_mode") === "margin" ? "margin" : "meet"; } catch (e) { return "meet"; } })(),   // 업체회의 | 유통마진
+  mode: (() => { try { const m = localStorage.getItem("upche_mode"); return m === "margin" || m === "pnl" ? m : "meet"; } catch (e) { return "meet"; } })(),   // 업체회의 | 유통마진 | 유통매출
   months: {},          // { "2026-09": {units:[...], file, at, rawRows} }
   master: null,        // { file, at, rows:[...] }
   seg: "협력점",
@@ -1730,6 +1736,8 @@ function render() {
     const keepCol = [...document.querySelectorAll("#main .col-b")].map(el => el.scrollTop);   // 신규·재거래·이탈·결정 목록 안쪽 스크롤
     const wy = window.scrollY, sy = (document.querySelector(".side-mid") || {}).scrollTop || 0, helpEl = document.querySelector(".side-help");
     if (helpEl) S.helpOpen = helpEl.open;
+    showPnl(S.mode === "pnl");
+    if (S.mode === "pnl") return;
     const mg = S.mode === "margin";
     document.body.classList.toggle("mode-margin", mg);
     if (mg && !MS.loaded && !MS.loading && !MS.error && lsGet(LS_KEY.token)) setTimeout(() => mgLoad(), 0);
@@ -2537,11 +2545,26 @@ function bindMain() {
   on("#bMaster", () => $("#fMaster").click()); on("#bMaster2", () => $("#fMaster").click());
   on("#bDel", onDeleteMonth);
 }
+// 메뉴 바꾸기 (업체회의 · 유통마진 · 유통매출)
+function setMode(m) {
+  if (!["meet", "margin", "pnl"].includes(m) || S.mode === m) return;
+  S.mode = m; lsSet("upche_mode", m === "meet" ? null : m);
+  closeDetail(); render(); window.scrollTo(0, 0);
+}
+// 유통매출 화면(안에 열린 계산기)에서 전환 버튼을 누르면 이쪽으로 알려줌
+window.addEventListener("message", (e) => { if (e.origin === location.origin && e.data && e.data.type === "upche-mode") setMode(e.data.mode); });
+// 유통매출: 손익매출 계산기(pnl/)를 화면 가득 띄움. 한 번 열면 계산 중인 내용이 남도록 지우지 않고 숨기기만
+function showPnl(on) {
+  document.body.classList.toggle("mode-pnl", on);
+  let w = $("#pnlWrap");
+  if (on && !w) { w = document.createElement("div"); w.id = "pnlWrap"; w.innerHTML = `<iframe src="pnl/index.html" title="유통매출" allow="clipboard-write"></iframe>`; document.body.appendChild(w); }
+  if (w) w.hidden = !on;
+}
 // 두 메뉴 공통: 전환 버튼, 비밀번호, 로그아웃
 function bindCommon() {
   document.querySelectorAll(".mode button").forEach(b => b.onclick = () => {
     if (S.mode === b.dataset.mode) return;
-    S.mode = b.dataset.mode; lsSet("upche_mode", S.mode === "margin" ? "margin" : null);
+    setMode(b.dataset.mode); return;
     closeDetail(); render(); window.scrollTo(0, 0);
   });
   const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
@@ -2961,7 +2984,7 @@ async function mgLoad(force) {
 
 // ---------- 사이드바 ----------
 function modeSwitchHtml() {
-  return `<div class="mode" role="tablist"><button class="${S.mode !== "margin" ? "on" : ""}" data-mode="meet">업체회의</button><button class="${S.mode === "margin" ? "on" : ""}" data-mode="margin">유통마진</button></div>`;
+  return `<div class="mode" role="tablist"><button class="${S.mode === "meet" ? "on" : ""}" data-mode="meet">업체회의</button><button class="${S.mode === "margin" ? "on" : ""}" data-mode="margin">유통마진</button><button class="${S.mode === "pnl" ? "on" : ""}" data-mode="pnl">유통매출</button></div>`;
 }
 function mgSideHtml() {
   const ms = mMonths();

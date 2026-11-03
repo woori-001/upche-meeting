@@ -1,7 +1,7 @@
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611030046';
-import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611030046';
-import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611030046';
-import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611030046';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611030140';
+import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611030140';
+import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611030140';
+import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611030140';
 
 // ---------- 서버 (업체회의 웹과 같은 로그인 · 같은 Supabase) ----------
 // 업체회의 웹에서 로그인한 토큰을 그대로 씀 (같은 주소라 브라우저 저장소를 같이 봄)
@@ -166,8 +166,12 @@ window.addEventListener('message', e => {
     return;
   }
   if (e.data.type !== 'dist-pnl-admin-files') return;
+  acceptAdminFiles(e.data);
+});
+// 어드민 엑셀 받기 (어드민 창에서 바로 오거나, 업체회의 웹 탭이 중계 창에서 받아서 넘겨줌)
+function acceptAdminFiles(data) {
   clearTimeout(waitTimer); importDone = true;
-  const { period, files } = e.data;
+  const { period, files } = data;
   if (!/^\d{4}-\d{2}$/.test(period) || !Array.isArray(files)) return;
   const parsed = [], errors = [];
   for (const f of files) {
@@ -177,10 +181,22 @@ window.addEventListener('message', e => {
       p.source = 'admin'; p.db = f.old ? 'old' : ''; parsed.push(p);
     } catch (err) { errors.push(err.message); }
   }
-  pendingAdmin = { period, pulledAt: e.data.pulledAt, files: parsed, errors };
+  pendingAdmin = { period, pulledAt: data.pulledAt, files: parsed, errors };
   if ($('viewApp').hidden) adminWait('데이터를 다 받았어요', '로그인하면 바로 계산돼요.', { done: true });
   applyAdmin();
-});
+}
+window.__pnlImport = acceptAdminFiles;   // 업체회의 웹(바깥 화면)이 부르는 입구
+// 따로 연 유통매출 창: 열린 업체회의 웹이 없을 때 중계 창이 보내는 유통매출 데이터를 여기서 받음
+if (!EMBED) {
+  import('./import-bus.js?v=202611030140').then(({ channel, takePending }) => {
+    const ch = channel(), me = Math.random().toString(36).slice(2);
+    ch.onmessage = async (m) => {
+      const d = m.data || {};
+      if (d.type === 'offer' && d.target === 'pnl') ch.postMessage({ type: 'claim', id: d.id, from: me });
+      if (d.type === 'go' && d.to === me) { const p = await takePending(); if (p) { acceptAdminFiles(p); window.focus(); } ch.postMessage({ type: 'done', id: d.id }); }
+    };
+  }).catch(() => {});
+}
 window.addEventListener('hashchange', announceReady);
 function applyAdmin() {
   if (!pendingAdmin || $('viewApp').hidden) return;

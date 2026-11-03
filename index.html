@@ -2550,6 +2550,7 @@ function setMode(m) {
   if (!["meet", "margin", "pnl"].includes(m) || S.mode === m) return;
   S.mode = m; lsSet("upche_mode", m === "meet" ? null : m);
   closeDetail(); render(); window.scrollTo(0, 0);
+  if (m === "margin") setTimeout(mgImportOpen, 0);
 }
 // 유통매출 화면(안에 열린 계산기)에서 전환 버튼을 누르면 이쪽으로 알려줌
 window.addEventListener("message", (e) => { if (e.origin === location.origin && e.data && e.data.type === "upche-mode") setMode(e.data.mode); });
@@ -2559,6 +2560,51 @@ function showPnl(on) {
   let w = $("#pnlWrap");
   if (on && !w) { w = document.createElement("div"); w.id = "pnlWrap"; w.innerHTML = `<iframe src="pnl/index.html" title="유통매출" allow="clipboard-write"></iframe>`; document.body.appendChild(w); }
   if (w) w.hidden = !on;
+}
+// ---------- 어드민에서 가져오기 (즐겨찾기 버튼 → 작은 중계 창 → 이 탭) ----------
+let importBus = null;
+const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611030140"));
+async function listenImports() {
+  try {
+    const { channel, takePending } = await bus();
+    const ch = channel(), me = Math.random().toString(36).slice(2);
+    ch.onmessage = async (m) => {
+      const d = m.data || {};
+      if (d.type === "offer" && lsGet(LS_KEY.token)) ch.postMessage({ type: "claim", id: d.id, from: me });
+      if (d.type === "go" && d.to === me) { const p = await takePending(); ch.postMessage({ type: "done", id: d.id }); if (p) applyImport(p); }
+    };
+    // 열린 탭이 없어서 중계 창이 이 화면으로 바뀌어 온 경우
+    if (location.hash.includes("admin-import")) { history.replaceState(null, "", location.pathname); const p = await takePending(); if (p) applyImport(p); }
+  } catch (e) { console.warn("가져오기 통로를 열지 못했어요", e); }
+}
+async function applyImport(p) {
+  const t = p.target || "pnl";
+  try { window.focus(); } catch (e) {}
+  if (t === "margin" || t === "both") {
+    const pick = (side) => (p.files || []).find(f => f.side === side && !f.old && /일반/.test(f.label || f.name || ""));
+    const sf = pick("상부"), jf = pick("전체");
+    if (!sf || !jf) toast("유통마진에 쓸 상부·전체정산 일반 파일이 없어요.", 6000);
+    else {
+      try {
+        MS.up = { s: MG.parseFile(new Uint8Array(sf.buffer)), j: MG.parseFile(new Uint8Array(jf.buffer)), sName: "어드민 · 상부정산 일반", jName: "어드민 · 전체정산 일반", month: p.period, calc: null };
+        MS.importReady = true;
+      } catch (e) { toast(`<b>유통마진 파일을 읽지 못했어요</b> ${esc(e.message)}`, 0); }
+    }
+  }
+  if (t === "pnl" || t === "both") {
+    setMode("pnl"); showPnl(true);
+    const fr = $("#pnlWrap iframe");
+    for (let i = 0; i < 100; i++) { const w = fr && fr.contentWindow; if (w && w.__pnlImport) { w.__pnlImport(p); break; } await new Promise(r => setTimeout(r, 200)); }
+    if (t === "both") toast(`${mLabel(p.period)} 유통매출을 계산했어요. 유통마진도 계산해 뒀으니 <b>유통마진</b> 메뉴에서 확인하고 저장하세요.`, 8000);
+  } else {
+    setMode("margin"); mgImportOpen();
+  }
+}
+// 어드민에서 받아둔 유통마진 파일이 있으면 계산해서 저장 창을 띄움
+function mgImportOpen() {
+  if (!MS.importReady || !MS.up || !MS.up.s) return;
+  MS.importReady = false; mgCalculate();
+  toast(`어드민에서 ${mLabel(MS.up.month)} 정산 파일을 가져와 계산했어요. 확인 후 <b>저장</b>을 눌러주세요.`, 6000);
 }
 // 두 메뉴 공통: 전환 버튼, 비밀번호, 로그아웃
 function bindCommon() {
@@ -3651,6 +3697,7 @@ async function init() {
   document.addEventListener("drop", e => { e.preventDefault(); if (!lsGet(LS_KEY.token)) return; if (S.mode === "margin") mgOpenUpload(); else onDataFiles([...e.dataTransfer.files]); });
   $("#loginForm").onsubmit = doLogin;
   derive(); render();
+  listenImports();
   if (!lsGet(LS_KEY.token)) { showLogin(); return; }
   try { S.user = JSON.parse(lsGet(LS_KEY.user) || "null"); } catch (e) {}
   await loadAll();

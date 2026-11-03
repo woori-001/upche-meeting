@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>어드민에서 가져오는 중</title>
+<style>
+body{margin:0;font:14px/1.55 "Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;background:#4c82f7;color:#fff;display:grid;place-items:center;min-height:100vh}
+.box{width:min(360px,92vw);background:#fff;color:#1c2230;border-radius:16px;padding:18px 20px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+b{display:block;font-size:15px;margin-bottom:4px}.m{font-size:12.5px;color:#5b6475;min-height:20px}.err{color:#e5484d}
+.spin{width:16px;height:16px;border:2px solid #dbe7ff;border-top-color:#4c82f7;border-radius:50%;display:inline-block;animation:r 1s linear infinite;vertical-align:-3px;margin-right:6px}@keyframes r{to{transform:rotate(360deg)}}
+</style></head>
+<body><div class="box"><b id="t"><span class="spin"></span>어드민에서 가져오는 중이에요</b><div class="m" id="m">어드민 창을 닫지 마세요. 다 받으면 열려 있는 업체회의 웹으로 넘기고 이 창은 저절로 닫혀요.</div></div>
+<script type="module">
+import { putPending, channel } from './src/import-bus.js?v=202611030140';
+const ADMIN_ORIGIN = 'https://workline.kr';
+const $ = (id) => document.getElementById(id);
+const say = (t, m, err) => { if (t) $('t').innerHTML = (err ? '' : '<span class="spin"></span>') + t; if (m !== undefined) $('m').textContent = m; $('m').classList.toggle('err', !!err); };
+// 어드민 창에 "준비됐어요" 알림 (어드민 가져오기 버튼이 기다리는 신호)
+if (window.opener) { try { window.opener.postMessage({ type: 'dist-pnl-calc-ready' }, ADMIN_ORIGIN); } catch (e) {} }
+window.addEventListener('message', async (e) => {
+  if (e.origin !== ADMIN_ORIGIN || !e.data) return;
+  if (e.data.type === 'dist-pnl-progress') { say(e.data.error ? '어드민에서 가져오지 못했어요' : '어드민에서 가져오는 중이에요', String(e.data.text || ''), e.data.error); return; }
+  if (e.data.type !== 'dist-pnl-admin-files') return;
+  const data = { period: e.data.period, files: e.data.files, pulledAt: e.data.pulledAt, target: e.data.target || 'pnl', at: Date.now() };
+  say('다 받았어요', '열려 있는 업체회의 웹을 찾는 중이에요…');
+  await putPending(data);
+  // 열린 탭에 물어보고, 먼저 대답한 한 곳에만 넘김
+  const ch = channel(), id = Math.random().toString(36).slice(2);
+  let taken = false;
+  ch.onmessage = (m) => {
+    const d = m.data || {};
+    if (d.type === 'claim' && d.id === id && !taken) { taken = true; ch.postMessage({ type: 'go', id, to: d.from }); }
+    if (d.type === 'done' && d.id === id) { say('넘겼어요', '업체회의 웹에서 확인하세요. 이 창은 닫혀요.'); setTimeout(() => window.close(), 600); }
+  };
+  ch.postMessage({ type: 'offer', id, target: data.target });
+  // 열린 탭이 없으면 이 창이 그대로 업체회의 웹(해당 메뉴)으로 바뀜
+  setTimeout(() => { if (!taken) { say('열린 화면이 없어서 여기서 열게요', ''); try { localStorage.setItem('upche_mode', data.target === 'margin' ? 'margin' : 'pnl'); } catch (e) {} location.replace('../#admin-import'); } }, 1500);
+});
+</script></body></html>

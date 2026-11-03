@@ -9,6 +9,8 @@
 (() => {
   const CALC_URL = '__CALC_URL__';
   const CALC_ORIGIN = new URL(CALC_URL).origin;
+  // 작은 중계 창 → 이미 열려 있는 업체회의 웹 탭으로 넘김 (없으면 그 창이 업체회의 웹으로 바뀜)
+  const RELAY_URL = CALC_URL.replace(/\/?$/, '/') + 'relay.html';
   const ADMIN_HOST = 'workline.kr';
 
   if (location.hostname !== ADMIN_HOST) { alert('어드민(workline.kr)에 로그인한 화면에서 눌러주세요.'); return; }
@@ -44,11 +46,12 @@
     return { name: `${job.label} · ${j.fileName}`, side: job.side, label: job.label, rows: j.rowCount, old: !!job.old, buffer };
   }
 
-  async function pull(period, progress) {
+  async function pull(period, progress, target) {
     const from = `${period}-01`, to = `${period}-${String(lastDay(period)).padStart(2, '0')}`;
     const jobs = [];
     for (const [side, ep] of [['전체', '/api/exact/calc/export'], ['상부', '/api/exact/calc/upper/export']]) {
       jobs.push({ side, ep, label: `${side}정산 일반`, params: { chargeType: 'G', dateChk: '2', dateFrom: from, dateTo: to } });
+      if (target === 'margin') continue;   // 유통마진은 일반(개통일) 상부·전체 2개만
       jobs.push({ side, ep, label: `${side}정산 추가`, params: { chargeType: 'A', dateChk: '4', dateFrom: from, dateTo: to } });
       jobs.push({ side, ep, label: `${side}정산 환수`, params: { chargeType: 'B', dateChk: '4', dateFrom: from, dateTo: to } });
       // 옛날 데이터: 같은 조건 (일반은 옛 웹 기간이 끝나 해당 없음 → 추가·환수만)
@@ -68,9 +71,11 @@
   const box = document.createElement('div');
   box.id = 'dist-pnl-box';
   box.setAttribute('style', 'position:fixed;top:16px;right:16px;z-index:2147483647;width:340px;background:#fff;color:#1d2229;border:1px solid #d0d5dc;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:16px;font:14px/1.5 system-ui,sans-serif');
-  box.innerHTML = `<div style="font-weight:700;margin-bottom:8px">유통 손익매출 · 어드민에서 가져오기</div>
+  const rb = (v, l, on) => `<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid #d0d5dc;border-radius:8px;padding:6px 4px;cursor:pointer;font-size:13px"><input type="radio" name="upche-t" value="${v}"${on ? ' checked' : ''}>${l}</label>`;
+  box.innerHTML = `<div style="font-weight:700;margin-bottom:8px">업체회의 웹 · 어드민에서 가져오기</div>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px">대상월 <input type="month" value="${defYm}" style="flex:1;padding:6px;border:1px solid #d0d5dc;border-radius:6px"></label>
-    <div style="font-size:12px;color:#6b7380;margin-bottom:10px">전체·상부정산의 일반(개통일)과 추가·환수(정산예정일) 엑셀 10개(옛날 데이터 추가·환수 포함)를 만들어 계산기 창으로 넘깁니다. 1~2분 걸릴 수 있어요.</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">${rb('pnl', '유통매출', true)}${rb('margin', '유통마진')}${rb('both', '둘 다')}</div>
+    <div style="font-size:12px;color:#6b7380;margin-bottom:10px">유통매출: 전체·상부정산 일반(개통일)·추가·환수(정산예정일) 엑셀 10개 · 유통마진: 일반(개통일) 2개만.<br>다 받으면 열려 있는 업체회의 웹으로 바로 넘겨요 (작은 창이 잠깐 떴다가 닫혀요).</div>
     <div data-msg style="font-size:12px;min-height:18px;margin-bottom:10px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button data-close style="padding:7px 12px;border:1px solid #d0d5dc;border-radius:8px;background:#fff;cursor:pointer">닫기</button>
@@ -89,7 +94,7 @@
     if (!calcWin || calcWin.closed || !calcReady || !payload) return;
     calcWin.postMessage({ type: 'dist-pnl-admin-files', ...payload }, CALC_ORIGIN, payload.files.map(f => f.buffer));
     payload = null;
-    msg('✓ 계산기 창으로 넘겼습니다. 계산기에서 결과를 확인하고 저장하세요.');
+    msg('✓ 업체회의 웹으로 넘겼습니다. 결과를 확인하고 저장하세요.');
     goBtn.disabled = false; busy = false;
   }
   function onMsg(e) {
@@ -100,18 +105,19 @@
   box.querySelector('[data-close]').onclick = () => { if (busy && !confirm('가져오는 중입니다. 닫을까요?')) return; window.removeEventListener('message', onMsg); box.remove(); };
 
   goBtn.onclick = async () => {
-    const period = box.querySelector('input').value;
+    const period = box.querySelector('input[type=month]').value;
+    const target = (box.querySelector('input[name=upche-t]:checked') || {}).value || 'pnl';
     if (!/^\d{4}-\d{2}$/.test(period)) { msg('대상월을 고르세요', true); return; }
     busy = true; goBtn.disabled = true; payload = null; calcReady = false;
     // 팝업 차단을 피하려고 클릭하자마자 계산기 창부터 엽니다
-    calcWin = window.open(`${CALC_URL}#admin-import`, 'dist_pnl_calc');
+    calcWin = window.open(RELAY_URL, 'upche_relay', 'width=460,height=280');
     if (!calcWin) { msg('팝업이 차단되었습니다. workline.kr 팝업을 허용한 뒤 다시 눌러주세요.', true); goBtn.disabled = false; busy = false; return; }
     try {
       const t0 = Date.now();
-      const files = await pull(period, t => msg('가져오는 중… ' + t));
+      const files = await pull(period, t => msg('가져오는 중… ' + t), target);
       const rows = files.reduce((a, f) => a + (f.rows || 0), 0);
-      payload = { period, files, pulledAt: new Date().toISOString() };
-      msg(`엑셀 ${files.length}개 ${rows.toLocaleString()}건 받음 (${Math.round((Date.now() - t0) / 1000)}초) — 계산기 창 기다리는 중…`);
+      payload = { period, files, target, pulledAt: new Date().toISOString() };
+      msg(`엑셀 ${files.length}개 ${rows.toLocaleString()}건 받음 (${Math.round((Date.now() - t0) / 1000)}초) — 넘기는 중…`);
       send();
     } catch (err) {
       msg(err.message || String(err), true); goBtn.disabled = false; busy = false;

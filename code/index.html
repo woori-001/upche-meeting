@@ -322,6 +322,11 @@ details.fold-sec>summary::-webkit-details-marker{display:none}
 details.fold-sec:not([open]) .fs-chev{transform:rotate(-90deg)}
 .fs-body{padding:0 22px 22px}
 #hwansu{margin-top:0}
+.jm-box{margin-top:10px;border:1px dashed #f0c36d;background:#fffaf0;border-radius:10px;padding:9px 10px}
+.jm-r{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#8a5300}
+.jm-r i{font-style:normal;font-size:11px;font-weight:600;background:#fff0c8;color:#b76e00;border-radius:6px;padding:1px 6px;margin-left:4px}
+.jm-r b{font-variant-numeric:tabular-nums;color:#8a5300}
+.jm-s{font-size:11.5px;color:#a0845c;margin-top:2px}
 </style>
 </head>
 <body>
@@ -388,7 +393,7 @@ details.fold-sec:not([open]) .fs-chev{transform:rotate(-90deg)}
       </div>
       <div class="cfg-note">· 판정 순서가 위에서부터입니다. <b>CCTV</b>는 문자열에 'TV'를, <b>인터넷전화</b>는 '인터넷'을 포함하므로 인터넷·TV보다 먼저 걸러냅니다.<br>· <b>인터넷전화는 인터넷이 아닙니다.</b> 건수·유지수수료·자점마진 어디에도 인터넷으로 잡히지 않습니다.</div>
 
-      <div class="cfg-sub">자점운영마진 (협력점이 <span style="font-family:monospace;">1.시흥영업팀 / 2.천안영업팀</span> 인 건 · 전체정산 기준)</div>
+      <div class="cfg-sub">자점운영비 · 수익에 넣지 않고 별도 표기 (협력점이 <span style="font-family:monospace;">1.시흥영업팀 / 2.천안영업팀</span> 인 건 · 전체정산 기준)</div>
       <div class="margin-grid">
         <div class="margin-item"><label>SKYLIFE 유선(인터넷) 건당</label><input type="number" id="in-sky-line" value="100000" step="10000"></div>
         <div class="margin-item"><label>SKYLIFE 무선(유심) 건당</label><input type="number" id="in-sky-mob" value="50000" step="10000"></div>
@@ -462,7 +467,7 @@ details.fold-sec:not([open]) .fs-chev{transform:rotate(-90deg)}
           <div class="hh"><h3>유선기타 <span class="sc-real-val" id="sc-biz-real"></span></h3><span class="hchev">▾</span></div>
           <p class="col-s">수익(A-B) · <span class="sc-sub" id="sc-biz-sub"></span></p></div>
         <div class="col-b"><div class="bcard">
-          <div class="bc-h"><span class="badge">자점마진·유지수수료 없음</span><span class="card-code" id="code-biz"></span></div>
+          <div class="bc-h"><span class="badge">자점운영비·유지수수료 없음</span><span class="card-code" id="code-biz"></span></div>
           <div id="biz-result"></div></div></div>
       </div>
     </div>
@@ -870,8 +875,9 @@ function computeBrand(cfg, BU, JE, marginLine, marginMob) {
   var mgmtU = usim     * f.usim     * f.months;
   var mgmt  = mgmtI + mgmtT + mgmtU;
 
-  var expenseBTotal = expenseB + margin;
-  var profit = incomeA - expenseBTotal;
+  // 자점운영비(자점마진)는 수익 계산에서 빼고 따로 표기 (2026-11 요청)
+  var expenseBTotal = expenseB;
+  var profit = incomeA - expenseB;
 
   return {
     internet:internet, tv:tv, usim:usim, extra:extra, cctv:cctv, voip:voip, phone:phone,
@@ -1210,7 +1216,7 @@ function hwansuSheetRows() {
   });
   return out;
 }
-var HW_COLS = [{wch:12},{wch:22},{wch:24},{wch:30},{wch:22},{wch:14},{wch:12},{wch:14},{wch:30}];
+var HW_COLS = [{wch:12},{wch:34},{wch:24},{wch:30},{wch:22},{wch:14},{wch:12},{wch:14},{wch:30}];
 
 
 function showError(msg){ var el = document.getElementById('error-msg'); el.style.display='block'; el.textContent = msg; }
@@ -1235,24 +1241,22 @@ function extraCnt(d) {
 
 function renderResult(type, d) {
   var vcls = function(v){ return v < 0 ? 'negative' : 'positive'; };
-  var marginHtml = d.margin > 0
-    ? '<div class="result-row"><span class="row-label" style="color:#dc2626;">&nbsp;&nbsp;∟ 자점운영마진 ('+d.marginLines+'+'+d.marginMobLines+'건)</span><span class="row-value negative">-'+fmt(d.margin)+'</span></div>'+
-      '<div class="result-row"><span class="row-label">지출(B) 합계</span><span class="row-value">'+fmt(d.expenseBTotal)+'</span></div>'
-    : '';
+  var marginHtml = '<div class="jm-box"><div class="jm-r"><span>자점운영비 <i>별도</i></span><b>'+fmt(d.margin || 0)+'</b></div>'+
+    '<div class="jm-s">유선 '+(d.marginLines||0)+'건 · 무선 '+(d.marginMobLines||0)+'건 · 수익·실예상수익에 넣지 않음</div></div>';
   document.getElementById(type+'-result').innerHTML =
     '<div class="result-row"><span class="row-label">가입자수</span><span class="row-value">인터넷 '+d.internet+' / TV '+d.tv+' / 유심 '+d.usim+'</span></div>'+
     extraCnt(d)+
     '<div class="result-row"><span class="row-label">수입(A)</span><span class="row-value">'+fmt(d.incomeA)+'</span></div>'+
     '<div class="sub-row"><span class="sub-label">유선</span><span class="sub-value">'+fmt(d.incomeLine)+'</span></div>'+
     '<div class="sub-row"><span class="sub-label">무선</span><span class="sub-value">'+fmt(d.incomeMob)+'</span></div>'+
-    '<div class="result-row"><span class="row-label">지출(B) 기본</span><span class="row-value">'+fmt(d.expenseB)+'</span></div>'+
-    marginHtml +
+    '<div class="result-row"><span class="row-label">지출(B)</span><span class="row-value">'+fmt(d.expenseB)+'</span></div>'+
     '<div class="result-row"><span class="row-label">수익(A-B)</span><span class="row-value '+vcls(d.profit)+'">'+fmt(d.profit)+'</span></div>'+
     '<div class="result-row"><span class="row-label">예상관리</span><span class="row-value">'+fmt(d.mgmt)+'</span></div>'+
     '<div class="sub-row"><span class="sub-label">인터넷 '+d.internet+'건</span><span class="sub-value">'+fmt(d.mgmtI)+'</span></div>'+
     '<div class="sub-row"><span class="sub-label">TV '+d.tv+'건</span><span class="sub-value">'+fmt(d.mgmtT)+'</span></div>'+
     '<div class="sub-row"><span class="sub-label">유심 '+d.usim+'건</span><span class="sub-value">'+fmt(d.mgmtU)+'</span></div>'+
-    '<div class="result-row highlight"><span class="row-label" style="font-weight:600;">실예상수익</span><span class="row-value '+vcls(d.real)+' highlight">'+fmt(d.real)+'</span></div>';
+    '<div class="result-row highlight"><span class="row-label" style="font-weight:600;">실예상수익</span><span class="row-value '+vcls(d.real)+' highlight">'+fmt(d.real)+'</span></div>'+
+    marginHtml;
 }
 
 function renderRental(r) {
@@ -1261,7 +1265,7 @@ function renderRental(r) {
     '<div class="result-row"><span class="row-label">개통 건수</span><span class="row-value">'+r.cnt+'건</span></div>'+
     '<div class="result-row"><span class="row-label">수입(A)</span><span class="row-value">'+fmt(r.incomeA)+'</span></div>'+
     '<div class="result-row"><span class="row-label">지출(B)</span><span class="row-value">'+fmt(r.expenseB)+'</span></div>'+
-    '<div class="sub-row"><span class="sub-label">자점운영마진</span><span class="sub-value">없음</span></div>'+
+    '<div class="sub-row"><span class="sub-label">자점운영비</span><span class="sub-value">없음</span></div>'+
     '<div class="sub-row"><span class="sub-label">예상관리(유지수수료)</span><span class="sub-value">없음</span></div>'+
     '<div class="result-row highlight"><span class="row-label" style="font-weight:600;">실예상수익</span><span class="row-value '+vcls(r.profit)+' highlight">'+fmt(r.profit)+'</span></div>';
 }
@@ -1291,7 +1295,7 @@ function renderBiz(z) {
     lines(z.byProduct) +
     '<div class="result-row"><span class="row-label">수입(A)</span><span class="row-value">'+fmt(z.incomeA)+'</span></div>'+
     '<div class="result-row"><span class="row-label">지출(B)</span><span class="row-value">'+fmt(z.expenseB)+'</span></div>'+
-    '<div class="sub-row"><span class="sub-label">자점운영마진</span><span class="sub-value">없음</span></div>'+
+    '<div class="sub-row"><span class="sub-label">자점운영비</span><span class="sub-value">없음</span></div>'+
     '<div class="sub-row"><span class="sub-label">예상관리(유지수수료)</span><span class="sub-value">없음</span></div>'+
     '<div class="result-row highlight"><span class="row-label" style="font-weight:600;">수익(A-B)</span><span class="row-value '+vcls(z.profit)+' highlight">'+fmt(z.profit)+'</span></div>';
   document.getElementById('code-biz').innerHTML = z.codes.length
@@ -1324,11 +1328,7 @@ function renderDashboard(s, b, r, z) {
 
   function setDetail(id, d) {
     document.getElementById('dc-'+id+'-cnt').textContent = '인터넷 '+d.internet+'건 · TV '+d.tv+'건 · 유심 '+d.usim+'건';
-    var marginRow = d.margin > 0
-      ? dcRow('지출(B) 기본', fmt(d.expenseB)) +
-        dcRow('∟ 자점운영마진', '-'+fmt(d.margin), 'neg') +
-        dcRow('지출(B) 합계', fmt(d.expenseBTotal))
-      : dcRow('지출 (B)', fmt(d.expenseB));
+    var marginRow = dcRow('지출 (B)', fmt(d.expenseB));
     document.getElementById('dc-'+id+'-body').innerHTML =
       dcRow('수입 (A)', fmt(d.incomeA)) + marginRow +
       dcRow('수익 (A-B)', fmt(d.profit), vc(d.profit)) +
@@ -1377,14 +1377,14 @@ function renderDiag(s, b, r, z) {
     : '<div class="diag-ok">✓ 상부점 코드 5종이 모두 정상 매칭되었습니다. 상부정산 '+D.buRows.toLocaleString()+'행 / 전체정산 '+D.jeRows.toLocaleString()+'행 중 아래 건만 집계했습니다.</div>';
 
   var h = '<thead><tr><th>브랜드</th><th>상부점 코드</th><th>상부정산<br>매칭행</th><th>전체정산<br>매칭행</th>'+
-          '<th>해지<br>제외</th><th>정산종류<br>제외</th><th>수입(A)</th><th>지출(B)합계</th><th>실예상수익</th></tr></thead><tbody>';
+          '<th>해지<br>제외</th><th>정산종류<br>제외</th><th>수입(A)</th><th>지출(B)</th><th>자점운영비<br>(별도)</th><th>실예상수익</th></tr></thead><tbody>';
   ALL.forEach(function(p) {
     var d = p[1]._diag, o = p[1];
     var jong = Object.keys(d.dropJong).map(function(k2){ return k2+' '+d.dropJong[k2]; }).join(', ') || '-';
     h += '<tr><td><b>'+p[0]+'</b></td><td class="mono">'+esc(d.lineCode)+(d.mobCode!=='-'?'<br>'+esc(d.mobCode):'')+'</td>'+
          '<td>'+(d.buLine+d.buMob)+'</td><td>'+(d.jeLine+d.jeMob)+'</td>'+
          '<td>'+d.dropHaeji+'</td><td class="mono">'+esc(jong)+'</td>'+
-         '<td>'+fmt(o.incomeA)+'</td><td>'+fmt(o.expenseBTotal)+'</td><td><b>'+fmt(o.real)+'</b></td></tr>';
+         '<td>'+fmt(o.incomeA)+'</td><td>'+fmt(o.expenseB)+'</td><td>'+(o.margin ? fmt(o.margin) : '-')+'</td><td><b>'+fmt(o.real)+'</b></td></tr>';
   });
   document.getElementById('diag-main').innerHTML = h + '</tbody>';
 
@@ -1494,14 +1494,18 @@ function styleMain(X, ws, nRows) {
     var lb = g[0], v = g[1], d0 = g[2], d1 = g[3], col = g[4];
     xput(X, ws, 3, lb, { fill: col, b: 1, bd: 'b', al: 'left' });
     for (c = v; c <= d1; c++) xput(X, ws, 3, c, { bd: 'b' });
-    for (r = 4; r <= 13; r++) {
+    for (r = 4; r <= 11; r++) {
       xput(X, ws, r, lb, r === 7 ? { bd: 'b' } : { fill: XC.lab, bd: 'tb', al: 'left' });
       xput(X, ws, r, v, { bd: 'tb', num: r >= 8 });
-      for (c = d0; c <= d1; c++) xput(X, ws, r, c, { bd: 'tb', al: 'center', num: r === 13 });
+      for (c = d0; c <= d1; c++) xput(X, ws, r, c, { bd: 'tb', al: 'center', num: r === 11 });
     }
-    xput(X, ws, 14, lb, { fill: col, b: 1, bd: 't', al: 'left' });
-    xput(X, ws, 14, v, { fill: col, b: 1, bd: 't', num: 1 });
-    for (c = d0; c <= d1; c++) xput(X, ws, 14, c, { bd: 't' });
+    xput(X, ws, 12, lb, { fill: col, b: 1, bd: 'tb', al: 'left' });
+    xput(X, ws, 12, v, { fill: col, b: 1, bd: 'tb', num: 1 });
+    for (c = d0; c <= d1; c++) xput(X, ws, 12, c, { bd: 't' });
+    xput(X, ws, 14, lb, { fill: 'FFF2CC', b: 1, bd: 'tb', al: 'left' });
+    xput(X, ws, 14, v, { fill: 'FFF2CC', b: 1, bd: 'tb', num: 1 });
+    for (c = d0; c <= d1; c++) xput(X, ws, 14, c, { bd: 'tb', al: 'center' });
+    xput(X, ws, 15, lb, { fc: '808080' });
   });
   ws['!merges'] = [{ s: { r: 5, c: B }, e: { r: 6, c: B } }, { s: { r: 5, c: H }, e: { r: 6, c: H } }, { s: { r: 24, c: C }, e: { r: 24, c: F } }];
   // SK매직 렌탈 (18~24) · 유선기타 (25~)
@@ -1512,7 +1516,7 @@ function styleMain(X, ws, nRows) {
     xput(X, ws, r, C, top ? { bd: 'b' } : prof ? { fill: XC.org, b: 1, bd: 'tb', num: 1, fc: 'FF0000' } : r === 25 ? { bd: 'tb', al: 'left', wrap: 1 } : { bd: 'tb', num: !!NUMR[r] });
     for (c = D; c <= F; c++) xput(X, ws, r, c, { bd: top ? 'b' : 'tb' });
   }
-  ws['!rows'] = []; ws['!rows'][13] = { hpt: 18.75 }; ws['!rows'][24] = { hpt: 40.5 }; ws['!rows'][30] = { hpt: 18.75 };
+  ws['!rows'] = []; ws['!rows'][11] = { hpt: 18.75 }; ws['!rows'][24] = { hpt: 40.5 }; ws['!rows'][30] = { hpt: 18.75 };
 }
 // 목록형 장: 첫 줄 파란 머리, 빈 줄로 나뉜 묶음마다 마지막 줄 아래 선, 숫자는 천 단위 쉼표
 function styleList(X, ws, rows, o) {
@@ -1532,13 +1536,25 @@ function styleList(X, ws, rows, o) {
   }
 }
 function styleHwansu(X, ws, rows) {
+  var w = 9, detail = false;
   rows.forEach(function (row, i) {
+    var r = i + 1;
+    if (i === 0) { xput(X, ws, r, 0, { b: 1 }); return; }
     if (!row.length) return;
-    var head = row[0] === '구분';
-    row.forEach(function (v, c) {
-      xput(X, ws, i + 1, c, head ? { fill: XC.head, b: 1, fc: 'FFFFFF' } : i === 0 ? { b: 1 } : { bd: 'b', num: typeof v === 'number' && Math.abs(v) >= 1000, b: row[0] === '합계' });
-    });
+    if (row[0] === '구분') {
+      detail = row.length > 4;
+      for (var c = 0; c < (detail ? w : 4); c++) xput(X, ws, r, c, { fill: XC.head, b: 1, fc: 'FFFFFF', al: c >= 2 && !detail ? 'center' : undefined });
+      return;
+    }
+    if (String(row[0]).indexOf('※') === 0) { xput(X, ws, r, 0, { fc: '808080' }); return; }
+    var tot = row[0] === '합계', n = detail ? w : 4;
+    for (var c2 = 0; c2 < n; c2++) {
+      var v = row[c2], isNum = typeof v === 'number';
+      xput(X, ws, r, c2, { bd: 'tb', fill: tot ? XC.lab : (!detail && c2 === 0 ? XC.lab : undefined), b: tot,
+        num: isNum && (detail ? c2 === 7 : c2 === 3), al: !detail && c2 === 2 ? 'center' : undefined });
+    }
   });
+  ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
 }
 // 저장: 서식 있는 파일은 눈금선을 숨겨서 받음
 function saveBook(X, wb, name, styled) {
@@ -1569,25 +1585,26 @@ function buildCodeExcel(X, styled) {
     [null,'가입자수',null,'인터넷','TV','유심', null,'가입자수',null,'인터넷','TV','유심'],
     [null,null,null,s.internet,s.tv,s.usim, null,null,null,b.internet,b.tv,b.usim],
     [null,'수입(A)',s.incomeA, null,null,null, null,'수입(A)',b.incomeA],
-    [null,'지출(B) 기본',s.expenseB, null,null,null, null,'지출(B) 기본',b.expenseB],
-    [null,'  └ 자점운영마진',-s.margin, s.marginLines+'건(유선)', s.marginMobLines+'건(무선)',null, null,'  └ 자점운영마진',-b.margin, b.marginLines+'건(유선)', b.marginMobLines+'건(무선)'],
-    [null,'지출(B) 합계',s.expenseBTotal, null,null,null, null,'지출(B) 합계',b.expenseBTotal],
+    [null,'지출(B)',s.expenseB, null,null,null, null,'지출(B)',b.expenseB],
     [null,'수익(A-B)',s.profit, null,null,null, null,'수익(A-B)',b.profit],
     [null,'예상관리',s.mgmt,s.mgmtI,s.mgmtT,s.mgmtU, null,'예상관리',b.mgmt,b.mgmtI,b.mgmtT,b.mgmtU],
     [null,'실예상수익',s.real, null,null,null, null,'실예상수익',b.real],
-    [null],[null],[null],
+    [null],
+    [null,'자점운영비(별도)',s.margin, s.marginLines+'건(유선)', s.marginMobLines+'건(무선)',null, null,'자점운영비(별도)',b.margin, b.marginLines+'건(유선)', b.marginMobLines+'건(무선)'],
+    [null,'※ 수익·실예상수익에 넣지 않은 금액',null,null,null,null, null,'※ 수익·실예상수익에 넣지 않은 금액'],
+    [null],[null],
     [null,'SK매직 렌탈', CONFIG.rental.code],
     [null,'개통 건수',r.cnt],
     [null,'수입(A)',r.incomeA],
     [null,'지출(B)',r.expenseB],
-    [null,'자점운영마진','없음'],
+    [null,'자점운영비','없음'],
     [null,'실예상수익',r.profit],
     [null],
     [null,'유선기타', z.codes.join(' / ')],
     [null,'건수(고객 단위)','상부 '+z.cnt+' / 전체 '+z.cntB, '원본 행수', '상부 '+z.rowsA+' / 전체 '+z.rowsB],
     [null,'수입(A)',z.incomeA],
     [null,'지출(B)',z.expenseB],
-    [null,'자점운영마진','없음'],
+    [null,'자점운영비','없음'],
     [null,'유지수수료','없음'],
     [null,'수익(A-B)',z.profit]
   ];
@@ -1612,6 +1629,7 @@ function buildCodeExcel(X, styled) {
     ['상부점','SKB 무선', CONFIG.skb.mobCode],
     ['상부점','SK매직 렌탈', CONFIG.rental.code],
     [],
+    ['자점운영비','계산 방식','수익에 넣지 않고 별도 표기'],
     ['자점마진','SKYLIFE 유선(인터넷) 건당', D.margins.skyLine],
     ['자점마진','SKYLIFE 무선(유심) 건당',  D.margins.skyMob],
     ['자점마진','SKB 유선(인터넷) 건당',    D.margins.skbLine],
@@ -1649,13 +1667,13 @@ function buildCodeExcel(X, styled) {
   if (styled) styleList(X, ws2, cfgRows, { head: 1 });
   X.utils.book_append_sheet(wb, ws2, '적용조건');
 
-  var dRows = [['브랜드','상부점','상부정산 매칭행','전체정산 매칭행','해지제외','수입(A)','지출(B)합계','실예상수익']];
+  var dRows = [['브랜드','상부점','상부정산 매칭행','전체정산 매칭행','해지제외','수입(A)','지출(B)','자점운영비(별도)','실예상수익']];
   var ALLX = [['SKYLIFE',s],['SKB',b],['SK매직 렌탈',r],['SK-biz 기타',z]];
   ALLX.forEach(function(p) {
     var d = p[1]._diag;
     dRows.push([p[0], d.lineCode + (d.mobCode !== '-' ? ' / ' + d.mobCode : ''),
                 d.buLine + d.buMob, d.jeLine + d.jeMob, d.dropHaeji,
-                p[1].incomeA, p[1].expenseBTotal, p[1].real]);
+                p[1].incomeA, p[1].expenseB, p[1].margin || 0, p[1].real]);
   });
   dRows.push([]);
   dRows.push(['상품분류 건수','브랜드','인터넷','TV','유심','부가상품','CCTV','인터넷전화','일반전화','자점마진 대상']);
@@ -1824,8 +1842,14 @@ function buildCodeExcel(X, styled) {
     calculate();
   };
   // 저장된 달 보기 (계산 화면을 그대로 다시 그림 · 환수 상세 목록은 저장하지 않아 합계만)
+  function unMargin(d) {   // 예전 기준(수익에서 자점마진 차감)으로 저장된 결과 → 지금 기준
+    if (d && d.margin > 0 && Math.round(d.expenseBTotal) === Math.round(d.expenseB + d.margin)) {
+      d.expenseBTotal = d.expenseB; d.profit += d.margin; d.real += d.margin;
+    }
+    return d;
+  }
   window.__codeShowSaved = function (run) {
-    var R = run.result || {};
+    var R = JSON.parse(JSON.stringify(run.result || {})); unMargin(R.sky); unMargin(R.skb);
     lastResult = R; lastDiag = Object.assign({ others: {}, opt: {}, margins: {} }, run.diag || {}, { month: run.month });
     try {
       renderResult('sky', R.sky); renderResult('skb', R.skb); renderRental(R.rental); renderBiz(R.biz);

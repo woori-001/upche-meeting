@@ -2619,7 +2619,7 @@ function showPnl(on) {
 const CS = { runs: null, loading: false, month: null, mpYear: 0, pending: null };
 function showCode(on) {
   let w = $("#codeWrap");
-  if (on && !w) { w = document.createElement("div"); w.id = "codeWrap"; w.innerHTML = `<iframe src="code/index.html?v=202611031601" title="코드실적"></iframe>`; document.body.appendChild(w); }
+  if (on && !w) { w = document.createElement("div"); w.id = "codeWrap"; w.innerHTML = `<iframe src="code/index.html?v=202611031618" title="코드실적"></iframe>`; document.body.appendChild(w); }
   if (w) w.hidden = !on;
   if (on && CS.runs === null && !CS.loading) codeLoad();
 }
@@ -2649,7 +2649,7 @@ function codeSideHtml() {
       <details class="side-help"><summary>${ic("info", 14)}계산 기준<span class="chev">▾</span></summary>
         <div class="hl">
           <div class="hi"><i class="c-blue"></i><div><b>대상</b><p>우리 코드 상부점만<br>SKYLIFE · SKB · SK매직 · 유선기타</p></div></div>
-          <div class="hi"><i class="c-green"></i><div><b>수익</b><p class="f">수입(상부) − 지출(전체) − 자점마진 + 유지수수료</p><p>기본: 정산종류 일반만 · 해지 제외</p></div></div>
+          <div class="hi"><i class="c-green"></i><div><b>수익</b><p class="f">수입(상부) − 지출(전체) + 유지수수료</p><p>자점운영비는 빼지 않고 별도 표기<br>기본: 정산종류 일반만 · 해지 제외</p></div></div>
           <div class="hi"><i class="c-orange"></i><div><b>환수 체크</b><p>상부정산 환수 중 우리 코드만<br>수익과 별개로 합계만 확인</p></div></div>
           <div class="hi"><i class="c-violet"></i><div><b>자세한 기준</b><p>본문 '조건 설정'에서 확인·변경</p></div></div>
         </div></details>
@@ -2713,7 +2713,7 @@ function showRail(on) {
 async function setupBookmarklet() {
   try {
     const base = location.origin + location.pathname.replace(/[^/]*$/, "");
-    let code = await fetch("pnl/src/admin-pull.js?v=202611031601", { cache: "no-cache" }).then(r => r.text());
+    let code = await fetch("pnl/src/admin-pull.js?v=202611031618", { cache: "no-cache" }).then(r => r.text());
     code = code.replace(/^\/\*[\s\S]*?\*\/\s*/, "").replace("__CALC_URL__", base + "pnl/");
     $("#irBm").href = "javascript:" + encodeURIComponent(code);
   } catch (e) { $("#irBm").removeAttribute("href"); }
@@ -2721,7 +2721,7 @@ async function setupBookmarklet() {
 
 // ---------- 어드민에서 가져오기 (즐겨찾기 버튼 → 작은 중계 창 → 이 탭) ----------
 let importBus = null;
-const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611031601"));
+const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611031618"));
 async function listenImports() {
   try {
     const { channel, takePending } = await bus();

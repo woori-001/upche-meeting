@@ -1,7 +1,7 @@
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611031444';
-import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611031444';
-import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611031444';
-import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611031444';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611031449';
+import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611031449';
+import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611031449';
+import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611031449';
 
 // ---------- 서버 (업체회의 웹과 같은 로그인 · 같은 Supabase) ----------
 // 업체회의 웹에서 로그인한 토큰을 그대로 씀 (같은 주소라 브라우저 저장소를 같이 봄)
@@ -26,7 +26,7 @@ const XLSX = window.XLSX;
 
 const prevMonth = (() => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })();
 // period = 왼쪽 달력에서 고른 달 · mode: 'upload'(파일 올리기) / 'calc'(방금 계산한 결과) / 'saved'(저장된 결과)
-const state = { files: [], result: null, runs: [], period: prevMonth, mode: 'upload', selRun: null, year: +prevMonth.slice(0, 4), segStatus: null, view: null, showFiles: false, pulledAt: null };
+const state = { files: [], result: null, runs: [], period: prevMonth, mode: 'upload', selRun: null, year: +prevMonth.slice(0, 4), segStatus: null, view: null, showFiles: false, manual: false, pulledAt: null };
 const ST = ['가정산', '확정'];
 const segSt = (run, k) => (run.seg_status && run.seg_status[k]) || run.status || '가정산';
 const blankSt = () => Object.fromEntries(STATUS_KEYS.map(k => [k, '가정산']));
@@ -118,6 +118,8 @@ drop.ondragleave = () => drop.classList.remove('over');
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); };
 $('fileInput').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
 $('btnClear').onclick = () => { state.files = []; state.result = null; renderFiles(); refresh(); };
+$('btnManual').onclick = () => { state.manual = true; refresh(); };
+$('btnManualClose').onclick = () => { state.manual = false; refresh(); };
 $('btnToggleFiles').onclick = () => { state.showFiles = !state.showFiles; refresh(); };
 $('btnNew').onclick = async () => {
   if (state.result && state.mode === 'calc' && !state.resultSaved && !await ask('저장하지 않은 계산 결과가 있어요. 지우고 새로 계산할까요?')) return;
@@ -209,7 +211,7 @@ function acceptAdminFiles(data) {
 window.__pnlImport = acceptAdminFiles;   // 업체회의 웹(바깥 화면)이 부르는 입구
 // 따로 연 유통매출 창: 열린 업체회의 웹이 없을 때 중계 창이 보내는 유통매출 데이터를 여기서 받음
 if (!EMBED) {
-  import('./import-bus.js?v=202611031444').then(({ channel, takePending }) => {
+  import('./import-bus.js?v=202611031449').then(({ channel, takePending }) => {
     const ch = channel(), me = Math.random().toString(36).slice(2);
     ch.onmessage = async (m) => {
       const d = m.data || {};
@@ -628,8 +630,12 @@ function refresh() {
 function refreshInner() {
   renderMonths(); renderRail();
   const m = state.mode, r = state.result;
-  const showUpload = m === 'upload' || state.showFiles;
+  // 어드민 가져오기를 주로 쓰니, 파일 직접 올리기는 평소엔 얇은 줄로 접어 둠
+  const manualOpen = m === 'upload' && (state.manual || state.files.length > 0);
+  const showUpload = manualOpen || state.showFiles;
   $('uploadCard').hidden = !showUpload;
+  $('manualBar').hidden = !(m === 'upload' && !manualOpen);
+  $('btnManualClose').hidden = !(m === 'upload' && !state.files.length);
   $('uploadTitle').textContent = m === 'upload' ? `${monthLabel(state.period)} · 엑셀로 계산하기` : '계산에 쓴 파일';
   $('uploadSub').textContent = m === 'upload' ? '어드민 가져오기 버튼을 쓰면 자동으로 계산돼요. 엑셀을 직접 받았다면 여기에 올리세요.' : '파일을 빼거나 더 올린 뒤 다시 계산할 수 있어요.';
   if (m === 'calc' && r) {

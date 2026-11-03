@@ -151,7 +151,7 @@ details.cfg[open] > summary::after { content:'▴'; }
 
 /* ===== 업체회의 웹과 같은 모양 ===== */
 body{font-family:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;background:#EEF1F5;color:#1c2230;letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
-.container{max-width:1240px;padding:26px 32px 60px}
+.container{max-width:none;margin:0;padding:26px 32px 60px}
 h1{font-size:24px;font-weight:800;letter-spacing:-.02em}
 .subtitle{color:#7d8697}
 .section,details.cfg,.result-card,.detail-card{border:0;border-radius:20px;box-shadow:0 1px 2px rgba(20,30,50,.04),0 4px 16px rgba(20,30,50,.05)}
@@ -172,6 +172,17 @@ h1{font-size:24px;line-height:32px;font-weight:700;letter-spacing:-.02em;margin-
 details.cfg>summary{font-size:15px;font-weight:700}
 .result-card-title{font-size:16px}
 .dash-title{font-size:17px}
+details.manual{margin-bottom:16px}
+details.manual>summary{list-style:none;cursor:pointer}
+details.manual>summary::-webkit-details-marker{display:none}
+.manual-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border-radius:16px;padding:14px 18px}
+.manual-bar .mb-t{display:flex;flex-direction:column;gap:2px;font-size:13px;color:#1c2230;min-width:0}
+.manual-bar .mb-t>span{font-size:12.5px;color:#7d8697}
+.mb-btn{flex:none;border:1px solid #dfe5ee;background:#fff;color:#4c82f7;border-radius:10px;padding:7px 12px;font-size:12.5px;font-weight:600}
+.manual-bar:hover .mb-btn{background:#f1f5fe}
+details.manual .mb-c,details.manual[open] .mb-o{display:none}
+details.manual[open] .mb-c{display:inline}
+details.manual[open]>summary{margin-bottom:16px}
 *{scrollbar-width:thin;scrollbar-color:rgba(120,130,150,.35) transparent}
 .savebar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#4c82f7;color:#fff;border-radius:18px;padding:14px 18px;margin:8px 0 14px}
 .savebar[hidden]{display:none}
@@ -190,6 +201,8 @@ details.cfg>summary{font-size:15px;font-weight:700}
   <h1>코드실적 <span style="font-size:12px;color:#9ca3af;font-weight:400;">SKYLIFE · SKB · SK매직 · 유선기타</span></h1>
   <p class="subtitle">전체 로우데이터를 그대로 넣어도 <b>상부점 코드</b>로 SKYLIFE / SKB / SK매직만 정확히 골라냅니다. (.xlsx / .xls 지원)</p>
 
+  <details class="manual" id="manualBox">
+  <summary class="manual-bar"><span class="mb-t"><b>파일 직접 올려서 계산하기</b><span>평소엔 오른쪽 <b>어드민에서 가져오기</b>로 받아오면 자동으로 계산돼요</span></span><span class="mb-btn"><span class="mb-o">파일 직접 올리기</span><span class="mb-c">접기</span></span></summary>
   <div class="section">
     <div class="section-title">1. 파일 업로드</div>
     <div class="file-grid">
@@ -276,6 +289,7 @@ details.cfg>summary{font-size:15px;font-weight:700}
 
   <button class="calc-btn" onclick="calculate()">계산하기</button>
   <button class="sub-btn" onclick="checkHwansuOnly()">환수만 체크 <span style="font-weight:400;color:#94a3b8;">(상부정산 파일만 있으면 가능 · 수익 계산과 별개)</span></button>
+  </details>
   <div class="error-msg" id="error-msg"></div>
   <div class="loading" id="loading">계산 중...</div>
 

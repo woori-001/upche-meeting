@@ -9,7 +9,7 @@ b{display:block;font-size:15px;margin-bottom:4px}.m{font-size:12.5px;color:#5b64
 </style></head>
 <body><div class="box"><b id="t"><span class="spin"></span>어드민에서 가져오는 중이에요</b><div class="m" id="m">어드민 창을 닫지 마세요. 다 받으면 열려 있는 업체회의 웹으로 넘기고 이 창은 저절로 닫혀요.</div></div>
 <script type="module">
-import { putPending, channel } from './src/import-bus.js?v=202611031444';
+import { putPending, channel } from './src/import-bus.js?v=202611031449';
 const ADMIN_ORIGIN = 'https://workline.kr';
 const $ = (id) => document.getElementById(id);
 const say = (t, m, err) => { if (t) $('t').innerHTML = (err ? '' : '<span class="spin"></span>') + t; if (m !== undefined) $('m').textContent = m; $('m').classList.toggle('err', !!err); };

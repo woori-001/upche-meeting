@@ -2613,7 +2613,7 @@ function showPnl(on) {
 const CS = { runs: null, loading: false, month: null, mpYear: 0, pending: null };
 function showCode(on) {
   let w = $("#codeWrap");
-  if (on && !w) { w = document.createElement("div"); w.id = "codeWrap"; w.innerHTML = `<iframe src="code/index.html?v=202611031444" title="코드실적"></iframe>`; document.body.appendChild(w); }
+  if (on && !w) { w = document.createElement("div"); w.id = "codeWrap"; w.innerHTML = `<iframe src="code/index.html?v=202611031449" title="코드실적"></iframe>`; document.body.appendChild(w); }
   if (w) w.hidden = !on;
   if (on && CS.runs === null && !CS.loading) codeLoad();
 }
@@ -2656,7 +2656,8 @@ function bindCodeSide() {
     const run = (CS.runs || []).find(r => r.month === CS.month), w = await codeWhenReady();
     if (run && w) w.__codeShowSaved(run);
   });
-  $("#cdNew").onclick = () => { CS.month = null; const f = $("#codeWrap iframe"); if (f) f.src = f.src; render(); };
+  $("#cdNew").onclick = () => { CS.month = null; const f = $("#codeWrap iframe"); if (f) f.src = f.src; render();
+    setTimeout(async () => { const w = await codeWhenReady(); const d = w && w.document.getElementById("manualBox"); if (d) d.open = true; }, 500); };
   const del = $("#cdDel");
   if (del) del.onclick = async () => {
     const m = CS.month; if (!confirm(`${mLabel(m)} 코드실적 저장을 지울까요? 되돌릴 수 없어요.`)) return;
@@ -2696,7 +2697,7 @@ function showRail(on) {
 async function setupBookmarklet() {
   try {
     const base = location.origin + location.pathname.replace(/[^/]*$/, "");
-    let code = await fetch("pnl/src/admin-pull.js?v=202611031444", { cache: "no-cache" }).then(r => r.text());
+    let code = await fetch("pnl/src/admin-pull.js?v=202611031449", { cache: "no-cache" }).then(r => r.text());
     code = code.replace(/^\/\*[\s\S]*?\*\/\s*/, "").replace("__CALC_URL__", base + "pnl/");
     $("#irBm").href = "javascript:" + encodeURIComponent(code);
   } catch (e) { $("#irBm").removeAttribute("href"); }
@@ -2704,7 +2705,7 @@ async function setupBookmarklet() {
 
 // ---------- 어드민에서 가져오기 (즐겨찾기 버튼 → 작은 중계 창 → 이 탭) ----------
 let importBus = null;
-const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611031444"));
+const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611031449"));
 async function listenImports() {
   try {
     const { channel, takePending } = await bus();

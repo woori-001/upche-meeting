@@ -710,3 +710,12 @@ body{font-family:var(--font);line-height:1.55;letter-spacing:-.01em}
 .me-foot .icon{width:28px;height:30px;padding:0;border:0;border-radius:8px;background:none;color:rgba(255,255,255,.8);cursor:pointer;display:grid;place-items:center}
 .me-foot .icon:hover{background:rgba(255,255,255,.15);color:#fff}
 .side{padding-bottom:0}
+
+/* 파일 직접 올리기: 평소엔 얇은 줄 */
+.manual-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border-radius:16px;padding:14px 18px;box-shadow:var(--shadow, 0 1px 2px rgba(20,30,50,.04))}
+.manual-bar[hidden]{display:none}
+.manual-bar .mb-t{display:flex;flex-direction:column;gap:2px;font-size:13px;min-width:0}
+.manual-bar .mb-t b{font-weight:700}.manual-bar .mb-t .muted{font-size:12.5px}
+.mb-btn,.mb-close{flex:none;border:1px solid #dfe5ee;background:#fff;color:#4c82f7;border-radius:10px;padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer}
+.mb-btn:hover,.mb-close:hover{background:#f1f5fe}
+.mb-close{color:#7d8697}

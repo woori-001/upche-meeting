@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>코드실적 · 업체회의 누적분석</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Malgun Gothic', sans-serif; background: #f5f5f5; color: #222; font-size: 14px; }
+.container { max-width: 1040px; margin: 0 auto; padding: 24px 16px; }
+h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+.subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
+.section { background: #fff; border: 0.5px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.section-title { font-size: 13px; font-weight: 700; color: #555; margin-bottom: 14px; letter-spacing: 0.3px; }
+.file-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width:640px){ .file-grid { grid-template-columns: 1fr; } }
+.file-item { border: 1px dashed #ccc; border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: border-color .2s, background .2s; position: relative; }
+.file-item:hover { border-color: #888; background: #fafafa; }
+.file-item.loaded { border: 1px solid #3b82f6; background: #eff6ff; }
+.file-item.warn { border: 1px solid #f59e0b; background: #fffbeb; }
+.file-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+.file-name { font-size: 13px; font-weight: 500; color: #333; word-break: break-all; }
+.file-item.loaded .file-name { color: #1d4ed8; }
+.file-item input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.file-status { font-size: 11px; margin-top: 4px; color: #aaa; }
+.file-item.loaded .file-status { color: #3b82f6; }
+.file-item.warn .file-status { color: #b45309; font-weight: 600; }
+.calc-btn { display: block; width: 100%; padding: 13px; background: #1d4ed8; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: background .2s; }
+.calc-btn:hover { background: #1e40af; }
+.result-card { background: #fff; border: 0.5px solid #ddd; border-radius: 10px; padding: 18px; }
+.result-card-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+.result-card-title.sky { color: #0369a1; }
+.result-card-title.skb { color: #7c3aed; }
+.result-card-title.rental { color: #b45309; }
+.card-code { font-size: 10.5px; color: #9ca3af; font-weight: 400; display: block; margin-top: 3px; line-height: 1.5; }
+.result-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 0.5px solid #f0f0f0; }
+.result-row.highlight { background: #f0fdf4; margin: 4px -4px 0; padding: 7px 4px; border-radius: 6px; border-bottom: none; }
+.row-label { color: #555; font-size: 13px; }
+.row-value { font-weight: 500; font-size: 13px; }
+.row-value.negative { color: #dc2626; }
+.row-value.positive { color: #16a34a; }
+.row-value.highlight { font-size: 15px; font-weight: 700; color: #15803d; }
+.row-value.negative.highlight { color: #dc2626; }
+.sub-row { display: flex; justify-content: space-between; padding: 2px 0 2px 12px; }
+.sub-label { color: #999; font-size: 12px; }
+.sub-value { color: #666; font-size: 12px; }
+.error-msg { background: #fef2f2; border: 1px solid #fca5a5; color: #dc2626; border-radius: 8px; padding: 12px 14px; font-size: 13px; margin-top: 12px; display: none; white-space: pre-wrap; }
+.loading { text-align: center; padding: 20px; color: #666; display: none; }
+#results { display: none; margin-top: 8px; }
+.result-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+@media (max-width: 700px) { .result-grid { grid-template-columns: 1fr; } }
+@media (min-width:701px) and (max-width:1100px) { .result-grid { grid-template-columns: 1fr 1fr; } }
+.result-card-title.biz { color: #0f766e; }
+.badge { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #fef3c7; color: #92400e; margin-left: 6px; vertical-align: middle; }
+.dl-btn { display: block; width: 100%; padding: 13px; background: #16a34a; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 16px; transition: background .2s; }
+.dl-btn:hover { background: #15803d; }
+
+/* 조건 설정 패널 */
+details.cfg { background:#fff; border:0.5px solid #ddd; border-radius:10px; margin-bottom:16px; }
+details.cfg > summary { padding:16px 20px; font-size:13px; font-weight:700; color:#555; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; }
+details.cfg > summary::-webkit-details-marker { display:none; }
+details.cfg > summary::after { content:'▾'; color:#999; font-size:12px; }
+details.cfg[open] > summary::after { content:'▴'; }
+.cfg-body { padding:0 20px 20px; }
+.cfg-table { width:100%; border-collapse:collapse; font-size:12px; }
+.cfg-table th, .cfg-table td { text-align:left; padding:7px 8px; border-bottom:1px solid #f1f5f9; }
+.cfg-table th { color:#94a3b8; font-weight:600; font-size:11px; background:#f8fafc; }
+.cfg-table td.code { font-family:'Consolas',monospace; font-size:11.5px; color:#1e293b; }
+.cfg-note { font-size:11.5px; color:#94a3b8; margin-top:10px; line-height:1.7; }
+.cfg-sub { font-size:12px; font-weight:700; color:#475569; margin:18px 0 8px; }
+.opt-row { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:12.5px; color:#475569; }
+.opt-row input[type=checkbox] { width:15px; height:15px; cursor:pointer; }
+.margin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; }
+.margin-item { border:1px solid #e5e7eb; border-radius:8px; padding:10px 12px; }
+.margin-item label { display:block; font-size:11.5px; color:#94a3b8; margin-bottom:5px; }
+.margin-item input { width:100%; border:1px solid #e5e7eb; border-radius:6px; padding:7px 9px; font-size:13px; font-family:'Consolas',monospace; }
+.margin-item input:focus { outline:none; border-color:#3b82f6; }
+
+/* 진단 */
+.diag { margin-top:16px; }
+.diag-warn { background:#fffbeb; border:1px solid #fde68a; color:#92400e; border-radius:8px; padding:11px 14px; font-size:12.5px; margin-bottom:12px; line-height:1.8; }
+.diag-warn b { color:#b45309; }
+.diag-ok { background:#f0fdf4; border:1px solid #bbf7d0; color:#15803d; border-radius:8px; padding:11px 14px; font-size:12.5px; margin-bottom:12px; }
+.diag-table { width:100%; border-collapse:collapse; font-size:11.5px; }
+.diag-table th, .diag-table td { padding:6px 8px; border-bottom:1px solid #f1f5f9; text-align:right; }
+.diag-table th:first-child, .diag-table td:first-child,
+.diag-table th:nth-child(2), .diag-table td:nth-child(2) { text-align:left; }
+.diag-table th { background:#f8fafc; color:#94a3b8; font-weight:600; font-size:11px; }
+.diag-table td.mono { font-family:'Consolas',monospace; color:#334155; }
+.diag-table tr.ex td { color:#b91c1c; }
+.diag-scroll { overflow-x:auto; }
+
+/* 대시보드 */
+.dashboard { margin-top: 28px; }
+.dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; }
+.dash-title { font-size: 16px; font-weight: 700; color: #222; }
+.dash-month { font-size: 12px; color: #999; }
+.summary-bar { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+@media (max-width:640px) { .summary-bar { grid-template-columns: 1fr; } }
+@media (min-width:641px) and (max-width:1100px) { .summary-bar { grid-template-columns: 1fr 1fr; } }
+.summary-card { border-radius: 10px; padding: 18px 20px; }
+.summary-card.sky { background: #eff6ff; border: 1px solid #bfdbfe; }
+.summary-card.skb { background: #f5f3ff; border: 1px solid #ddd6fe; }
+.summary-card.rental { background: #fffbeb; border: 1px solid #fde68a; }
+.summary-card.biz { background: #f0fdfa; border: 1px solid #99f6e4; }
+.sc-brand { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.sc-brand.sky { color: #1d4ed8; } .sc-brand.skb { color: #6d28d9; } .sc-brand.rental { color: #92400e; }
+.sc-brand.biz { color: #0f766e; }
+.sc-real-label { font-size: 11px; color: #888; margin-bottom: 2px; }
+.sc-real-val { font-size: 22px; font-weight: 700; line-height: 1.2; }
+.sc-real-val.pos { color: #15803d; } .sc-real-val.neg { color: #dc2626; }
+.sc-sub { font-size: 11px; color: #666; margin-top: 8px; }
+.sc-sub span { margin-right: 8px; }
+.detail-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+@media (max-width:640px) { .detail-grid { grid-template-columns: 1fr; } }
+@media (min-width:641px) and (max-width:1100px) { .detail-grid { grid-template-columns: 1fr 1fr; } }
+.detail-card { background: #fff; border: 0.5px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
+.dc-head { padding: 12px 16px 10px; border-bottom: 1px solid #f3f4f6; }
+.dc-brand { font-size: 13px; font-weight: 700; }
+.dc-brand.sky { color: #0369a1; } .dc-brand.skb { color: #7c3aed; } .dc-brand.rental { color: #b45309; }
+.dc-brand.biz { color: #0f766e; }
+.dc-cnt { font-size: 11px; color: #999; margin-top: 2px; }
+.dc-body { padding: 10px 16px 14px; }
+.dc-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 0.5px solid #f9fafb; }
+.dc-row:last-child { border-bottom: none; }
+.dc-key { font-size: 12px; color: #777; }
+.dc-val { font-size: 12px; font-weight: 600; color: #222; }
+.dc-val.neg { color: #dc2626; } .dc-val.pos { color: #16a34a; }
+.dc-divider { height: 1px; background: #e5e7eb; margin: 6px 0; }
+.dc-real-row { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 8px; border-top: 1.5px solid #e5e7eb; }
+.dc-real-key { font-size: 13px; font-weight: 700; color: #333; }
+.dc-real-val { font-size: 14px; font-weight: 700; }
+.dc-real-val.neg { color: #dc2626; } .dc-real-val.pos { color: #16a34a; }
+.sub-detail { margin-top: 6px; padding: 8px 10px; background: #f9fafb; border-radius: 6px; }
+.sub-detail-row { display: flex; justify-content: space-between; font-size: 11px; color: #999; padding: 2px 0; }
+.sub-detail-val { color: #666; }
+
+/* 환수 체크 */
+.sub-btn { display:block; width:100%; padding:10px; background:#fff; color:#b91c1c; border:1px solid #fca5a5; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; margin-top:8px; }
+.sub-btn:hover { background:#fef2f2; }
+#hwansu { display:none; margin-top:24px; border-color:#fecaca; }
+#hwansu .section-title { color:#b91c1c; }
+.hw-note { font-size:11.5px; color:#94a3b8; margin:-6px 0 12px; line-height:1.7; }
+.hw-total td { font-weight:700; border-top:1.5px solid #e5e7eb; }
+.hw-neg { color:#dc2626; }
+.hw-list { max-height:420px; overflow:auto; }
+.hw-dl { display:inline-block; margin-top:12px; padding:8px 14px; background:#fff; border:1px solid #d1d5db; border-radius:6px; font-size:12px; cursor:pointer; }
+.hw-dl:hover { background:#f9fafb; }
+
+/* ===== 업체회의 웹과 같은 모양 ===== */
+body{font-family:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;background:#EEF1F5;color:#1c2230;letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
+.container{max-width:1240px;padding:26px 32px 60px}
+h1{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.subtitle{color:#7d8697}
+.section,details.cfg,.result-card,.detail-card{border:0;border-radius:20px;box-shadow:0 1px 2px rgba(20,30,50,.04),0 4px 16px rgba(20,30,50,.05)}
+.section,.result-card{padding:22px}
+.section-title{font-size:15px;color:#1c2230}
+details.cfg>summary{font-size:14px;color:#1c2230}
+.file-item{border-radius:14px;border-color:#cdd6e4}
+.file-item.loaded{border-color:#4c82f7;background:#edf3ff}
+.calc-btn{background:#4c82f7;border-radius:12px}.calc-btn:hover{background:#3a6fe6}
+.dl-btn{background:#1f9d6b;border-radius:12px}
+.sub-btn{border-radius:12px}
+.summary-card{border-radius:18px}
+.margin-item input:focus{border-color:#4c82f7}
+.savebar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#4c82f7;color:#fff;border-radius:18px;padding:14px 18px;margin:8px 0 14px}
+.savebar[hidden]{display:none}
+.sb-l{display:flex;flex-direction:column}.sb-l b{font-size:15px}.sb-l span{font-size:12px;opacity:.85}
+.sb-r{display:flex;align-items:center;gap:8px}
+.sb-m{font-size:12px;display:flex;align-items:center;gap:6px}
+.sb-m input{border:0;border-radius:8px;padding:6px 8px;font:inherit;color:#1c2230}
+.sb-btn{border:0;background:#fff;color:#3a6fe6;font:inherit;font-weight:700;border-radius:10px;padding:8px 14px;cursor:pointer}
+.sb-btn:disabled{opacity:.6;cursor:default}
+.savebar.saved{background:#fff;color:#1c2230;box-shadow:0 1px 2px rgba(20,30,50,.04),0 4px 16px rgba(20,30,50,.05)}
+.savebar.saved .sb-l span{color:#7d8697;opacity:1}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>코드실적 <span style="font-size:12px;color:#9ca3af;font-weight:400;">SKYLIFE · SKB · SK매직 · 유선기타</span></h1>
+  <p class="subtitle">전체 로우데이터를 그대로 넣어도 <b>상부점 코드</b>로 SKYLIFE / SKB / SK매직만 정확히 골라냅니다. (.xlsx / .xls 지원)</p>
+
+  <div class="section">
+    <div class="section-title">1. 파일 업로드</div>
+    <div class="file-grid">
+      <div class="file-item" id="wrap-상부정산">
+        <div class="file-label">수입(A) · 상부정산관리</div>
+        <div class="file-name">상부정산 파일 (.xlsx / .xls)</div>
+        <div class="file-status">파일을 선택하세요</div>
+        <input type="file" accept=".xlsx,.xls" onchange="loadFile(this,'상부정산')">
+      </div>
+      <div class="file-item" id="wrap-전체정산">
+        <div class="file-label">지출(B) · 전체정산관리</div>
+        <div class="file-name">전체정산 파일 (.xlsx / .xls)</div>
+        <div class="file-status">파일을 선택하세요</div>
+        <input type="file" accept=".xlsx,.xls" onchange="loadFile(this,'전체정산')">
+      </div>
+    </div>
+  </div>
+
+  <details class="cfg" id="cfg-panel">
+    <summary>2. 조건 설정 / 체크 (상부점 코드 · 자점마진 · 제외 규칙)</summary>
+    <div class="cfg-body">
+      <div class="cfg-sub" style="margin-top:0;">■ 상부점 코드 (이 코드에 정확히 일치하는 행만 집계)</div>
+      <div class="diag-scroll">
+      <table class="cfg-table">
+        <thead><tr><th style="width:90px;">브랜드</th><th style="width:60px;">구분</th><th>상부점</th><th style="width:140px;">상품명 조건</th></tr></thead>
+        <tbody id="cfg-code-body"></tbody>
+      </table>
+      </div>
+
+      <div class="cfg-sub">■ 유선기타 집계 규칙 (별도 카테고리)</div>
+      <div class="cfg-note" style="margin-top:0;">
+        · 대상: 상품명이 <span style="font-family:monospace;">유선기타_</span> 로 시작하는 모든 행 (SK-biz · KT-biz · LG-biz · 다회선)<br>
+        · <b>건수는 (상부점 + 고객명) 묶음 = 1건.</b> 인터넷전화만 2대여도 1건, 인터넷+CCTV를 같이 신청해도 1건.
+          상부점이 다르면 다른 건으로 셉니다.<br>
+        · <b>대표 상품 우선순위:</b> 인터넷 → CCTV → 인터넷전화 → TV → 일반전화 → 부가상품 → 기타.
+          인터넷이 없으면 CCTV로, CCTV도 없으면 인터넷전화로 1건 잡습니다.<br>
+        · <b>코드입력 건은 제외.</b> 상부점이 숫자로 시작하면(<span style="font-family:monospace;">0.</span> <span style="font-family:monospace;">1.</span> <span style="font-family:monospace;">2.</span> <span style="font-family:monospace;">3.</span> <span style="font-family:monospace;">5.</span> <span style="font-family:monospace;">6.</span> …) 우리 코드로 입력된 건이라 유선기타에서 뺍니다.
+          <span style="font-family:monospace;">6.유SKB-웨이브넷(월☆통말)</span> 도 우리 코드라 여기서 빠지고 SKB에 잡힙니다.<br>
+        · 숫자로 시작하지 않는 상부점(<span style="font-family:monospace;">디컴스</span>, <span style="font-family:monospace;">광합성</span>, <span style="font-family:monospace;">지엠컴퍼니</span>, <span style="font-family:monospace;">더베이스</span>, <span style="font-family:monospace;">한결위드</span> …) 만 집계합니다.<br>
+        · <b>다회선</b>은 묶지 않고 행당 1건.<br>
+        · 수입−지출 수익만 계산하고 <b>자점마진·유지수수료는 붙지 않습니다.</b>
+      </div>
+
+      <div class="cfg-sub">■ 상품 분류 (행 단위로 판정)</div>
+      <div class="diag-scroll">
+      <table class="cfg-table">
+        <thead><tr><th style="width:110px;">상품</th><th>판정 기준</th><th style="width:110px;">자점마진</th><th style="width:110px;">유지수수료</th></tr></thead>
+        <tbody id="cfg-prod-body"></tbody>
+      </table>
+      </div>
+      <div class="cfg-note">· 판정 순서가 위에서부터입니다. <b>CCTV</b>는 문자열에 'TV'를, <b>인터넷전화</b>는 '인터넷'을 포함하므로 인터넷·TV보다 먼저 걸러냅니다.<br>· <b>인터넷전화는 인터넷이 아닙니다.</b> 건수·유지수수료·자점마진 어디에도 인터넷으로 잡히지 않습니다.</div>
+
+      <div class="cfg-sub">■ 자점운영마진 (협력점이 <span style="font-family:monospace;">1.시흥영업팀 / 2.천안영업팀</span> 인 건 · 전체정산 기준)</div>
+      <div class="margin-grid">
+        <div class="margin-item"><label>SKYLIFE 유선(인터넷) 건당</label><input type="number" id="in-sky-line" value="100000" step="10000"></div>
+        <div class="margin-item"><label>SKYLIFE 무선(유심) 건당</label><input type="number" id="in-sky-mob" value="50000" step="10000"></div>
+        <div class="margin-item"><label>SKB 유선(인터넷) 건당</label><input type="number" id="in-skb-line" value="100000" step="10000"></div>
+        <div class="margin-item"><label>SKB 무선(유심) 건당</label><input type="number" id="in-skb-mob" value="100000" step="10000"></div>
+        <div class="margin-item" style="background:#f9fafb;"><label>SK매직 렌탈</label><input type="number" id="in-rental-margin" value="0" disabled title="렌탈은 자점마진 없음"></div>
+      </div>
+      <div class="cfg-note">· 유선은 <b>인터넷</b> 건에만 마진 적용 · TV · 부가상품 · CCTV · 인터넷전화 · 일반전화는 마진 없음<br>· SK매직 렌탈, SK-biz 기타는 자점마진 없음</div>
+
+      <div class="cfg-sub">■ 집계 제외 규칙</div>
+      <div class="opt-row"><input type="checkbox" id="opt-ex-jsg" checked><label for="opt-ex-jsg">정산관련 · 추가지급 행 제외 <span style="color:#94a3b8;">(SKYLIFE_정산관련, SKB_추가지급, 렌탈_정산관련_SK매직 …)</span></label></div>
+      <div class="opt-row"><input type="checkbox" id="opt-ex-mgmt" checked><label for="opt-ex-mgmt">관리수수료(<span style="font-family:monospace;">_관리</span>) 행 제외 <span style="color:#94a3b8;">(예상관리와 이중계상 방지)</span></label></div>
+      <div class="opt-row"><input type="checkbox" id="opt-ex-haeji" checked><label for="opt-ex-haeji">개통상태에 '해지' 포함된 행 제외</label></div>
+      <div class="opt-row"><input type="checkbox" id="opt-only-ilban" checked><label for="opt-only-ilban">정산종류 '일반'만 집계 <span style="color:#94a3b8;">(환수 · 추가 제외)</span></label></div>
+      <div class="opt-row"><input type="checkbox" id="opt-inc-biz" checked><label for="opt-inc-biz">SKB에 <span style="font-family:monospace;">유선기타_(SK-biz)</span> 상품 포함 <span style="color:#94a3b8;">(상부점이 웨이브넷인 건)</span></label></div>
+      <div class="opt-row"><input type="checkbox" id="opt-ext-skip-code" checked><label for="opt-ext-skip-code">유선기타에서 <b>코드입력 건 제외</b> <span style="color:#94a3b8;">(상부점이 숫자로 시작하는 것 — <span style="font-family:monospace;">0.기타</span>, <span style="font-family:monospace;">1.유KT-우리(도매)(동판O)</span>, <span style="font-family:monospace;">6.유SKB-웨이브넷(월☆통말)</span> …)</span></label></div>
+
+      <div class="cfg-sub">■ 유지수수료 단가 (예상관리)</div>
+      <div class="diag-scroll">
+      <table class="cfg-table">
+        <thead><tr><th>통신사</th><th>인터넷</th><th>TV</th><th>유심</th><th>개월</th></tr></thead>
+        <tbody>
+          <tr><td>SKYLIFE</td><td class="code">950</td><td class="code">400</td><td class="code">1,400</td><td class="code">28</td></tr>
+          <tr><td>SKB</td><td class="code">1,350</td><td class="code">800</td><td class="code">1,500</td><td class="code">28</td></tr>
+          <tr><td>SK매직 렌탈</td><td colspan="4" class="code" style="color:#b45309;">유지수수료 없음</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </details>
+
+  <button class="calc-btn" onclick="calculate()">계산하기</button>
+  <button class="sub-btn" onclick="checkHwansuOnly()">환수만 체크 <span style="font-weight:400;color:#94a3b8;">(상부정산 파일만 있으면 가능 · 수익 계산과 별개)</span></button>
+  <div class="error-msg" id="error-msg"></div>
+  <div class="loading" id="loading">계산 중...</div>
+
+  <div class="savebar" id="saveBar" hidden>
+    <div class="sb-l"><b id="sbTitle">계산 결과</b><span id="sbSub"></span></div>
+    <div class="sb-r"><label class="sb-m">저장할 달 <input type="month" id="sbMonth"></label><button class="sb-btn" id="sbSave">💾 이 달 결과 저장</button></div>
+  </div>
+  <div id="results">
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="result-card-title sky">SKYLIFE<span class="card-code" id="code-sky"></span></div>
+        <div id="sky-result"></div>
+      </div>
+      <div class="result-card">
+        <div class="result-card-title skb">SKB<span class="card-code" id="code-skb"></span></div>
+        <div id="skb-result"></div>
+      </div>
+      <div class="result-card">
+        <div class="result-card-title rental">SK매직 렌탈 <span class="badge">유지수수료 없음</span><span class="card-code" id="code-rental"></span></div>
+        <div id="rental-result"></div>
+      </div>
+      <div class="result-card">
+        <div class="result-card-title biz">유선기타 <span class="badge">자점마진·유지수수료 없음</span><span class="card-code" id="code-biz"></span></div>
+        <div id="biz-result"></div>
+      </div>
+    </div>
+    <button class="dl-btn" onclick="downloadExcel()">📥 엑셀 보고서 다운로드</button>
+
+    <div class="section diag">
+      <div class="section-title">🔎 조건 체크 리포트 (분류 검증)</div>
+      <div id="diag-alerts"></div>
+      <div class="diag-scroll"><table class="diag-table" id="diag-main"></table></div>
+      <div class="cfg-sub">■ 상품 분류별 건수 (행 단위 · 고객 단위 아님)</div>
+      <div class="diag-scroll"><table class="diag-table" id="diag-prod"></table></div>
+      <div class="cfg-sub">■ 제외된 행 내역</div>
+      <div class="diag-scroll"><table class="diag-table" id="diag-ex"></table></div>
+      <div class="cfg-sub">■ 유선기타에서 코드입력으로 제외된 상부점</div>
+      <div class="diag-scroll"><table class="diag-table" id="diag-code"></table></div>
+      <div class="cfg-sub">■ 집계에서 빠진 상부점 (참고 · 상위 12개)</div>
+      <div class="diag-scroll"><table class="diag-table" id="diag-other"></table></div>
+    </div>
+
+    <div class="dashboard">
+      <div class="dash-header">
+        <div class="dash-title">실적 대시보드</div>
+        <div class="dash-month" id="dash-month"></div>
+      </div>
+      <div class="summary-bar">
+        <div class="summary-card sky">
+          <div class="sc-brand sky">SKYLIFE</div>
+          <div class="sc-real-label">실예상수익</div>
+          <div class="sc-real-val" id="sc-sky-real"></div>
+          <div class="sc-sub" id="sc-sky-sub"></div>
+        </div>
+        <div class="summary-card skb">
+          <div class="sc-brand skb">SKB</div>
+          <div class="sc-real-label">실예상수익</div>
+          <div class="sc-real-val" id="sc-skb-real"></div>
+          <div class="sc-sub" id="sc-skb-sub"></div>
+        </div>
+        <div class="summary-card rental">
+          <div class="sc-brand rental">SK매직 렌탈</div>
+          <div class="sc-real-label">실예상수익</div>
+          <div class="sc-real-val" id="sc-rental-real"></div>
+          <div class="sc-sub" id="sc-rental-sub"></div>
+        </div>
+        <div class="summary-card biz">
+          <div class="sc-brand biz">유선기타</div>
+          <div class="sc-real-label">수익(A-B)</div>
+          <div class="sc-real-val" id="sc-biz-real"></div>
+          <div class="sc-sub" id="sc-biz-sub"></div>
+        </div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <div class="dc-head"><div class="dc-brand sky">SKYLIFE</div><div class="dc-cnt" id="dc-sky-cnt"></div></div>
+          <div class="dc-body" id="dc-sky-body"></div>
+        </div>
+        <div class="detail-card">
+          <div class="dc-head"><div class="dc-brand skb">SKB</div><div class="dc-cnt" id="dc-skb-cnt"></div></div>
+          <div class="dc-body" id="dc-skb-body"></div>
+        </div>
+        <div class="detail-card">
+          <div class="dc-head"><div class="dc-brand rental">SK매직 렌탈</div><div class="dc-cnt" id="dc-rental-cnt"></div></div>
+          <div class="dc-body" id="dc-rental-body"></div>
+        </div>
+        <div class="detail-card">
+          <div class="dc-head"><div class="dc-brand biz">유선기타</div><div class="dc-cnt" id="dc-biz-cnt"></div></div>
+          <div class="dc-body" id="dc-biz-body"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="hwansu">
+    <div class="section-title">↩ 환수 체크 (상부정산 · 우리 코드 · 수익 계산과 별개)</div>
+    <div class="hw-note"><b>상부정산</b>에서 정산종류가 '환수'인 행 중 <b>우리 코드</b>(SKY-우리 · SKB-웨이브넷 · SK매직-우성)만 모아 금액을 따로 봅니다.
+      위 수익(A−B)에는 영향을 주지 않으며, 해지·정산관련 제외 같은 집계 규칙은 적용하지 않습니다.</div>
+    <div class="diag-scroll"><table class="diag-table" id="hw-sum"></table></div>
+    <div class="hw-note" id="hw-skip" style="margin:8px 0 0;"></div>
+    <div class="cfg-sub">■ 환수 행 상세</div>
+    <div class="diag-scroll hw-list"><table class="diag-table" id="hw-rows"></table></div>
+    <button class="hw-dl" onclick="downloadHwansu()">📥 환수 내역 엑셀</button>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   설정 : 상부점 코드 · 유지수수료 · 자점마진
+   ══════════════════════════════════════════════════════════════════ */
+var CONFIG = {
+  sky: {
+    label: 'SKYLIFE',
+    lineCode: '1.유SKY-우리(월☆통25)',      // 유선
+    mobCode : '1.무SKY-우리(월☆통25)',      // 무선
+    mobProduct: '모바일_SKYLIFE',
+    fee: { internet:950, tv:400, usim:1400, months:28 }
+  },
+  skb: {
+    label: 'SKB',
+    lineCode: '6.유SKB-웨이브넷(월☆통말)',
+    mobCode : '6.무SKB-웨이브넷(월☆통말)',
+    mobProduct: '모바일_SKB',
+    fee: { internet:1350, tv:800, usim:1500, months:28 }
+  },
+  rental: {
+    label: 'SK매직 렌탈',
+    code: '2.렌탈SK매직-우성(월☆통말)',
+    product: '렌탈_SK매직'
+  }
+};
+var MARGIN_TEAMS = ['1.시흥영업팀','2.천안영업팀'];
+
+/* ── 상품 분류 규칙 ──────────────────────────────────────────────
+   행(상품) 단위로 판정한다. 고객 단위로 묶지 않는다.
+   순서가 중요: CCTV 는 'TV' 를, 인터넷전화 는 '인터넷' 을 문자열로 포함하므로
+   반드시 먼저 걸러낸다.
+   margin:true 인 상품에만 자점운영마진이 붙는다.                        */
+var PRODUCT_RULES = [
+  { key:'cctv',     label:'CCTV',     re:/CCTV/i,      margin:false },
+  { key:'voip',     label:'인터넷전화', re:/인터넷전화/,   margin:false },
+  { key:'phone',    label:'일반전화',   re:/일반전화|_전화$/, margin:false },
+  { key:'tv',       label:'TV',       re:/TV/,         margin:false },
+  { key:'internet', label:'인터넷',    re:/인터넷/,      margin:true  },
+  { key:'extra',    label:'부가상품',   re:/부가상품/,     margin:false },
+  { key:'etc',      label:'기타',      re:/./,          margin:false }
+];
+function classify(pn) {
+  var v = key(pn);
+  for (var i = 0; i < PRODUCT_RULES.length; i++) {
+    if (PRODUCT_RULES[i].re.test(v)) return PRODUCT_RULES[i];
+  }
+  return PRODUCT_RULES[PRODUCT_RULES.length - 1];
+}
+function isMarginProduct(pn){ return classify(pn).margin === true; }
+
+/* ── 유선기타 (별도 카테고리) ───────────────────────────────────
+   상품명이 '유선기타_' 로 시작하는 모든 행. 상부점을 가리지 않는다.
+   · 건수는 (상부점 + 고객명) 묶음 = 1건. 한 고객이 인터넷전화만 2대여도 1건,
+     인터넷+CCTV 를 같이 신청해도 1건(대표=인터넷).
+     상부점이 다르면 다른 건으로 센다.
+   · 대표 상품은 아래 우선순위로 정한다.
+   · 다회선은 묶지 않고 행당 1건으로 센다.
+   · 수입-지출 수익만 계산하고 자점마진·유지수수료는 붙지 않는다.        */
+var EXT_PREFIX  = '유선기타_';
+var EXT_MULTI   = '다회선';
+var REP_PRIORITY = ['internet','cctv','voip','tv','phone','extra','etc'];
+var CARRIERS = [
+  { key:'SK', label:'SK-biz', re:/\(SK-biz\)/ },
+  { key:'KT', label:'KT-biz', re:/\(KT-biz\)|다회선KT/ },
+  { key:'LG', label:'LG-biz', re:/\(LG-biz\)/ },
+  { key:'ETC', label:'기타',  re:/./ }
+];
+function carrierOf(pn) {
+  var v = key(pn);
+  for (var i = 0; i < CARRIERS.length; i++) if (CARRIERS[i].re.test(v)) return CARRIERS[i];
+  return CARRIERS[CARRIERS.length - 1];
+}
+function isExtProduct(pn){ return key(pn).indexOf(EXT_PREFIX) === 0; }
+function isMultiLine(pn){ return key(pn).indexOf(EXT_MULTI) >= 0; }
+
+/* 코드입력 건 = 상부점이 숫자로 시작하는 것.
+   0.기타 / 1.유KT-우리(도매)(동판O) / 5.유KT-대성_평택(월☆통20) /
+   6.유SKB-웨이브넷(월☆통말) … 전부 우리 코드로 입력된 건이므로
+   유선기타 집계에서 제외한다. 숫자로 시작하지 않는 상부점
+   (디컴스 / 광합성 / 지엠컴퍼니 / 더베이스 / 한결위드 …) 만 집계한다. */
+function isCodeInput(sangbu){ return /^[0-9]/.test(key(sangbu)); }
+
+var files = {};
+var lastResult = null, lastDiag = null;
+
+/* ── 문자열 정규화: 공백/NBSP 제거 후 비교 (파일별 공백 차이 흡수) ── */
+function key(v){ return String(v==null?'':v).replace(/ /g,' ').replace(/\s+/g,'').trim(); }
+function num(v){ var n = parseFloat(String(v==null?'':v).replace(/,/g,'')); return isNaN(n) ? 0 : n; }
+function fmt(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ══════════════════════════════════════════════════════════════════
+   파일 로드
+   ══════════════════════════════════════════════════════════════════ */
+function loadFile(input, slot) {
+  var file = input.files[0];
+  if (!file) return;
+  var wrap = document.getElementById('wrap-' + slot);
+  hideError();
+
+  var r1 = new FileReader();
+  r1.onload = function(e) {
+    try {
+      var wb = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
+      var sheetName = wb.SheetNames[0];
+      var ws = wb.Sheets[sheetName];
+      var testRows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', range:0 });
+      var firstRow = (testRows[0] || []).join('');
+      if (firstRow.indexOf('상부점') >= 0 || firstRow.indexOf('상품명') >= 0 || firstRow.indexOf('정산') >= 0 || firstRow.indexOf('No') >= 0) {
+        files[slot] = { type:'xlsx', wb:wb, sheetName:sheetName, fileName:file.name };
+        afterLoad(slot, wrap, file.name);
+        return;
+      }
+      throw new Error('헤더 인식 실패 - HTML xls로 재시도');
+    } catch(e1) {
+      var r2 = new FileReader();
+      r2.onload = function(e2) {
+        try {
+          var rows = parseHtmlXls(e2.target.result);
+          if (!rows || rows.length < 2) throw new Error('파싱된 데이터 없음');
+          files[slot] = { type:'html', rows:rows, sheetName:'', fileName:file.name };
+          afterLoad(slot, wrap, file.name);
+        } catch(e2err) {
+          showError('파일 읽기 실패: ' + file.name + '\n' + e2err.message);
+        }
+      };
+      r2.readAsText(file, 'euc-kr');
+    }
+  };
+  r1.readAsArrayBuffer(file);
+}
+
+/* 시트명/파일명으로 상부정산·전체정산 종류 자동 감지 */
+function detectKind(f) {
+  var s = key(f.sheetName) + key(f.fileName);
+  if (s.indexOf('상부정산') >= 0) return '상부정산';
+  if (s.indexOf('전체정산') >= 0) return '전체정산';
+  return '';
+}
+
+function afterLoad(slot, wrap, name) {
+  var kind = detectKind(files[slot]);
+  wrap.classList.remove('warn');
+  wrap.classList.add('loaded');
+  wrap.querySelector('.file-name').textContent = name;
+  if (kind && kind !== slot) {
+    wrap.classList.add('warn');
+    wrap.querySelector('.file-status').textContent = '⚠ ' + kind + ' 파일로 보입니다 — 계산 시 자동 교정';
+  } else {
+    wrap.querySelector('.file-status').textContent = '로드 완료 ✓' + (kind ? ' (' + kind + ' 확인)' : '');
+  }
+}
+
+/* ── HTML xls 파싱 (rowspan/colspan 처리) ── */
+function parseHtmlXls(html) {
+  var doc = new DOMParser().parseFromString(html, 'text/html');
+  var table = doc.querySelector('table');
+  if (!table) throw new Error('테이블 없음');
+  var trs = Array.prototype.slice.call(table.querySelectorAll('tr'));
+  var grid = [];
+  trs.forEach(function(tr, ri) {
+    if (!grid[ri]) grid[ri] = [];
+    var ci = 0;
+    Array.prototype.slice.call(tr.querySelectorAll('td,th')).forEach(function(cell) {
+      while (grid[ri][ci] !== undefined) ci++;
+      var text = cell.textContent.replace(/\s+/g,' ').trim();
+      var rs = parseInt(cell.getAttribute('rowspan') || '1', 10);
+      var cs = parseInt(cell.getAttribute('colspan') || '1', 10);
+      for (var r = ri; r < ri + rs; r++) {
+        if (!grid[r]) grid[r] = [];
+        for (var c = ci; c < ci + cs; c++) grid[r][c] = text;
+      }
+      ci += cs;
+    });
+  });
+  return grid;
+}
+
+/* ── 2D배열 → 객체배열 ── */
+function parseRows(rawRows) {
+  var headerIdx = -1;
+  for (var i = 0; i < Math.min(8, rawRows.length); i++) {
+    var row = (rawRows[i] || []).map(function(v){ return String(v==null?'':v).trim(); });
+    if (row.indexOf('상품명') >= 0 && row.indexOf('상부점') >= 0) { headerIdx = i; break; }
+  }
+  if (headerIdx < 0) throw new Error("헤더 행을 찾지 못했습니다. ('상품명' + '상부점' 컬럼 필요)");
+
+  var h0 = (rawRows[headerIdx]   || []).map(function(v){ return String(v==null?'':v).trim(); });
+  var h1 = (rawRows[headerIdx+1] || []).map(function(v){ return String(v==null?'':v).trim(); });
+  var headers = h0.map(function(v, i){ return (v === '' && h1[i]) ? h1[i] : v; });
+
+  var seen = {};
+  var finalHeaders = headers.map(function(h) {
+    if (seen[h] !== undefined) { seen[h]++; return h + '_' + seen[h]; }
+    seen[h] = 0; return h;
+  });
+
+  // 서브헤더 행(차감내역 세부)이 있으면 2줄, 없으면 1줄 건너뜀
+  var h1IsSub = h1.length > 0 && h1.indexOf('상품명') < 0 && h1.filter(function(v){return v!=='';}).length > 0
+                && String(h1[0]||'').trim() === '';
+  var start = headerIdx + (h1IsSub ? 2 : 1);
+
+  return rawRows.slice(start).map(function(row) {
+    var obj = {};
+    finalHeaders.forEach(function(h, i) {
+      obj[h] = (row && row[i] !== undefined && row[i] !== null) ? String(row[i]).trim() : '';
+    });
+    return obj;
+  }).filter(function(r) {
+    var no = r['No'] || '';
+    return no !== '' && no.indexOf('화면') < 0 && no !== 'No';
+  });
+}
+
+function getRows(slot) {
+  var f = files[slot];
+  if (f.type === 'html') return parseRows(f.rows);
+  var ws = f.wb.Sheets[f.wb.SheetNames[0]];
+  return parseRows(XLSX.utils.sheet_to_json(ws, { header:1, defval:'' }));
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   필터
+   ══════════════════════════════════════════════════════════════════ */
+var OPT = {};
+function readOptions() {
+  OPT = {
+    exJsg    : document.getElementById('opt-ex-jsg').checked,
+    exMgmt   : document.getElementById('opt-ex-mgmt').checked,
+    exHaeji  : document.getElementById('opt-ex-haeji').checked,
+    onlyIlban: document.getElementById('opt-only-ilban').checked,
+    incBiz   : document.getElementById('opt-inc-biz').checked,
+    extSkipCode : document.getElementById('opt-ext-skip-code').checked
+  };
+}
+function readMargins() {
+  function g(id, d){ var v = parseFloat(document.getElementById(id).value); return isNaN(v) ? d : v; }
+  return {
+    skyLine: g('in-sky-line',100000), skyMob: g('in-sky-mob',50000),
+    skbLine: g('in-skb-line',100000), skbMob: g('in-skb-mob',100000),
+    rental : 0
+  };
+}
+
+function isHaeji(r){ return String(r['개통상태']||'').indexOf('해지') >= 0; }
+
+/* 제외 상품 판정 — 대소문자 무관, '_정산관련 / _추가지급 / _관리' 부분일치 */
+function exReason(pn) {
+  var p = key(pn).toUpperCase();
+  if (OPT.exJsg  && p.indexOf('정산관련') >= 0) return '정산관련';
+  if (OPT.exJsg  && p.indexOf('추가지급') >= 0) return '추가지급';
+  if (OPT.exMgmt && /_관리$|^모바일_관리$/.test(key(pn))) return '관리수수료';
+  return '';
+}
+
+/* 유선(인터넷/TV/부가상품) 행 판정 */
+function isBizProduct(pn){ return key(pn).indexOf('유선기타_(SK-biz)') >= 0; }
+
+/* 상부점 코드 + 기본조건으로 1차 분류 (진단정보 함께 수집) */
+function pickLine(rows, code, opt) {
+  var K = key(code);
+  var hit = [], ex = {}, dropHaeji = 0, dropJong = {};
+  rows.forEach(function(r) {
+    if (key(r['상부점']) !== K) return;
+    if (OPT.onlyIlban && String(r['정산종류']||'').trim() !== '일반') {
+      var j = String(r['정산종류']||'(공백)'); dropJong[j] = (dropJong[j]||0) + 1; return;
+    }
+    if (OPT.exHaeji && isHaeji(r)) { dropHaeji++; return; }
+    if (!OPT.incBiz && isBizProduct(r['상품명'])) {
+      var pn0 = r['상품명']||'(공백)';
+      ex[pn0] = ex[pn0] || {cnt:0, amt:0, why:'SK-biz 제외'};
+      ex[pn0].cnt++; ex[pn0].amt += num(r['정산금액']); return;
+    }
+    var why = exReason(r['상품명']);
+    if (why) {
+      var pn = r['상품명']||'(공백)';
+      ex[pn] = ex[pn] || {cnt:0, amt:0, why:why};
+      ex[pn].cnt++; ex[pn].amt += num(r['정산금액']); return;
+    }
+    hit.push(r);
+  });
+  return { rows:hit, excluded:ex, dropHaeji:dropHaeji, dropJong:dropJong };
+}
+
+/* 무선: 상부점 코드 + 상품명 정확일치 */
+function pickMob(rows, code, product) {
+  var K = key(code), P = key(product);
+  var hit = [], ex = {}, dropHaeji = 0, dropJong = {};
+  rows.forEach(function(r) {
+    if (key(r['상부점']) !== K) return;
+    if (key(r['상품명']) !== P) {
+      var pn = r['상품명']||'(공백)';
+      ex[pn] = ex[pn] || {cnt:0, amt:0, why:'무선 상품명 불일치'};
+      ex[pn].cnt++; ex[pn].amt += num(r['정산금액']); return;
+    }
+    if (OPT.onlyIlban && String(r['정산종류']||'').trim() !== '일반') {
+      var j = String(r['정산종류']||'(공백)'); dropJong[j] = (dropJong[j]||0) + 1; return;
+    }
+    if (OPT.exHaeji && isHaeji(r)) { dropHaeji++; return; }
+    hit.push(r);
+  });
+  return { rows:hit, excluded:ex, dropHaeji:dropHaeji, dropJong:dropJong };
+}
+
+function mergeEx(a, b) {
+  var o = {};
+  [a,b].forEach(function(src){
+    Object.keys(src).forEach(function(k){
+      o[k] = o[k] || {cnt:0, amt:0, why:src[k].why};
+      o[k].cnt += src[k].cnt; o[k].amt += src[k].amt;
+    });
+  });
+  return o;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   계산
+   ══════════════════════════════════════════════════════════════════ */
+function computeBrand(cfg, BU, JE, marginLine, marginMob) {
+  var lb = pickLine(BU, cfg.lineCode), lj = pickLine(JE, cfg.lineCode);
+  var mb = pickMob (BU, cfg.mobCode, cfg.mobProduct), mj = pickMob(JE, cfg.mobCode, cfg.mobProduct);
+
+  var of = function(k2){ return function(r){ return classify(r['상품명']).key === k2; }; };
+  var isNet = of('internet');
+
+  var internet = lb.rows.filter(isNet).length;
+  var tv       = lb.rows.filter(of('tv')).length;
+  var extra    = lb.rows.filter(of('extra')).length;
+  var cctv     = lb.rows.filter(of('cctv')).length;
+  var voip     = lb.rows.filter(of('voip')).length;
+  var phone    = lb.rows.filter(of('phone')).length;
+  var usim     = mb.rows.length;
+
+  var incomeLine = lb.rows.reduce(function(s,r){ return s + num(r['정산금액']); }, 0);
+  var incomeMob  = mb.rows.reduce(function(s,r){ return s + num(r['정산금액']); }, 0);
+  var incomeA    = incomeLine + incomeMob;
+
+  var expLine = lj.rows.filter(function(r){ return num(r['약정금액']) > 0; })
+                       .reduce(function(s,r){ return s + num(r['약정금액']); }, 0);
+  var expMob  = mj.rows.reduce(function(s,r){ return s + num(r['약정금액']) + num(r['동판수수료']); }, 0);
+  var expenseB = expLine + expMob;
+
+  var inTeam = function(r){ return MARGIN_TEAMS.indexOf(String(r['협력점']||'').trim()) >= 0; };
+  var mLineRows = lj.rows.filter(function(r){ return inTeam(r) && isMarginProduct(r['상품명']); });
+  var mMobRows  = mj.rows.filter(inTeam);
+  var margin = mLineRows.length * marginLine + mMobRows.length * marginMob;
+
+  var f = cfg.fee;
+  var mgmtI = internet * f.internet * f.months;
+  var mgmtT = tv       * f.tv       * f.months;
+  var mgmtU = usim     * f.usim     * f.months;
+  var mgmt  = mgmtI + mgmtT + mgmtU;
+
+  var expenseBTotal = expenseB + margin;
+  var profit = incomeA - expenseBTotal;
+
+  return {
+    internet:internet, tv:tv, usim:usim, extra:extra, cctv:cctv, voip:voip, phone:phone,
+    incomeA:incomeA, incomeLine:incomeLine, incomeMob:incomeMob,
+    expenseB:expenseB, margin:margin, expenseBTotal:expenseBTotal, profit:profit,
+    mgmt:mgmt, mgmtI:mgmtI, mgmtT:mgmtT, mgmtU:mgmtU, real:profit + mgmt,
+    marginLines:mLineRows.length, marginMobLines:mMobRows.length,
+    marginLineRate:marginLine, marginMobRate:marginMob,
+    _diag: {
+      lineCode:cfg.lineCode, mobCode:cfg.mobCode,
+      buLine:lb.rows.length, buMob:mb.rows.length,
+      jeLine:lj.rows.length, jeMob:mj.rows.length,
+      excluded: mergeEx(mergeEx(lb.excluded, lj.excluded), mergeEx(mb.excluded, mj.excluded)),
+      dropHaeji: lb.dropHaeji + lj.dropHaeji + mb.dropHaeji + mj.dropHaeji,
+      dropJong: (function(){ var o={}; [lb,lj,mb,mj].forEach(function(x){ Object.keys(x.dropJong).forEach(function(k){ o[k]=(o[k]||0)+x.dropJong[k]; }); }); return o; })()
+    }
+  };
+}
+
+function computeRental(cfg, BU, JE) {
+  var K = key(cfg.code), P = key(cfg.product);
+  function pick(rows) {
+    var hit = [], ex = {}, dropHaeji = 0, dropJong = {};
+    rows.forEach(function(r) {
+      if (key(r['상부점']) !== K) return;
+      if (key(r['상품명']) !== P) {
+        var pn = r['상품명']||'(공백)';
+        ex[pn] = ex[pn] || {cnt:0, amt:0, why:'렌탈 상품명 불일치'};
+        ex[pn].cnt++; ex[pn].amt += num(r['정산금액']); return;
+      }
+      if (OPT.onlyIlban && String(r['정산종류']||'').trim() !== '일반') {
+        var j = String(r['정산종류']||'(공백)'); dropJong[j]=(dropJong[j]||0)+1; return;
+      }
+      if (OPT.exHaeji && isHaeji(r)) { dropHaeji++; return; }
+      hit.push(r);
+    });
+    return { rows:hit, excluded:ex, dropHaeji:dropHaeji, dropJong:dropJong };
+  }
+  var b = pick(BU), j = pick(JE);
+  var incomeA = b.rows.reduce(function(s,r){ return s + num(r['정산금액']); }, 0);
+  var expenseB = j.rows.filter(function(r){ return num(r['약정금액']) > 0; })
+                       .reduce(function(s,r){ return s + num(r['약정금액']); }, 0);
+  return {
+    cnt:b.rows.length, incomeA:incomeA, expenseB:expenseB, margin:0,
+    expenseBTotal:expenseB, profit:incomeA - expenseB, real:incomeA - expenseB,
+    _diag: { lineCode:cfg.code, mobCode:'-', buLine:b.rows.length, buMob:0,
+             jeLine:j.rows.length, jeMob:0, excluded:mergeEx(b.excluded, j.excluded),
+             dropHaeji:b.dropHaeji + j.dropHaeji,
+             dropJong:(function(){ var o={}; [b,j].forEach(function(x){ Object.keys(x.dropJong).forEach(function(k){ o[k]=(o[k]||0)+x.dropJong[k]; }); }); return o; })() }
+  };
+}
+
+/* 유선기타 집계 */
+function computeExt(BU, JE) {
+  function pick(rows) {
+    var norm = [], multi = [], dropCode = 0, codeSeen = {}, dropHaeji = 0, dropJong = {};
+    rows.forEach(function(r) {
+      if (!isExtProduct(r['상품명'])) return;
+      if (exReason(r['상품명'])) return;
+      if (OPT.extSkipCode && isCodeInput(r['상부점'])) {   // 코드입력 건 — 우리 코드라 제외
+        dropCode++;
+        var c = String(r['상부점']||'(공백)').trim();
+        codeSeen[c] = (codeSeen[c] || 0) + 1;
+        return;
+      }
+      if (OPT.onlyIlban && String(r['정산종류']||'').trim() !== '일반') {
+        var j = String(r['정산종류']||'(공백)'); dropJong[j] = (dropJong[j]||0) + 1; return;
+      }
+      if (OPT.exHaeji && isHaeji(r)) { dropHaeji++; return; }
+      if (isMultiLine(r['상품명'])) { multi.push(r); return; }   // 다회선은 묶지 않고 행당 1건
+      norm.push(r);
+    });
+    return { norm:norm, multi:multi, dropCode:dropCode, codeSeen:codeSeen,
+             dropHaeji:dropHaeji, dropJong:dropJong };
+  }
+
+  /* (상부점 + 고객명) 으로 묶어 1건. 대표 상품은 REP_PRIORITY 순. */
+  function group(rows) {
+    var g = {}, order = [];
+    rows.forEach(function(r) {
+      var gk = key(r['상부점']) + '\u0000' + key(r['고객명']);
+      if (!g[gk]) { g[gk] = { rows:[], 상부점:r['상부점'], 고객명:r['고객명'] }; order.push(gk); }
+      g[gk].rows.push(r);
+    });
+    return order.map(function(gk) {
+      var it = g[gk], best = REP_PRIORITY.length, rep = null;
+      it.rows.forEach(function(r) {
+        var c = classify(r['상품명']), i = REP_PRIORITY.indexOf(c.key);
+        if (i < 0) i = REP_PRIORITY.length - 1;
+        if (i < best) { best = i; rep = c; }
+      });
+      it.rep = rep || classify(it.rows[0]['상품명']);
+      it.carrier = carrierOf(it.rows[0]['상품명']);
+      return it;
+    });
+  }
+
+  var b = pick(BU), j = pick(JE);
+  var gb = group(b.norm), gj = group(j.norm);
+
+  function tally(groups, multi) {
+    var byCarrier = {}, byProduct = {};
+    groups.forEach(function(it) {
+      var c = byCarrier[it.carrier.key] || (byCarrier[it.carrier.key] = { label:it.carrier.label, cnt:0 });
+      c.cnt++;
+      var p = byProduct[it.rep.key] || (byProduct[it.rep.key] = { label:it.rep.label, cnt:0 });
+      p.cnt++;
+    });
+    return { cnt:groups.length + multi.length, groups:groups.length, multi:multi.length,
+             byCarrier:byCarrier, byProduct:byProduct };
+  }
+  var tb = tally(gb, b.multi), tj = tally(gj, j.multi);
+
+  var incomeA  = b.norm.concat(b.multi).reduce(function(s2,r){ return s2 + num(r['정산금액']); }, 0);
+  var expenseB = j.norm.concat(j.multi).filter(function(r){ return num(r['약정금액']) > 0; })
+                       .reduce(function(s2,r){ return s2 + num(r['약정금액']); }, 0);
+
+  var codes = {};
+  b.norm.concat(b.multi, j.norm, j.multi).forEach(function(r){ codes[String(r['상부점']||'(공백)').trim()] = 1; });
+
+  return {
+    cnt:tb.cnt, cntB:tj.cnt, groups:tb.groups, multi:tb.multi, multiB:tj.multi,
+    rowsA:b.norm.length + b.multi.length, rowsB:j.norm.length + j.multi.length,
+    byCarrier:tb.byCarrier, byProduct:tb.byProduct,
+    byCarrierB:tj.byCarrier, byProductB:tj.byProduct,
+    codes:Object.keys(codes).sort(),
+    dropCode:b.dropCode + j.dropCode,
+    codeSeen:(function(){ var o={}; [b,j].forEach(function(x){ Object.keys(x.codeSeen).forEach(function(k2){ o[k2]=(o[k2]||0)+x.codeSeen[k2]; }); }); return o; })(),
+    incomeA:incomeA, expenseB:expenseB, margin:0,
+    expenseBTotal:expenseB, profit:incomeA - expenseB, real:incomeA - expenseB,
+    _diag: { lineCode:'유선기타_* · 상부점 무관', mobCode:'-',
+             buLine:tb.cnt, buMob:0, jeLine:tj.cnt, jeMob:0,
+             excluded:{}, dropHaeji:b.dropHaeji + j.dropHaeji,
+             dropJong:(function(){ var o={}; [b,j].forEach(function(x){ Object.keys(x.dropJong).forEach(function(k2){ o[k2]=(o[k2]||0)+x.dropJong[k2]; }); }); return o; })() }
+  };
+}
+
+function detectMonth(rows) {
+  var c = {};
+  rows.forEach(function(r) {
+    var m = String(r['정산예정일']||'').match(/(\d{4})[-.\/](\d{1,2})/);
+    if (m) { var k2 = m[1] + '-' + ('0'+m[2]).slice(-2); c[k2] = (c[k2]||0) + 1; }
+  });
+  var best = '', n = 0;
+  Object.keys(c).forEach(function(k2){ if (c[k2] > n) { n = c[k2]; best = k2; } });
+  return best;
+}
+
+function calculate() {
+  hideError();
+  var missing = ['상부정산','전체정산'].filter(function(k2){ return !files[k2]; });
+  if (missing.length) { showError('상부정산, 전체정산 파일 2개를 모두 선택해주세요.'); return; }
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+
+  setTimeout(function() {
+    try {
+      readOptions();
+      var M = readMargins();
+
+      var slotBU = '상부정산', slotJE = '전체정산', swapped = false;
+      var kA = detectKind(files['상부정산']), kB = detectKind(files['전체정산']);
+      if (kA === '전체정산' && kB === '상부정산') { slotBU = '전체정산'; slotJE = '상부정산'; swapped = true; }
+
+      var BU = getRows(slotBU);
+      var JE = getRows(slotJE);
+      if (!BU.length || !JE.length) throw new Error('데이터 행이 없습니다. 파일을 확인해주세요.');
+
+      var sky    = computeBrand(CONFIG.sky, BU, JE, M.skyLine, M.skyMob);
+      var skb    = computeBrand(CONFIG.skb, BU, JE, M.skbLine, M.skbMob);
+      var rental = computeRental(CONFIG.rental, BU, JE);
+
+      var mainCodes = [CONFIG.sky.lineCode, CONFIG.sky.mobCode,
+                       CONFIG.skb.lineCode, CONFIG.skb.mobCode, CONFIG.rental.code];
+      var biz = computeExt(BU, JE);
+
+      var used = {};
+      mainCodes.forEach(function(c){ used[key(c)] = 1; });
+      var others = {};
+      BU.forEach(function(r) {
+        var c = String(r['상부점']||'(공백)').trim();
+        if (used[key(c)]) return;
+        others[c] = (others[c]||0) + 1;
+      });
+
+      lastDiag = {
+        swapped: swapped,
+        buName: files[slotBU].fileName, jeName: files[slotJE].fileName,
+        buRows: BU.length, jeRows: JE.length,
+        month: window.__forcedMonth || detectMonth(BU) || detectMonth(JE),
+        others: others,
+        opt: JSON.parse(JSON.stringify(OPT)),
+        margins: M
+      };
+
+      renderResult('sky', sky);
+      renderResult('skb', skb);
+      renderRental(rental);
+      renderBiz(biz);
+      document.getElementById('code-sky').innerHTML    = esc(CONFIG.sky.lineCode) + ' · ' + esc(CONFIG.sky.mobCode);
+      document.getElementById('code-skb').innerHTML    = esc(CONFIG.skb.lineCode) + ' · ' + esc(CONFIG.skb.mobCode);
+      document.getElementById('code-rental').innerHTML = esc(CONFIG.rental.code);
+
+      lastResult = { sky:sky, skb:skb, rental:rental, biz:biz };
+      renderDashboard(sky, skb, rental, biz);
+      renderDiag(sky, skb, rental, biz);
+      renderHwansu(computeHwansu(BU));     // 상부정산 환수만 · 수익과 별개
+      lastHwansu.month = lastDiag.month;
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('results').style.display = 'block';
+      if (window.__afterCalc) window.__afterCalc();
+    } catch(err) {
+      document.getElementById('loading').style.display = 'none';
+      showError('계산 오류: ' + err.message);
+      console.error(err);
+    }
+  }, 50);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   환수 체크 — 상부정산의 정산종류 '환수' 행만, 우리 코드 3개만 별도 집계.
+     SKYLIFE  : 1.유SKY-우리 / 1.무SKY-우리
+     SKB      : 6.유SKB-웨이브넷 / 6.무SKB-웨이브넷
+     SK매직   : 2.렌탈SK매직-우성
+   수익 계산과 무관. 해지 제외 · 정산관련 제외 같은 집계 규칙은 적용하지 않는다.
+   ══════════════════════════════════════════════════════════════════ */
+var HW_CATS = [
+  { label:'SKYLIFE',     codes:function(){ return [CONFIG.sky.lineCode, CONFIG.sky.mobCode]; } },
+  { label:'SKB',         codes:function(){ return [CONFIG.skb.lineCode, CONFIG.skb.mobCode]; } },
+  { label:'SK매직 렌탈', codes:function(){ return [CONFIG.rental.code]; } }
+];
+var lastHwansu = null;
+
+function hwansuCategory(r) {
+  var sb = key(r['상부점']);
+  for (var i = 0; i < HW_CATS.length; i++) {
+    if (HW_CATS[i].codes().some(function(c){ return key(c) === sb; })) return HW_CATS[i].label;
+  }
+  return null;                                     // 우리 코드 아님 → 표시 안 함
+}
+
+function computeHwansu(rows) {
+  var by = {}, list = [], skipped = 0;
+  HW_CATS.forEach(function(c){ by[c.label] = { cnt:0, amt:0 }; });
+  (rows || []).forEach(function(r) {
+    if (String(r['정산종류']||'').trim() !== '환수') return;
+    var c = hwansuCategory(r);
+    if (!c) { skipped++; return; }
+    by[c].cnt++; by[c].amt += num(r['정산금액']);
+    list.push({ cat:c, row:r });
+  });
+  var order = HW_CATS.map(function(c){ return c.label; });
+  list.sort(function(x, y) {
+    return (order.indexOf(x.cat) - order.indexOf(y.cat)) || (num(x.row['정산금액']) - num(y.row['정산금액']));
+  });
+  var tot = { cnt:0, amt:0 };
+  order.forEach(function(c){ tot.cnt += by[c].cnt; tot.amt += by[c].amt; });
+  return { by:by, list:list, total:tot, skipped:skipped };
+}
+
+function renderHwansu(h) {
+  lastHwansu = h;
+  function m(v){ return '<span class="'+(v<0?'hw-neg':'')+'">'+fmt(v)+'</span>'; }
+
+  var t = '<thead><tr><th>구분</th><th>상부점</th><th>환수 건수</th><th>환수 정산금액</th></tr></thead><tbody>';
+  HW_CATS.forEach(function(c) {
+    var x = h.by[c.label];
+    t += '<tr><td><b>'+c.label+'</b></td><td class="mono">'+c.codes().map(esc).join('<br>')+'</td>'+
+         '<td>'+x.cnt+'</td><td>'+m(x.amt)+'</td></tr>';
+  });
+  t += '<tr class="hw-total"><td>합계</td><td></td><td>'+h.total.cnt+'</td><td>'+m(h.total.amt)+'</td></tr>';
+  document.getElementById('hw-sum').innerHTML = t + '</tbody>';
+
+  var d = '<thead><tr><th>구분</th><th>고객명</th><th>상품명</th><th>상부점</th><th>협력점</th>'+
+          '<th>개통상태</th><th>정산금액</th><th>정산 비고</th></tr></thead><tbody>';
+  h.list.forEach(function(it) {
+    var r = it.row;
+    d += '<tr><td>'+it.cat+'</td><td>'+esc(r['고객명']||'')+'</td><td class="mono">'+esc(r['상품명']||'')+'</td>'+
+         '<td class="mono">'+esc(r['상부점']||'')+'</td><td>'+esc(r['협력점']||'')+'</td>'+
+         '<td>'+esc(r['개통상태']||'')+'</td><td>'+m(num(r['정산금액']))+'</td>'+
+         '<td style="text-align:left;">'+esc(r['정산 비고']||'')+'</td></tr>';
+  });
+  if (!h.list.length) d += '<tr><td colspan="8" style="color:#94a3b8;">우리 코드 환수 없음</td></tr>';
+  document.getElementById('hw-rows').innerHTML = d + '</tbody>';
+
+  document.getElementById('hw-skip').textContent = h.skipped
+    ? '※ 우리 코드가 아닌 상부점의 환수 ' + h.skipped + '건은 표시하지 않았습니다.' : '';
+  document.getElementById('hwansu').style.display = 'block';
+}
+
+/* 상부정산 파일 하나만 있어도 환수만 따로 체크 */
+function pickBuSlot() {
+  var slots = ['상부정산','전체정산'].filter(function(k2){ return files[k2]; });
+  for (var i = 0; i < slots.length; i++) if (detectKind(files[slots[i]]) === '상부정산') return slots[i];
+  return files['상부정산'] && detectKind(files['상부정산']) !== '전체정산' ? '상부정산' : null;
+}
+function checkHwansuOnly() {
+  hideError();
+  var sl = pickBuSlot();
+  if (!sl) { showError('환수 체크는 상부정산 파일이 필요합니다. 상부정산 파일을 올려주세요.'); return; }
+  try {
+    var rows = getRows(sl);
+    renderHwansu(computeHwansu(rows));
+    lastHwansu.month = detectMonth(rows);
+    var sec = document.getElementById('hwansu');
+    if (sec.scrollIntoView) sec.scrollIntoView({ behavior:'smooth', block:'start' });
+  } catch(err) {
+    showError('환수 체크 오류: ' + err.message);
+    console.error(err);
+  }
+}
+
+function hwansuSheetRows() {
+  var H = lastHwansu, out = [['환수 체크 (상부정산 · 정산종류=환수 · 우리 코드만 · 수익 계산과 별개)'], [],
+    ['구분','상부점','환수 건수','환수 정산금액']];
+  HW_CATS.forEach(function(c) {
+    out.push([c.label, c.codes().join(' / '), H.by[c.label].cnt, H.by[c.label].amt]);
+  });
+  out.push(['합계','', H.total.cnt, H.total.amt]);
+  if (H.skipped) out.push(['※ 우리 코드가 아닌 상부점 환수 ' + H.skipped + '건은 제외']);
+  out.push([]);
+  out.push(['구분','고객명','상품명','상부점','협력점','개통상태','개통일','정산금액','정산 비고']);
+  H.list.forEach(function(it) {
+    var r = it.row;
+    out.push([it.cat, r['고객명'], r['상품명'], r['상부점'], r['협력점'], r['개통상태'], r['개통일'],
+              num(r['정산금액']), r['정산 비고']]);
+  });
+  return out;
+}
+var HW_COLS = [{wch:12},{wch:22},{wch:24},{wch:30},{wch:22},{wch:14},{wch:12},{wch:14},{wch:30}];
+
+function downloadHwansu() {
+  if (!lastHwansu) return;
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet(hwansuSheetRows());
+  ws['!cols'] = HW_COLS;
+  XLSX.utils.book_append_sheet(wb, ws, '환수');
+  XLSX.writeFile(wb, '환수체크_' + (lastHwansu.month || '') + '.xlsx');
+}
+
+function showError(msg){ var el = document.getElementById('error-msg'); el.style.display='block'; el.textContent = msg; }
+function hideError(){ document.getElementById('error-msg').style.display='none'; }
+
+/* ══════════════════════════════════════════════════════════════════
+   렌더링
+   ══════════════════════════════════════════════════════════════════ */
+/* 마진·유지수수료가 붙지 않는 부수 상품 건수 (상품별로 따로 표기) */
+function extraCnt(d) {
+  var parts = [];
+  if (d.extra) parts.push(['부가상품', d.extra]);
+  if (d.cctv)  parts.push(['CCTV', d.cctv]);
+  if (d.voip)  parts.push(['인터넷전화', d.voip]);
+  if (d.phone) parts.push(['일반전화', d.phone]);
+  if (!parts.length) return '';
+  return parts.map(function(p) {
+    return '<div class="sub-row"><span class="sub-label">'+p[0]+' <span style="color:#cbd5e1;">(마진·유지수수료 없음)</span></span>'+
+           '<span class="sub-value">'+p[1]+'건</span></div>';
+  }).join('');
+}
+
+function renderResult(type, d) {
+  var vcls = function(v){ return v < 0 ? 'negative' : 'positive'; };
+  var marginHtml = d.margin > 0
+    ? '<div class="result-row"><span class="row-label" style="color:#dc2626;">&nbsp;&nbsp;∟ 자점운영마진 ('+d.marginLines+'+'+d.marginMobLines+'건)</span><span class="row-value negative">-'+fmt(d.margin)+'</span></div>'+
+      '<div class="result-row"><span class="row-label">지출(B) 합계</span><span class="row-value">'+fmt(d.expenseBTotal)+'</span></div>'
+    : '';
+  document.getElementById(type+'-result').innerHTML =
+    '<div class="result-row"><span class="row-label">가입자수</span><span class="row-value">인터넷 '+d.internet+' / TV '+d.tv+' / 유심 '+d.usim+'</span></div>'+
+    extraCnt(d)+
+    '<div class="result-row"><span class="row-label">수입(A)</span><span class="row-value">'+fmt(d.incomeA)+'</span></div>'+
+    '<div class="sub-row"><span class="sub-label">유선</span><span class="sub-value">'+fmt(d.incomeLine)+'</span></div>'+
+    '<div class="sub-row"><span class="sub-label">무선</span><span class="sub-value">'+fmt(d.incomeMob)+'</span></div>'+
+    '<div class="result-row"><span class="row-label">지출(B) 기본</span><span class="row-value">'+fmt(d.expenseB)+'</span></div>'+
+    marginHtml +
+    '<div class="result-row"><span class="row-label">수익(A-B)</span><span class="row-value '+vcls(d.profit)+'">'+fmt(d.profit)+'</span></div>'+
+    '<div class="result-row"><span class="row-label">예상관리</span><span class="row-value">'+fmt(d.mgmt)+'</span></div>'+
+    '<div class="sub-row"><span class="sub-label">인터넷 '+d.internet+'건</span><span class="sub-value">'+fmt(d.mgmtI)+'</span></div>'+
+    '<div class="sub-row"><span class="sub-label">TV '+d.tv+'건</span><span class="sub-value">'+fmt(d.mgmtT)+'</span></div>'+
+    '<div class="sub-row"><span class="sub-label">유심 '+d.usim+'건</span><span class="sub-value">'+fmt(d.mgmtU)+'</span></div>'+
+    '<div class="result-row highlight"><span class="row-label" style="font-weight:600;">실예상수익</span><span class="row-value '+vcls(d.real)+' highlight">'+fmt(d.real)+'</span></div>';
+}
+
+function renderRental(r) {
+  var vcls = function(v){ return v < 0 ? 'negative' : 'positive'; };
+  document.getElementById('rental-result').innerHTML =
+    '<div class="result-row"><span class="row-label">개통 건수</span><span class="row-value">'+r.cnt+'건</span></div>'+
+    '<div class="result-row"><span class="row-label">수입(A)</span><span class="row-value">'+fmt(r.incomeA)+'</span></div>'+
+    '<div class="result-row"><span class="row-label">지출(B)</span><span class="row-value">'+fmt(r.expenseB)+'</span></div>'+
+    '<div class="sub-row"><span class="sub-label">자점운영마진</span><span class="sub-value">없음</span></div>'+
+    '<div class="sub-row"><span class="sub-label">예상관리(유지수수료)</span><span class="sub-value">없음</span></div>'+
+    '<div class="result-row highlight"><span class="row-label" style="font-weight:600;">실예상수익</span><span class="row-value '+vcls(r.profit)+' highlight">'+fmt(r.profit)+'</span></div>';
+}
+
+function renderBiz(z) {
+  var vcls = function(v){ return v < 0 ? 'negative' : 'positive'; };
+  function lines(map, indent) {
+    var ks = Object.keys(map);
+    if (!ks.length) return '';
+    return ks.map(function(k2) {
+      return '<div class="sub-row"><span class="sub-label">'+(indent||'')+esc(map[k2].label)+'</span>'+
+             '<span class="sub-value">'+map[k2].cnt+'건</span></div>';
+    }).join('');
+  }
+  var multiRow = z.multi
+    ? '<div class="sub-row"><span class="sub-label">다회선 (행당 1건)</span><span class="sub-value">'+z.multi+'건</span></div>' : '';
+  var codeRow = z.dropCode
+    ? '<div class="sub-row"><span class="sub-label" style="color:#cbd5e1;">코드입력 제외 (상부점 숫자 시작)</span>'+
+      '<span class="sub-value" style="color:#cbd5e1;">'+z.dropCode+'행</span></div>' : '';
+
+  document.getElementById('biz-result').innerHTML =
+    '<div class="result-row"><span class="row-label">건수 <span style="color:#cbd5e1;">(고객 단위)</span></span>'+
+      '<span class="row-value">상부 '+z.cnt+' / 전체 '+z.cntB+'</span></div>'+
+    '<div class="sub-row"><span class="sub-label">원본 행수</span><span class="sub-value">상부 '+z.rowsA+' / 전체 '+z.rowsB+'행</span></div>'+
+    lines(z.byCarrier) + multiRow + codeRow +
+    '<div class="result-row"><span class="row-label">대표상품별</span><span class="row-value"></span></div>'+
+    lines(z.byProduct) +
+    '<div class="result-row"><span class="row-label">수입(A)</span><span class="row-value">'+fmt(z.incomeA)+'</span></div>'+
+    '<div class="result-row"><span class="row-label">지출(B)</span><span class="row-value">'+fmt(z.expenseB)+'</span></div>'+
+    '<div class="sub-row"><span class="sub-label">자점운영마진</span><span class="sub-value">없음</span></div>'+
+    '<div class="sub-row"><span class="sub-label">예상관리(유지수수료)</span><span class="sub-value">없음</span></div>'+
+    '<div class="result-row highlight"><span class="row-label" style="font-weight:600;">수익(A-B)</span><span class="row-value '+vcls(z.profit)+' highlight">'+fmt(z.profit)+'</span></div>';
+  document.getElementById('code-biz').innerHTML = z.codes.length
+    ? esc(z.codes.slice(0,6).join(' · ')) + (z.codes.length>6 ? ' 외 '+(z.codes.length-6)+'곳' : '')
+    : '해당 상부점 없음';
+}
+
+function vc(v){ return v < 0 ? 'neg' : 'pos'; }
+
+function renderDashboard(s, b, r, z) {
+  var m = lastDiag.month;
+  document.getElementById('dash-month').textContent = m
+    ? (m.split('-')[0] + '년 ' + parseInt(m.split('-')[1],10) + '월 정산 기준')
+    : '정산월 미확인';
+
+  function setSummary(id, val, sub) {
+    var el = document.getElementById('sc-'+id+'-real');
+    el.className = 'sc-real-val ' + vc(val);
+    el.textContent = fmt(val);
+    document.getElementById('sc-'+id+'-sub').innerHTML = sub;
+  }
+  setSummary('sky', s.real, '<span>인터넷 '+s.internet+'</span><span>TV '+s.tv+'</span><span>유심 '+s.usim+'</span>');
+  setSummary('skb', b.real, '<span>인터넷 '+b.internet+'</span><span>TV '+b.tv+'</span><span>유심 '+b.usim+'</span>');
+  setSummary('rental', r.profit, '<span>개통 '+r.cnt+'건</span>');
+  var bizSub = Object.keys(z.byCarrier).map(function(k2){ return '<span>'+esc(z.byCarrier[k2].label)+' '+z.byCarrier[k2].cnt+'</span>'; }).join('');
+  setSummary('biz', z.profit, bizSub || '<span>해당 없음</span>');
+
+  function dcRow(k2, v, cls){ return '<div class="dc-row"><span class="dc-key">'+k2+'</span><span class="dc-val '+(cls||'')+'">'+v+'</span></div>'; }
+  function subRow(k2, v){ return '<div class="sub-detail-row"><span>'+k2+'</span><span class="sub-detail-val">'+v+'</span></div>'; }
+
+  function setDetail(id, d) {
+    document.getElementById('dc-'+id+'-cnt').textContent = '인터넷 '+d.internet+'건 · TV '+d.tv+'건 · 유심 '+d.usim+'건';
+    var marginRow = d.margin > 0
+      ? dcRow('지출(B) 기본', fmt(d.expenseB)) +
+        dcRow('∟ 자점운영마진', '-'+fmt(d.margin), 'neg') +
+        dcRow('지출(B) 합계', fmt(d.expenseBTotal))
+      : dcRow('지출 (B)', fmt(d.expenseB));
+    document.getElementById('dc-'+id+'-body').innerHTML =
+      dcRow('수입 (A)', fmt(d.incomeA)) + marginRow +
+      dcRow('수익 (A-B)', fmt(d.profit), vc(d.profit)) +
+      '<div class="dc-divider"></div>' +
+      dcRow('예상관리', fmt(d.mgmt)) +
+      '<div class="sub-detail">' + subRow('인터넷 '+d.internet+'건', fmt(d.mgmtI)) +
+        subRow('TV '+d.tv+'건', fmt(d.mgmtT)) + subRow('유심 '+d.usim+'건', fmt(d.mgmtU)) + '</div>' +
+      '<div class="dc-real-row"><span class="dc-real-key">실예상수익</span><span class="dc-real-val '+vc(d.real)+'">'+fmt(d.real)+'</span></div>';
+  }
+  setDetail('sky', s);
+  setDetail('skb', b);
+
+  document.getElementById('dc-rental-cnt').textContent = '총 '+r.cnt+'건';
+  document.getElementById('dc-rental-body').innerHTML =
+    dcRow('수입 (A)', fmt(r.incomeA)) + dcRow('지출 (B)', fmt(r.expenseB)) +
+    '<div class="dc-real-row"><span class="dc-real-key">실예상수익</span><span class="dc-real-val '+vc(r.profit)+'">'+fmt(r.profit)+'</span></div>';
+
+  document.getElementById('dc-biz-cnt').textContent = '상부 '+z.cnt+'건 · 전체 '+z.cntB+'건 (고객 단위)';
+  var bizDetail = Object.keys(z.byCarrier).map(function(k2) {
+    return subRow(esc(z.byCarrier[k2].label), z.byCarrier[k2].cnt+'건');
+  }).concat(Object.keys(z.byProduct).map(function(k2) {
+    return subRow('대표 '+esc(z.byProduct[k2].label), z.byProduct[k2].cnt+'건');
+  })).join('') || subRow('해당 없음', '0건');
+  document.getElementById('dc-biz-body').innerHTML =
+    dcRow('수입 (A)', fmt(z.incomeA)) + dcRow('지출 (B)', fmt(z.expenseB)) +
+    '<div class="sub-detail">' + bizDetail + '</div>' +
+    '<div class="dc-real-row"><span class="dc-real-key">수익 (A-B)</span><span class="dc-real-val '+vc(z.profit)+'">'+fmt(z.profit)+'</span></div>';
+}
+
+/* ── 진단 리포트 ── */
+function renderDiag(s, b, r, z) {
+  var D = lastDiag, alerts = [];
+  var ALL = [['SKYLIFE',s],['SKB',b],['SK매직 렌탈',r],['유선기타',z]];
+  if (D.swapped) alerts.push('<b>파일 자동 교정</b> — 상부정산/전체정산 파일이 서로 바뀌어 있어 자동으로 맞바꿔 계산했습니다.');
+
+  [['SKYLIFE',s],['SKB',b],['SK매직 렌탈',r]].forEach(function(p) {
+    var d = p[1]._diag;
+    if (d.buLine === 0 && d.buMob === 0)
+      alerts.push('<b>'+p[0]+'</b> — 상부정산에서 상부점 <span style="font-family:monospace;">'+esc(d.lineCode)+'</span> 에 해당하는 행을 찾지 못했습니다. 코드명을 확인하세요.');
+    if (d.jeLine === 0 && d.jeMob === 0)
+      alerts.push('<b>'+p[0]+'</b> — 전체정산에서 해당 상부점 행을 찾지 못했습니다.');
+  });
+
+  document.getElementById('diag-alerts').innerHTML = alerts.length
+    ? '<div class="diag-warn">' + alerts.join('<br>') + '</div>'
+    : '<div class="diag-ok">✓ 상부점 코드 5종이 모두 정상 매칭되었습니다. 상부정산 '+D.buRows.toLocaleString()+'행 / 전체정산 '+D.jeRows.toLocaleString()+'행 중 아래 건만 집계했습니다.</div>';
+
+  var h = '<thead><tr><th>브랜드</th><th>상부점 코드</th><th>상부정산<br>매칭행</th><th>전체정산<br>매칭행</th>'+
+          '<th>해지<br>제외</th><th>정산종류<br>제외</th><th>수입(A)</th><th>지출(B)합계</th><th>실예상수익</th></tr></thead><tbody>';
+  ALL.forEach(function(p) {
+    var d = p[1]._diag, o = p[1];
+    var jong = Object.keys(d.dropJong).map(function(k2){ return k2+' '+d.dropJong[k2]; }).join(', ') || '-';
+    h += '<tr><td><b>'+p[0]+'</b></td><td class="mono">'+esc(d.lineCode)+(d.mobCode!=='-'?'<br>'+esc(d.mobCode):'')+'</td>'+
+         '<td>'+(d.buLine+d.buMob)+'</td><td>'+(d.jeLine+d.jeMob)+'</td>'+
+         '<td>'+d.dropHaeji+'</td><td class="mono">'+esc(jong)+'</td>'+
+         '<td>'+fmt(o.incomeA)+'</td><td>'+fmt(o.expenseBTotal)+'</td><td><b>'+fmt(o.real)+'</b></td></tr>';
+  });
+  document.getElementById('diag-main').innerHTML = h + '</tbody>';
+
+  var e = '<thead><tr><th>브랜드</th><th>상품명</th><th>사유</th><th>건수</th><th>정산금액</th></tr></thead><tbody>';
+  var any = false;
+  ALL.forEach(function(p) {
+    var ex = p[1]._diag.excluded;
+    Object.keys(ex).sort().forEach(function(pn) {
+      any = true;
+      e += '<tr class="ex"><td>'+p[0]+'</td><td class="mono">'+esc(pn)+'</td><td>'+esc(ex[pn].why)+'</td>'+
+           '<td>'+ex[pn].cnt+'</td><td>'+fmt(ex[pn].amt)+'</td></tr>';
+    });
+  });
+  if (!any) e += '<tr><td colspan="5" style="color:#94a3b8;">제외된 행 없음</td></tr>';
+  document.getElementById('diag-ex').innerHTML = e + '</tbody>';
+
+  var pc = '<thead><tr><th>브랜드</th><th>인터넷</th><th>TV</th><th>유심</th><th>부가상품</th><th>CCTV</th><th>인터넷전화</th><th>일반전화</th><th>자점마진 대상</th></tr></thead><tbody>';
+  [['SKYLIFE',s],['SKB',b]].forEach(function(p) {
+    var o = p[1];
+    pc += '<tr><td><b>'+p[0]+'</b></td><td>'+o.internet+'</td><td>'+o.tv+'</td><td>'+o.usim+'</td>'+
+          '<td>'+o.extra+'</td><td>'+o.cctv+'</td><td>'+o.voip+'</td><td>'+o.phone+'</td>'+
+          '<td>인터넷 '+o.marginLines+' + 유심 '+o.marginMobLines+'</td></tr>';
+  });
+  pc += '<tr><td><b>SK매직 렌탈</b></td><td colspan="7" style="color:#94a3b8;">렌탈_SK매직 '+r.cnt+'건</td><td style="color:#94a3b8;">없음</td></tr>';
+  var bizCells = ['internet','tv','usim','extra','cctv','voip','phone'].map(function(k2) {
+    return '<td>' + (z.byProduct[k2] ? z.byProduct[k2].cnt : 0) + '</td>';
+  }).join('');
+  pc += '<tr><td><b>유선기타</b> <span style="color:#94a3b8;">(대표상품)</span></td>'+bizCells+'<td style="color:#94a3b8;">없음</td></tr>';
+  document.getElementById('diag-prod').innerHTML = pc + '</tbody>';
+
+  var ck = Object.keys(z.codeSeen).sort();
+  var codeTbl = '<thead><tr><th>상부점 (숫자로 시작 = 코드입력)</th><th>유선기타 행수</th></tr></thead><tbody>';
+  if (ck.length) {
+    ck.forEach(function(k2){ codeTbl += '<tr class="ex"><td class="mono">'+esc(k2)+'</td><td>'+z.codeSeen[k2]+'</td></tr>'; });
+    codeTbl += '<tr><td><b>합계</b></td><td><b>'+z.dropCode+'행</b></td></tr>';
+  } else {
+    codeTbl += '<tr><td colspan="2" style="color:#94a3b8;">제외된 행 없음</td></tr>';
+  }
+  document.getElementById('diag-code').innerHTML = codeTbl + '</tbody>';
+
+  var keys = Object.keys(D.others).sort(function(a2,b2){ return D.others[b2] - D.others[a2]; });
+  var total = keys.reduce(function(s2,k2){ return s2 + D.others[k2]; }, 0);
+  var o = '<thead><tr><th>상부점 (집계 제외)</th><th>상부정산 행수</th></tr></thead><tbody>';
+  keys.slice(0,12).forEach(function(k2){ o += '<tr><td class="mono">'+esc(k2)+'</td><td>'+D.others[k2]+'</td></tr>'; });
+  if (keys.length > 12) o += '<tr><td style="color:#94a3b8;">… 외 '+(keys.length-12)+'개</td><td style="color:#94a3b8;">합계 '+total+'행</td></tr>';
+  document.getElementById('diag-other').innerHTML = o + '</tbody>';
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   엑셀 다운로드
+   ══════════════════════════════════════════════════════════════════ */
+function downloadExcel() {
+  if (!lastResult) return;
+  var s = lastResult.sky, b = lastResult.skb, r = lastResult.rental, z = lastResult.biz, D = lastDiag;
+  var wb = XLSX.utils.book_new();
+
+  var rows = [
+    [null, '코드실적 보고', D.month ? (D.month + ' 정산') : ''],
+    [null],
+    [null,'SKYLIFE 개통기준',null,null,null,null, null,'SKB 개통기준'],
+    [null,'상부점(유선)', CONFIG.sky.lineCode, null,null,null, null,'상부점(유선)', CONFIG.skb.lineCode],
+    [null,'상부점(무선)', CONFIG.sky.mobCode,  null,null,null, null,'상부점(무선)', CONFIG.skb.mobCode],
+    [null,'가입자수',null,'인터넷','TV','유심', null,'가입자수',null,'인터넷','TV','유심'],
+    [null,null,null,s.internet,s.tv,s.usim, null,null,null,b.internet,b.tv,b.usim],
+    [null,'수입(A)',s.incomeA, null,null,null, null,'수입(A)',b.incomeA],
+    [null,'지출(B) 기본',s.expenseB, null,null,null, null,'지출(B) 기본',b.expenseB],
+    [null,'  └ 자점운영마진',-s.margin, s.marginLines+'건(유선)', s.marginMobLines+'건(무선)',null, null,'  └ 자점운영마진',-b.margin, b.marginLines+'건(유선)', b.marginMobLines+'건(무선)'],
+    [null,'지출(B) 합계',s.expenseBTotal, null,null,null, null,'지출(B) 합계',b.expenseBTotal],
+    [null,'수익(A-B)',s.profit, null,null,null, null,'수익(A-B)',b.profit],
+    [null,'예상관리',s.mgmt,s.mgmtI,s.mgmtT,s.mgmtU, null,'예상관리',b.mgmt,b.mgmtI,b.mgmtT,b.mgmtU],
+    [null,'실예상수익',s.real, null,null,null, null,'실예상수익',b.real],
+    [null],
+    [null,'SK매직 렌탈', CONFIG.rental.code],
+    [null,'개통 건수',r.cnt],
+    [null,'수입(A)',r.incomeA],
+    [null,'지출(B)',r.expenseB],
+    [null,'자점운영마진','없음'],
+    [null,'실예상수익',r.profit],
+    [null],
+    [null,'유선기타', z.codes.join(' / ')],
+    [null,'건수(고객 단위)','상부 '+z.cnt+' / 전체 '+z.cntB, '원본 행수', '상부 '+z.rowsA+' / 전체 '+z.rowsB],
+    [null,'수입(A)',z.incomeA],
+    [null,'지출(B)',z.expenseB],
+    [null,'자점운영마진','없음'],
+    [null,'유지수수료','없음'],
+    [null,'수익(A-B)',z.profit]
+  ];
+  Object.keys(z.byCarrier).forEach(function(k2) {
+    rows.push([null,'  └ '+z.byCarrier[k2].label, z.byCarrier[k2].cnt + '건']);
+  });
+  if (z.multi)    rows.push([null,'  └ 다회선(행당 1건)', z.multi + '건']);
+  if (z.dropCode) rows.push([null,'  └ 코드입력 제외(상부점 숫자 시작)', z.dropCode + '행']);
+  Object.keys(z.byProduct).forEach(function(k2) {
+    rows.push([null,'  └ 대표 '+z.byProduct[k2].label, z.byProduct[k2].cnt + '건']);
+  });
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:4},{wch:16},{wch:26},{wch:14},{wch:14},{wch:10},{wch:4},{wch:16},{wch:26},{wch:14},{wch:14},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, ws, 'SKY,SKB,매직');
+
+  var cfgRows = [
+    ['구분','항목','값'],
+    ['상부점','SKYLIFE 유선', CONFIG.sky.lineCode],
+    ['상부점','SKYLIFE 무선', CONFIG.sky.mobCode],
+    ['상부점','SKB 유선', CONFIG.skb.lineCode],
+    ['상부점','SKB 무선', CONFIG.skb.mobCode],
+    ['상부점','SK매직 렌탈', CONFIG.rental.code],
+    [],
+    ['자점마진','SKYLIFE 유선(인터넷) 건당', D.margins.skyLine],
+    ['자점마진','SKYLIFE 무선(유심) 건당',  D.margins.skyMob],
+    ['자점마진','SKB 유선(인터넷) 건당',    D.margins.skbLine],
+    ['자점마진','SKB 무선(유심) 건당',      D.margins.skbMob],
+    ['자점마진','SK매직 렌탈', '없음'],
+    ['자점마진','적용 협력점', MARGIN_TEAMS.join(' / ')],
+    [],
+    ['유지수수료','통신사','인터넷','TV','유심','개월'],
+    ['유지수수료','SKYLIFE', CONFIG.sky.fee.internet, CONFIG.sky.fee.tv, CONFIG.sky.fee.usim, CONFIG.sky.fee.months],
+    ['유지수수료','SKB',     CONFIG.skb.fee.internet, CONFIG.skb.fee.tv, CONFIG.skb.fee.usim, CONFIG.skb.fee.months],
+    ['유지수수료','SK매직 렌탈','없음'],
+    [],
+    ['제외규칙','정산관련·추가지급 제외', D.opt.exJsg ? 'Y' : 'N'],
+    ['제외규칙','관리수수료(_관리) 제외',  D.opt.exMgmt ? 'Y' : 'N'],
+    ['제외규칙','해지 행 제외',            D.opt.exHaeji ? 'Y' : 'N'],
+    ["제외규칙","정산종류 '일반'만",        D.opt.onlyIlban ? 'Y' : 'N'],
+    ['제외규칙','SK-biz 포함',             D.opt.incBiz ? 'Y' : 'N'],
+    ['제외규칙','유선기타: 코드입력 제외',     D.opt.extSkipCode ? 'Y' : 'N'],
+    [],
+    ['유선기타','건수 단위','(상부점 + 고객명) 묶음 = 1건'],
+    ['유선기타','대표상품 우선순위','인터넷 > CCTV > 인터넷전화 > TV > 일반전화 > 부가상품 > 기타'],
+    ['유선기타','코드입력 제외','상부점이 숫자로 시작하면 제외 (우리 코드로 입력된 건)'],
+    ['유선기타','다회선','묶지 않고 행당 1건'],
+    ['유선기타','자점마진 / 유지수수료','없음 / 없음'],
+    [],
+    ['상품분류','상품','판정기준','자점마진','유지수수료']
+  ];
+  PRODUCT_RULES.forEach(function(pr) {
+    cfgRows.push(['상품분류', pr.label, String(pr.re),
+                  pr.margin ? '적용' : '없음',
+                  (pr.key==='internet'||pr.key==='tv'||pr.key==='usim') ? '적용' : '없음']);
+  });
+  var ws2 = XLSX.utils.aoa_to_sheet(cfgRows);
+  ws2['!cols'] = [{wch:12},{wch:26},{wch:28},{wch:10},{wch:10},{wch:8}];
+  XLSX.utils.book_append_sheet(wb, ws2, '적용조건');
+
+  var dRows = [['브랜드','상부점','상부정산 매칭행','전체정산 매칭행','해지제외','수입(A)','지출(B)합계','실예상수익']];
+  var ALLX = [['SKYLIFE',s],['SKB',b],['SK매직 렌탈',r],['SK-biz 기타',z]];
+  ALLX.forEach(function(p) {
+    var d = p[1]._diag;
+    dRows.push([p[0], d.lineCode + (d.mobCode !== '-' ? ' / ' + d.mobCode : ''),
+                d.buLine + d.buMob, d.jeLine + d.jeMob, d.dropHaeji,
+                p[1].incomeA, p[1].expenseBTotal, p[1].real]);
+  });
+  dRows.push([]);
+  dRows.push(['상품분류 건수','브랜드','인터넷','TV','유심','부가상품','CCTV','인터넷전화','일반전화','자점마진 대상']);
+  [['SKYLIFE',s],['SKB',b]].forEach(function(p) {
+    var o = p[1];
+    dRows.push(['', p[0], o.internet, o.tv, o.usim, o.extra, o.cctv, o.voip, o.phone,
+                '인터넷 '+o.marginLines+' + 유심 '+o.marginMobLines]);
+  });
+  dRows.push(['', '유선기타(대표상품)',
+              (z.byProduct.internet||{cnt:0}).cnt, (z.byProduct.tv||{cnt:0}).cnt, 0,
+              (z.byProduct.extra||{cnt:0}).cnt, (z.byProduct.cctv||{cnt:0}).cnt,
+              (z.byProduct.voip||{cnt:0}).cnt, (z.byProduct.phone||{cnt:0}).cnt, '없음']);
+  dRows.push([]);
+  dRows.push(['유선기타 상부점', z.codes.join(' / ')]);
+  dRows.push([]);
+  dRows.push(['코드입력 제외 상부점','상부점','유선기타 행수']);
+  Object.keys(z.codeSeen).sort().forEach(function(k2) { dRows.push(['', k2, z.codeSeen[k2]]); });
+  dRows.push([]);
+  dRows.push(['제외된 행','브랜드','상품명','사유','건수','정산금액']);
+  ALLX.forEach(function(p) {
+    var ex = p[1]._diag.excluded;
+    Object.keys(ex).sort().forEach(function(pn) { dRows.push(['', p[0], pn, ex[pn].why, ex[pn].cnt, ex[pn].amt]); });
+  });
+  var ws3 = XLSX.utils.aoa_to_sheet(dRows);
+  ws3['!cols'] = [{wch:14},{wch:30},{wch:16},{wch:16},{wch:10},{wch:16},{wch:16},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws3, '조건체크');
+
+  if (lastHwansu) {
+    var ws4 = XLSX.utils.aoa_to_sheet(hwansuSheetRows());
+    ws4['!cols'] = HW_COLS;
+    XLSX.utils.book_append_sheet(wb, ws4, '환수');
+  }
+
+  XLSX.writeFile(wb, '코드실적보고_' + (D.month || '') + '.xlsx');
+}
+
+/* ── 조건표 초기 렌더 ── */
+(function initCfgTable() {
+  var rows = [
+    ['SKYLIFE','유선', CONFIG.sky.lineCode, '인터넷 / TV / 부가상품'],
+    ['SKYLIFE','무선', CONFIG.sky.mobCode,  CONFIG.sky.mobProduct],
+    ['SKB','유선',     CONFIG.skb.lineCode, '인터넷 / TV / 부가상품'],
+    ['SKB','무선',     CONFIG.skb.mobCode,  CONFIG.skb.mobProduct],
+    ['SK매직','렌탈',  CONFIG.rental.code,  CONFIG.rental.product],
+    ['유선기타','유선', '숫자로 시작하지 않는 상부점만 (코드입력 제외)', '유선기타_* 전체']
+  ];
+  document.getElementById('cfg-code-body').innerHTML = rows.map(function(r) {
+    return '<tr><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td class="code">'+esc(r[2])+'</td><td class="code">'+esc(r[3])+'</td></tr>';
+  }).join('');
+
+  var FEE_NOTE = { internet:'적용', tv:'적용', usim:'적용' };
+  document.getElementById('cfg-prod-body').innerHTML = PRODUCT_RULES.map(function(p) {
+    return '<tr><td><b>'+esc(p.label)+'</b></td>'+
+           '<td class="code">'+esc(String(p.re))+'</td>'+
+           '<td style="color:'+(p.margin?'#15803d':'#94a3b8')+';">'+(p.margin?'적용':'없음')+'</td>'+
+           '<td style="color:'+(FEE_NOTE[p.key]?'#15803d':'#94a3b8')+';">'+(FEE_NOTE[p.key]||'없음')+'</td></tr>';
+  }).join('');
+})();
+</script>
+<script>
+/* ═══ 업체회의 웹 연결: 월별 저장 · 어드민 가져오기 · 저장된 달 보기 (계산 규칙은 위 원본 그대로) ═══ */
+(function () {
+  var SB_URL = 'https://omdyyvqkxxigilxjysbz.supabase.co', SB_KEY = 'sb_publishable_g41wwhIMN19UchPheU9Vvg_lAHjnZNf';
+  var token = function () { try { return localStorage.getItem('upche_sb_token') || ''; } catch (e) { return ''; } };
+  function rpc(name, params) {
+    params = Object.assign({ p_token: token() }, params || {});
+    return fetch(SB_URL + '/rest/v1/rpc/' + name, { method: 'POST', headers: { apikey: SB_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(params) })
+      .then(function (r) { return r.text().then(function (t) { var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {}
+        if (!r.ok) throw new Error(String((j && j.message) || ('서버 오류 ' + r.status)).replace(/^AUTH:\s*/, '')); return j; }); });
+  }
+  var source = '파일';
+  // 고객 정보(이름·연락처 등 행 자료)는 빼고 집계만 남김
+  function strip(o) {
+    if (Array.isArray(o)) return o.map(strip).filter(function (x) { return x !== undefined; });
+    if (o && typeof o === 'object') {
+      if ('고객명' in o || '명의자연락처' in o || 'row' in o) return undefined;
+      var out = {}; Object.keys(o).forEach(function (k) { if (k === 'groups' || k === 'rows') return; var v = strip(o[k]); if (v !== undefined) out[k] = v; }); return out;
+    }
+    return o;
+  }
+  var bar = document.getElementById('saveBar'), mIn = document.getElementById('sbMonth'), btn = document.getElementById('sbSave');
+  function ml(m) { return m ? m.slice(0, 4) + '년 ' + (+m.slice(5, 7)) + '월' : ''; }
+  window.__afterCalc = function () {
+    bar.hidden = false; bar.classList.remove('saved'); btn.disabled = false; btn.hidden = false; mIn.parentElement.hidden = false;
+    mIn.value = (lastDiag && lastDiag.month) || '';
+    document.getElementById('sbTitle').textContent = (ml(mIn.value) || '계산 결과') + ' · 아직 저장 안 함';
+    document.getElementById('sbSub').textContent = (source === '어드민' ? '어드민에서 가져온 파일로 계산했어요' : '올린 파일로 계산했어요') + ' · 확인 후 저장하면 달력에서 다시 볼 수 있어요';
+  };
+  btn.onclick = function () {
+    var m = mIn.value; if (!/^\d{4}-\d{2}$/.test(m)) { alert('저장할 달을 골라주세요.'); return; }
+    if (!lastResult) return;
+    btn.disabled = true;
+    var hw = lastHwansu ? { by: lastHwansu.by, total: lastHwansu.total, skipped: lastHwansu.skipped, month: m } : {};
+    rpc('upche_code_save', { p_month: m, p_result: strip(lastResult), p_diag: strip(Object.assign({}, lastDiag, { month: m })), p_hwansu: hw, p_source: source })
+      .then(function (r) {
+        bar.classList.add('saved'); btn.hidden = true; mIn.parentElement.hidden = true;
+        document.getElementById('sbTitle').textContent = ml(m) + ' 저장했어요';
+        document.getElementById('sbSub').textContent = (r && r.savedBy ? r.savedBy + ' · ' + r.savedAt : '') + ' · 같은 달을 다시 저장하면 덮어써요';
+        try { parent.postMessage({ type: 'code-saved', month: m }, location.origin); } catch (e) {}
+      })
+      .catch(function (e) { btn.disabled = false; alert('저장 실패: ' + e.message); });
+  };
+  // 어드민에서 받은 엑셀(일반·추가·환수, 상부/전체 각각)을 상부정산·전체정산 한 파일처럼 합쳐서 계산
+  window.__codeImport = function (p) {
+    var by = { '상부': [], '전체': [] }, head = {};
+    (p.files || []).forEach(function (f) {
+      var wb = XLSX.read(new Uint8Array(f.buffer), { type: 'array' });
+      var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+      var hi = rows.findIndex(function (r) { return r.indexOf('상품명') >= 0 && r.indexOf('상부점') >= 0; });
+      if (hi < 0) return;
+      var sub = rows[hi + 1] && String(rows[hi + 1][0] || '').trim() === '' && rows[hi + 1].indexOf('상품명') < 0 && rows[hi + 1].some(function (v) { return v !== ''; });
+      var start = hi + (sub ? 2 : 1);
+      if (!head[f.side]) { head[f.side] = rows.slice(0, start); }
+      by[f.side] = by[f.side].concat(rows.slice(start));
+    });
+    ['상부', '전체'].forEach(function (side) {
+      var slot = side + '정산';
+      var ws = XLSX.utils.aoa_to_sheet((head[side] || []).concat(by[side]));
+      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, slot);
+      files[slot] = { type: 'xlsx', wb: wb, sheetName: slot, fileName: '어드민 · ' + slot + ' (' + p.period + ')' };
+      var wrap = document.getElementById('wrap-' + slot); if (wrap) afterLoad(slot, wrap, files[slot].fileName);
+    });
+    source = '어드민'; window.__forcedMonth = p.period;
+    calculate();
+  };
+  // 저장된 달 보기 (계산 화면을 그대로 다시 그림 · 환수 상세 목록은 저장하지 않아 합계만)
+  window.__codeShowSaved = function (run) {
+    var R = run.result || {};
+    lastResult = R; lastDiag = Object.assign({ others: {}, opt: {}, margins: {} }, run.diag || {}, { month: run.month });
+    try {
+      renderResult('sky', R.sky); renderResult('skb', R.skb); renderRental(R.rental); renderBiz(R.biz);
+      document.getElementById('code-sky').innerHTML = esc(CONFIG.sky.lineCode) + ' · ' + esc(CONFIG.sky.mobCode);
+      document.getElementById('code-skb').innerHTML = esc(CONFIG.skb.lineCode) + ' · ' + esc(CONFIG.skb.mobCode);
+      document.getElementById('code-rental').innerHTML = esc(CONFIG.rental.code);
+      renderDashboard(R.sky, R.skb, R.rental, R.biz); renderDiag(R.sky, R.skb, R.rental, R.biz);
+      var h = run.hwansu || {}; if (h.by) { renderHwansu({ by: h.by, total: h.total || { cnt: 0, amt: 0 }, skipped: h.skipped || 0, list: [] }); lastHwansu.month = run.month;
+        document.getElementById('hw-rows').innerHTML = '<tbody><tr><td colspan="8" style="color:#94a3b8;">저장된 결과에는 환수 상세 목록(고객 정보)을 남기지 않아요 · 합계만 보여요</td></tr></tbody>'; }
+    } catch (e) { console.error(e); }
+    document.getElementById('results').style.display = 'block';
+    bar.hidden = false; bar.classList.add('saved'); btn.hidden = true; mIn.parentElement.hidden = true;
+    document.getElementById('sbTitle').textContent = ml(run.month) + ' · 저장된 결과';
+    document.getElementById('sbSub').textContent = (run.source ? run.source + ' · ' : '') + (run.savedBy || '') + ' · ' + (run.savedAt || '') + ' 저장';
+    window.scrollTo(0, 0);
+  };
+  window.__codeReady = true;
+})();
+</script>
+</body>
+</html>

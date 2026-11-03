@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>유통매출 · 업체회의 누적분석</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-<link rel="stylesheet" href="src/styles.css?v=202611030359">
+<link rel="stylesheet" href="src/styles.css?v=202611030417">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -17,7 +17,7 @@
       <div class="brand-title"><div class="brand-name">유통 손익매출</div><div class="brand-sub">유통사업부 계산기</div></div>
     </div>
 
-    <div class="mode3" id="modeSw" role="tablist"><button data-mode="meet">업체회의</button><button data-mode="margin">유통마진</button><button data-mode="pnl" class="on">유통매출</button></div>
+    <div class="mode3" id="modeSw" role="tablist"><button data-mode="meet">업체회의</button><button data-mode="margin">유통마진</button><button data-mode="pnl" class="on">유통매출</button><button data-mode="code">코드실적</button></div>
 
     <div class="side-mid">
 
@@ -46,7 +46,7 @@
 
     <div class="bmbox" id="bmCard" hidden>
       <div class="bm-title">어드민 가져오기 버튼</div>
-      <a id="bmLink" class="bm" draggable="true">⭳ 유통손익 가져오기</a>
+      <a id="bmLink" class="bm" draggable="true">⭳ 업체회의 가져오기</a>
       <div class="bm-help">북마크 줄로 끌어다 놓고 어드민에서 누르세요</div>
     </div>
 
@@ -130,11 +130,11 @@
   document.querySelectorAll('#modeSw button').forEach(b => b.onclick = () => {
     const m = b.dataset.mode; if (m === 'pnl') return;
     if (EMBED) { window.parent.postMessage({ type: 'upche-mode', mode: m }, location.origin); return; }
-    try { m === 'margin' ? localStorage.setItem('upche_mode', 'margin') : localStorage.removeItem('upche_mode'); } catch (e) {}
+    try { m === 'meet' ? localStorage.removeItem('upche_mode') : localStorage.setItem('upche_mode', m); } catch (e) {}
     location.href = '../';
   });
 })();
 </script>
-<script type="module" src="src/app.js?v=202611030359"></script>
+<script type="module" src="src/app.js?v=202611030417"></script>
 </body>
 </html>

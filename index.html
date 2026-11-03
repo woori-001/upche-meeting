@@ -340,11 +340,12 @@ table.t.sm{font-size:13px}.t.sm th,.t.sm td{padding:7px 8px}
 .me-a .icon:hover{background:var(--soft);color:var(--pri-d)}
 .me-a .icon.out:hover{background:var(--up-w);color:var(--up)}
 /* 업체회의 / 유통마진 전환 */
-.mode{display:grid;grid-template-columns:repeat(3,1fr);background:var(--pri);border-radius:12px;padding:4px;margin:0 0 18px;position:relative}
+.mode{display:grid;grid-template-columns:repeat(4,1fr);background:var(--pri);border-radius:12px;padding:4px;margin:0 0 18px;position:relative}
 .mode button{position:relative;z-index:1;border:0;background:none;border-radius:9px;padding:8px 0;font-size:13.5px;font-weight:600;color:rgba(255,255,255,.82);cursor:pointer;transition:color .2s}
-.mode::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 3);border-radius:9px;background:#fff;box-shadow:0 1px 4px rgba(20,30,50,.18);transition:transform .25s ease}
+.mode::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 4);border-radius:9px;background:#fff;box-shadow:0 1px 4px rgba(20,30,50,.18);transition:transform .25s ease}
 .mode button.on{color:var(--pri-d)}
 body.mode-margin .mode::before{transform:translateX(100%)}
+body.mode-code .mode::before{transform:translateX(300%)}
 /* 유통마진 모드: 파란 사이드바 (컬러: Text #111827/#374151 · BG #EEF1F5/#F6F8FB · Primary #4c82f7(업체회의와 같은 파랑) · Accent #F97316) */
 body.mode-margin{--bg:#EEF1F5;--soft:#F6F8FB;--text:#111827;--pri:#4c82f7;--pri-d:#3a6fe6;--pri-w:#edf3ff;--pri-w2:#dbe7ff;--acc:#F97316;--acc-w:#FFF1E6}
 body.mode-margin #side{background:#4c82f7;border-right-color:#4c82f7;color:#fff}
@@ -811,6 +812,30 @@ body.mode-pnl .app,body.mode-pnl #drawer,body.mode-pnl #scrim{display:none}
 #pnlWrap[hidden]{display:none}
 #pnlWrap iframe{width:100%;height:100%;border:0;display:block}
 .mode button{font-size:12.5px}
+/* 코드실적 화면 · 오른쪽 가져오기 바 */
+#codeWrap{position:fixed;top:0;bottom:0;left:var(--sideW);right:0;z-index:5;background:#EEF1F5}
+body.has-rail #codeWrap{right:var(--railW)}
+#codeWrap[hidden]{display:none}
+#codeWrap iframe{width:100%;height:100%;border:0;display:block}
+body.mode-code #main{visibility:hidden}
+.side-cal .mp-m.sv{font-weight:800}
+body.mode-code .side-cal .mp-m:not(.sv):not(.on){color:rgba(255,255,255,.45)}
+.cd-new{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;border-radius:12px;padding:9px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;margin:2px 0 10px}
+.cd-new:hover{background:rgba(255,255,255,.22)}
+.cd-del{margin-top:8px;border:0;background:none;color:#ffd0d0;text-decoration:underline;font:inherit;font-size:12px;cursor:pointer;padding:0}
+:root{--sideW:264px;--railW:236px}
+.app{grid-template-columns:var(--sideW) minmax(0,1fr)}
+body.has-rail .app{margin-right:var(--railW)}
+body.has-rail #pnlWrap{right:var(--railW)}
+#importRail{position:fixed;top:0;right:0;bottom:0;width:var(--railW);z-index:21;background:#fff;border-left:1px solid #e3e7ee;padding:20px 14px;overflow-y:auto}
+#importRail[hidden]{display:none}
+.ir-card{background:#4c82f7;color:#fff;border-radius:16px;padding:16px 14px;display:flex;flex-direction:column;gap:10px}
+.ir-h{display:flex;align-items:center;gap:7px;font-size:14px}
+.ir-p{margin:0;font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.9)}
+.ir-bm{display:block;text-align:center;padding:11px 10px;border-radius:12px;background:#fff;color:#3a6fe6;font-weight:800;font-size:14px;text-decoration:none;border:2px dashed #bcd0fb;cursor:grab}
+.ir-tip{margin:0;font-size:11.5px;line-height:1.5;color:rgba(255,255,255,.8)}
+.ir-list{margin:0;padding:10px 12px;list-style:none;background:rgba(255,255,255,.12);border-radius:12px;display:flex;flex-direction:column;gap:6px;font-size:11.5px;line-height:1.45;color:rgba(255,255,255,.88)}
+.ir-list b{color:#fff;margin-right:4px}
 </style>
 </head>
 <body>
@@ -1396,7 +1421,7 @@ async function pool(items, k, fn) {
 // ---------- 상태 ----------
 const S = {
   fold: (() => { try { return JSON.parse(localStorage.getItem("upche_fold") || "{}"); } catch (e) { return {}; } })(),   // 신규·재거래·이탈 목록 접힘
-  mode: (() => { try { const m = localStorage.getItem("upche_mode"); return m === "margin" || m === "pnl" ? m : "meet"; } catch (e) { return "meet"; } })(),   // 업체회의 | 유통마진 | 유통매출
+  mode: (() => { try { const m = localStorage.getItem("upche_mode"); return ["margin", "pnl", "code"].includes(m) ? m : "meet"; } catch (e) { return "meet"; } })(),   // 업체회의 | 유통마진 | 유통매출
   months: {},          // { "2026-09": {units:[...], file, at, rawRows} }
   master: null,        // { file, at, rows:[...] }
   seg: "협력점",
@@ -1737,7 +1762,12 @@ function render() {
     const wy = window.scrollY, sy = (document.querySelector(".side-mid") || {}).scrollTop || 0, helpEl = document.querySelector(".side-help");
     if (helpEl) S.helpOpen = helpEl.open;
     showPnl(S.mode === "pnl");
+    showRail(S.mode !== "meet");
     if (S.mode === "pnl") return;
+    const cd = S.mode === "code";
+    document.body.classList.toggle("mode-code", cd);
+    showCode(cd);
+    if (cd) { document.body.classList.add("mode-margin"); $("#side").innerHTML = codeSideHtml(); bindCommon(); bindCodeSide(); return; }
     const mg = S.mode === "margin";
     document.body.classList.toggle("mode-margin", mg);
     if (mg && !MS.loaded && !MS.loading && !MS.error && lsGet(LS_KEY.token)) setTimeout(() => mgLoad(), 0);
@@ -2547,10 +2577,11 @@ function bindMain() {
 }
 // 메뉴 바꾸기 (업체회의 · 유통마진 · 유통매출)
 function setMode(m) {
-  if (!["meet", "margin", "pnl"].includes(m) || S.mode === m) return;
+  if (!["meet", "margin", "pnl", "code"].includes(m) || S.mode === m) return;
   S.mode = m; lsSet("upche_mode", m === "meet" ? null : m);
   closeDetail(); render(); window.scrollTo(0, 0);
   if (m === "margin") setTimeout(mgImportOpen, 0);
+  if (m === "code") setTimeout(codeImportOpen, 0);
 }
 // 유통매출 화면(안에 열린 계산기)에서 전환 버튼을 누르면 이쪽으로 알려줌
 window.addEventListener("message", (e) => { if (e.origin === location.origin && e.data && e.data.type === "upche-mode") setMode(e.data.mode); });
@@ -2561,9 +2592,94 @@ function showPnl(on) {
   if (on && !w) { w = document.createElement("div"); w.id = "pnlWrap"; w.innerHTML = `<iframe src="pnl/index.html" title="유통매출" allow="clipboard-write"></iframe>`; document.body.appendChild(w); }
   if (w) w.hidden = !on;
 }
+// ---------- 코드실적 (code/ 계산기를 본문에 띄우고, 사이드바에서 저장된 달을 고름) ----------
+const CS = { runs: null, loading: false, month: null, mpYear: 0, pending: null };
+function showCode(on) {
+  let w = $("#codeWrap");
+  if (on && !w) { w = document.createElement("div"); w.id = "codeWrap"; w.innerHTML = `<iframe src="code/index.html?v=202611030417" title="코드실적"></iframe>`; document.body.appendChild(w); }
+  if (w) w.hidden = !on;
+  if (on && CS.runs === null && !CS.loading) codeLoad();
+}
+const codeFrame = () => { const f = $("#codeWrap iframe"); return f && f.contentWindow; };
+async function codeWhenReady() { for (let i = 0; i < 150; i++) { const w = codeFrame(); if (w && w.__codeReady) return w; await new Promise(r => setTimeout(r, 100)); } return null; }
+async function codeLoad() {
+  CS.loading = true;
+  try { CS.runs = await rpc("upche_code_list", { p_token: lsGet(LS_KEY.token) || "" }) || []; }
+  catch (e) { CS.runs = []; if (/함수가 아직 없어요/.test(e.message)) toast("코드실적 저장을 쓰려면 Supabase 설정이 필요해요.", 6000); }
+  CS.loading = false; if (S.mode === "code") render();
+}
+function codeSideHtml() {
+  const runs = CS.runs || [], ms = runs.map(r => r.month), cur = runs.find(r => r.month === CS.month);
+  const y = CS.mpYear || +(CS.month || ms[ms.length - 1] || new Date().toISOString().slice(0, 7)).slice(0, 4);
+  const cells = Array.from({ length: 12 }, (_, i) => { const m = `${y}-${String(i + 1).padStart(2, "0")}`;
+    return `<button class="mp-m${m === CS.month ? " on" : ""}${ms.includes(m) ? " sv" : ""}" data-cm="${m}" ${ms.includes(m) ? "" : "disabled"}>${i + 1}월</button>`; }).join("");
+  return `<div class="side-top"><div class="brand"><img src="data:image/png;base64,${LOGO_W_B64}" alt="WAVENET"></div>${modeSwitchHtml()}</div>
+    <div class="side-mid">
+      <div class="side-cal"><div class="mp-h"><button class="icon" id="cdPrev">‹</button><b>${y}년</b><button class="icon" id="cdNext">›</button></div><div class="mp-g">${cells}</div></div>
+      <button class="cd-new" id="cdNew">${ic("upload", 15)}새로 계산하기 (파일 올리기)</button>
+      <div class="side-info">${cur ? `<div><span>${mLabel(cur.month)}</span><b>저장된 결과</b></div>
+          <div class="note"><span>${esc(cur.source || "")} · ${esc(whoShort(cur.savedBy))}</span><span>${esc(cur.savedAt || "")} 저장</span></div>
+          <button class="cd-del" id="cdDel">이 달 저장 지우기</button>`
+        : `<div><span>저장된 달</span><b>${ms.length ? `${monthLabel(ms[0])} ~ ${monthLabel(ms[ms.length - 1])}` : "없음"}</b></div><div><span>개월 수</span><b>${ms.length}개월</b></div>`}</div>
+      <details class="side-help"><summary>${ic("info", 14)}계산 기준<span class="chev">▾</span></summary>
+        <div class="hl">
+          <div class="hi"><i class="c-blue"></i><div><b>대상</b><p>우리 코드 상부점만<br>SKYLIFE · SKB · SK매직 · 유선기타</p></div></div>
+          <div class="hi"><i class="c-green"></i><div><b>수익</b><p class="f">수입(상부) − 지출(전체) − 자점마진 + 유지수수료</p><p>기본: 정산종류 일반만 · 해지 제외</p></div></div>
+          <div class="hi"><i class="c-orange"></i><div><b>환수 체크</b><p>상부정산 환수 중 우리 코드만<br>수익과 별개로 합계만 확인</p></div></div>
+          <div class="hi"><i class="c-violet"></i><div><b>자세한 기준</b><p>본문 '조건 설정'에서 확인·변경</p></div></div>
+        </div></details>
+    </div>
+    <div class="side-bottom">${meHtml()}</div>`;
+}
+function bindCodeSide() {
+  const step = (k) => () => { CS.mpYear = (CS.mpYear || +(CS.month || new Date().toISOString()).slice(0, 4)) + k; render(); };
+  $("#cdPrev").onclick = step(-1); $("#cdNext").onclick = step(1);
+  document.querySelectorAll("[data-cm]:not([disabled])").forEach(b => b.onclick = async () => {
+    CS.month = b.dataset.cm; render();
+    const run = (CS.runs || []).find(r => r.month === CS.month), w = await codeWhenReady();
+    if (run && w) w.__codeShowSaved(run);
+  });
+  $("#cdNew").onclick = () => { CS.month = null; const f = $("#codeWrap iframe"); if (f) f.src = f.src; render(); };
+  const del = $("#cdDel");
+  if (del) del.onclick = async () => {
+    const m = CS.month; if (!confirm(`${mLabel(m)} 코드실적 저장을 지울까요? 되돌릴 수 없어요.`)) return;
+    try { await rpc("upche_code_delete", { p_token: lsGet(LS_KEY.token) || "", p_month: m }); toast(`${mLabel(m)} 코드실적 저장을 지웠어요.`); CS.month = null; await codeLoad(); }
+    catch (e) { toast(`<b>지우기 실패</b> ${esc(e.message)}`, 0); }
+  };
+}
+// 코드실적 화면에서 저장하면 사이드바 달력을 새로 고침
+window.addEventListener("message", (e) => { if (e.origin === location.origin && e.data && e.data.type === "code-saved") { CS.month = e.data.month; codeLoad(); } });
+
+// ---------- 오른쪽 바: 어드민 가져오기 (유통마진 · 유통매출 · 코드실적 공통) ----------
+function showRail(on) {
+  document.body.classList.toggle("has-rail", on);
+  let r = $("#importRail");
+  if (on && !r) {
+    r = document.createElement("aside"); r.id = "importRail";
+    r.innerHTML = `<div class="ir-card"><div class="ir-h">${ic("upload", 16)}<b>어드민에서 가져오기</b></div>
+      <p class="ir-p">어드민(workline.kr)에 로그인한 화면에서 이 버튼을 누르면 정산 엑셀을 받아 <b>지금 열린 이 화면</b>으로 바로 넘겨요.</p>
+      <a class="ir-bm" id="irBm" draggable="true">⭳ 업체회의 가져오기</a>
+      <p class="ir-tip">처음 한 번, 위 버튼을 <b>즐겨찾기 막대로 끌어다</b> 놓으세요. 누르지 말고 끌어다 놓기!</p>
+      <ul class="ir-list"><li><b>유통매출</b> 엑셀 10개 · 일반=개통일, 추가·환수=정산예정일</li><li><b>코드실적</b> 유통매출과 같은 10개</li><li><b>유통마진</b> 일반(개통일) 2개만</li></ul>
+      <p class="ir-tip">작은 창이 잠깐 떴다가 닫혀요. 안 뜨면 workline.kr 팝업을 허용해 주세요.</p></div>`;
+    document.body.appendChild(r);
+    setupBookmarklet();
+    $("#irBm").onclick = (e) => { e.preventDefault(); toast("누르지 말고 즐겨찾기 막대로 끌어다 놓아 주세요."); };
+  }
+  if (r) r.hidden = !on;
+}
+async function setupBookmarklet() {
+  try {
+    const base = location.origin + location.pathname.replace(/[^/]*$/, "");
+    let code = await fetch("pnl/src/admin-pull.js?v=202611030417", { cache: "no-cache" }).then(r => r.text());
+    code = code.replace(/^\/\*[\s\S]*?\*\/\s*/, "").replace("__CALC_URL__", base + "pnl/");
+    $("#irBm").href = "javascript:" + encodeURIComponent(code);
+  } catch (e) { $("#irBm").removeAttribute("href"); }
+}
+
 // ---------- 어드민에서 가져오기 (즐겨찾기 버튼 → 작은 중계 창 → 이 탭) ----------
 let importBus = null;
-const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611030359"));
+const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611030417"));
 async function listenImports() {
   try {
     const { channel, takePending } = await bus();
@@ -2578,9 +2694,9 @@ async function listenImports() {
   } catch (e) { console.warn("가져오기 통로를 열지 못했어요", e); }
 }
 async function applyImport(p) {
-  const t = p.target || "pnl";
+  const ts = String(p.target || "pnl").replace("both", "pnl,margin").split(",").filter(Boolean);
   try { window.focus(); } catch (e) {}
-  if (t === "margin" || t === "both") {
+  if (ts.includes("margin")) {
     const pick = (side) => (p.files || []).find(f => f.side === side && !f.old && /일반/.test(f.label || f.name || ""));
     const sf = pick("상부"), jf = pick("전체");
     if (!sf || !jf) toast("유통마진에 쓸 상부·전체정산 일반 파일이 없어요.", 6000);
@@ -2591,14 +2707,25 @@ async function applyImport(p) {
       } catch (e) { toast(`<b>유통마진 파일을 읽지 못했어요</b> ${esc(e.message)}`, 0); }
     }
   }
-  if (t === "pnl" || t === "both") {
+  if (ts.includes("code")) CS.pending = p;
+  const first = ["pnl", "code", "margin"].find(t => ts.includes(t));
+  const names = { pnl: "유통매출", code: "코드실적", margin: "유통마진" };
+  const others = ts.filter(t => t !== first).map(t => names[t]);
+  if (first === "pnl") {
     setMode("pnl"); showPnl(true);
     const fr = $("#pnlWrap iframe");
     for (let i = 0; i < 100; i++) { const w = fr && fr.contentWindow; if (w && w.__pnlImport) { w.__pnlImport(p); break; } await new Promise(r => setTimeout(r, 200)); }
-    if (t === "both") toast(`${mLabel(p.period)} 유통매출을 계산했어요. 유통마진도 계산해 뒀으니 <b>유통마진</b> 메뉴에서 확인하고 저장하세요.`, 8000);
-  } else {
-    setMode("margin"); mgImportOpen();
-  }
+  } else if (first === "code") { setMode("code"); codeImportOpen(); }
+  else { setMode("margin"); mgImportOpen(); }
+  if (others.length) toast(`${mLabel(p.period)} ${names[first]}을 계산했어요. ${others.join(" · ")}도 계산해 뒀으니 그 메뉴에서 확인하고 저장하세요.`, 8000);
+}
+// 어드민에서 받아둔 코드실적 파일이 있으면 코드실적 화면에서 계산
+async function codeImportOpen() {
+  if (!CS.pending) return;
+  const p = CS.pending; CS.pending = null; CS.month = null; render();
+  const w = await codeWhenReady(); if (!w) { toast("코드실적 화면을 열지 못했어요.", 5000); return; }
+  try { w.__codeImport(p); toast(`어드민에서 ${mLabel(p.period)} 파일을 가져와 코드실적을 계산했어요. 확인 후 <b>저장</b>을 눌러주세요.`, 6000); }
+  catch (e) { toast(`<b>코드실적 계산 실패</b> ${esc(e.message)}`, 0); }
 }
 // 어드민에서 받아둔 유통마진 파일이 있으면 계산해서 저장 창을 띄움
 function mgImportOpen() {
@@ -3030,7 +3157,7 @@ async function mgLoad(force) {
 
 // ---------- 사이드바 ----------
 function modeSwitchHtml() {
-  return `<div class="mode" role="tablist"><button class="${S.mode === "meet" ? "on" : ""}" data-mode="meet">업체회의</button><button class="${S.mode === "margin" ? "on" : ""}" data-mode="margin">유통마진</button><button class="${S.mode === "pnl" ? "on" : ""}" data-mode="pnl">유통매출</button></div>`;
+  return `<div class="mode" role="tablist"><button class="${S.mode === "meet" ? "on" : ""}" data-mode="meet">업체회의</button><button class="${S.mode === "margin" ? "on" : ""}" data-mode="margin">유통마진</button><button class="${S.mode === "pnl" ? "on" : ""}" data-mode="pnl">유통매출</button><button class="${S.mode === "code" ? "on" : ""}" data-mode="code">코드실적</button></div>`;
 }
 function mgSideHtml() {
   const ms = mMonths();

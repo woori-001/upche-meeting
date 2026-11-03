@@ -51,7 +51,7 @@
     const jobs = [];
     for (const [side, ep] of [['전체', '/api/exact/calc/export'], ['상부', '/api/exact/calc/upper/export']]) {
       jobs.push({ side, ep, label: `${side}정산 일반`, params: { chargeType: 'G', dateChk: '2', dateFrom: from, dateTo: to } });
-      if (target === 'margin') continue;   // 유통마진은 일반(개통일) 상부·전체 2개만
+      if (target === 'margin') continue;   // 유통마진만이면 일반(개통일) 상부·전체 2개만
       jobs.push({ side, ep, label: `${side}정산 추가`, params: { chargeType: 'A', dateChk: '4', dateFrom: from, dateTo: to } });
       jobs.push({ side, ep, label: `${side}정산 환수`, params: { chargeType: 'B', dateChk: '4', dateFrom: from, dateTo: to } });
       // 옛날 데이터: 같은 조건 (일반은 옛 웹 기간이 끝나 해당 없음 → 추가·환수만)
@@ -71,11 +71,11 @@
   const box = document.createElement('div');
   box.id = 'dist-pnl-box';
   box.setAttribute('style', 'position:fixed;top:16px;right:16px;z-index:2147483647;width:340px;background:#fff;color:#1d2229;border:1px solid #d0d5dc;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:16px;font:14px/1.5 system-ui,sans-serif');
-  const rb = (v, l, on) => `<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid #d0d5dc;border-radius:8px;padding:6px 4px;cursor:pointer;font-size:13px"><input type="radio" name="upche-t" value="${v}"${on ? ' checked' : ''}>${l}</label>`;
+  const rb = (v, l, on) => `<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid #d0d5dc;border-radius:8px;padding:6px 4px;cursor:pointer;font-size:13px"><input type="checkbox" name="upche-t" value="${v}"${on ? ' checked' : ''}>${l}</label>`;
   box.innerHTML = `<div style="font-weight:700;margin-bottom:8px">업체회의 웹 · 어드민에서 가져오기</div>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px">대상월 <input type="month" value="${defYm}" style="flex:1;padding:6px;border:1px solid #d0d5dc;border-radius:6px"></label>
-    <div style="display:flex;gap:6px;margin-bottom:10px">${rb('pnl', '유통매출', true)}${rb('margin', '유통마진')}${rb('both', '둘 다')}</div>
-    <div style="font-size:12px;color:#6b7380;margin-bottom:10px">유통매출: 전체·상부정산 일반(개통일)·추가·환수(정산예정일) 엑셀 10개 · 유통마진: 일반(개통일) 2개만.<br>다 받으면 열려 있는 업체회의 웹으로 바로 넘겨요 (작은 창이 잠깐 떴다가 닫혀요).</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">${rb('pnl', '유통매출', true)}${rb('margin', '유통마진')}${rb('code', '코드실적')}</div>
+    <div style="font-size:12px;color:#6b7380;margin-bottom:10px">여러 개 골라도 한 번에 받아요. 유통매출·코드실적: 전체·상부정산 일반(개통일)·추가·환수(정산예정일) 엑셀 10개 · 유통마진만: 일반(개통일) 2개.<br>다 받으면 열려 있는 업체회의 웹으로 바로 넘겨요 (작은 창이 잠깐 떴다가 닫혀요).</div>
     <div data-msg style="font-size:12px;min-height:18px;margin-bottom:10px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button data-close style="padding:7px 12px;border:1px solid #d0d5dc;border-radius:8px;background:#fff;cursor:pointer">닫기</button>
@@ -106,7 +106,9 @@
 
   goBtn.onclick = async () => {
     const period = box.querySelector('input[type=month]').value;
-    const target = (box.querySelector('input[name=upche-t]:checked') || {}).value || 'pnl';
+    const picked = [...box.querySelectorAll('input[name=upche-t]:checked')].map(x => x.value);
+    if (!picked.length) { msg('가져올 메뉴를 하나 이상 고르세요', true); return; }
+    const target = picked.length === 1 && picked[0] === 'margin' ? 'margin' : picked.join(',');
     if (!/^\d{4}-\d{2}$/.test(period)) { msg('대상월을 고르세요', true); return; }
     busy = true; goBtn.disabled = true; payload = null; calcReady = false;
     // 팝업 차단을 피하려고 클릭하자마자 계산기 창부터 엽니다

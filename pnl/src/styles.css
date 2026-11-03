@@ -682,3 +682,9 @@ a.bm{padding:9px 10px;border-radius:10px;font-size:13px}
 .rulecard .ri{width:14px;height:14px;font-size:9px}
 .rules{padding:2px 12px 8px}
 .side-mid>.divider:first-child{display:none}.side .mode3{margin-bottom:2px}
+
+/* 전환 버튼 4칸 · 사이드바 264px (업체회의 웹과 같음) */
+.app{grid-template-columns:264px minmax(0,1fr)}
+.mode3{grid-template-columns:repeat(4,1fr)}
+/* 업체회의 웹 안에서는 가져오기 버튼을 오른쪽 바에서 보여줌 */
+html.embed #bmCard{display:none!important}

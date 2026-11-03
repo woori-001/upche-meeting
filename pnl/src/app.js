@@ -1,13 +1,14 @@
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611030359';
-import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611030359';
-import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611030359';
-import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611030359';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611030417';
+import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611030417';
+import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611030417';
+import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611030417';
 
 // ---------- 서버 (업체회의 웹과 같은 로그인 · 같은 Supabase) ----------
 // 업체회의 웹에서 로그인한 토큰을 그대로 씀 (같은 주소라 브라우저 저장소를 같이 봄)
 const TOKEN_KEY = 'upche_sb_token', USER_KEY = 'upche_user';
 const token = () => { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } };
 const EMBED = window.parent !== window;   // 업체회의 웹 안(유통매출 메뉴)에서 열렸는지
+if (EMBED) document.documentElement.classList.add('embed');
 async function rpc(name, params) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, { method: 'POST',
     headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ p_token: token(), ...params }) });
@@ -188,7 +189,7 @@ function acceptAdminFiles(data) {
 window.__pnlImport = acceptAdminFiles;   // 업체회의 웹(바깥 화면)이 부르는 입구
 // 따로 연 유통매출 창: 열린 업체회의 웹이 없을 때 중계 창이 보내는 유통매출 데이터를 여기서 받음
 if (!EMBED) {
-  import('./import-bus.js?v=202611030359').then(({ channel, takePending }) => {
+  import('./import-bus.js?v=202611030417').then(({ channel, takePending }) => {
     const ch = channel(), me = Math.random().toString(36).slice(2);
     ch.onmessage = async (m) => {
       const d = m.data || {};
@@ -648,7 +649,7 @@ function renderRail() {
   if (m === 'saved') $('btnToggleFiles').hidden = true;
   let html = '';
   if (m === 'upload') {
-    html = `<h3>${monthLabel(state.period)}</h3><p class="muted small">저장된 결과가 없어요.<br>어드민에서 <b>유통손익 가져오기</b>를 누르거나 오른쪽에 엑셀을 올려 계산하세요.</p>`;
+    html = `<h3>${monthLabel(state.period)}</h3><p class="muted small">저장된 결과가 없어요.<br>어드민에서 <b>업체회의 가져오기</b>를 누르거나 오른쪽에 엑셀을 올려 계산하세요.</p>`;
   } else if (m === 'calc' && r) {
     const c = r.checks, allOk = c.files.every(f => f.totalOk);
     html = `<h3>${monthLabel(r.period)}</h3><div class="ri-sub">계산에 쓴 파일 ${state.files.length}개</div>

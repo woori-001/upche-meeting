@@ -1134,6 +1134,13 @@ function computeHwansu(rows) {
   return { by:by, list:list, total:tot, skipped:skipped };
 }
 
+/* 고객명 가리기: 김기홍 → 김*홍, 홍길 → 홍*, 남궁민수 → 남**수 */
+function maskName(v) {
+  var s = String(v == null ? '' : v).trim(), c = Array.from(s);
+  if (c.length <= 1) return s;
+  if (c.length === 2) return c[0] + '*';
+  return c[0] + new Array(c.length - 1).join('*') + c[c.length - 1];
+}
 function renderHwansu(h) {
   lastHwansu = h;
   function m(v){ return '<span class="'+(v<0?'hw-neg':'')+'">'+fmt(v)+'</span>'; }
@@ -1151,7 +1158,7 @@ function renderHwansu(h) {
           '<th>개통상태</th><th>정산금액</th><th>정산 비고</th></tr></thead><tbody>';
   h.list.forEach(function(it) {
     var r = it.row;
-    d += '<tr><td>'+it.cat+'</td><td>'+esc(r['고객명']||'')+'</td><td class="mono">'+esc(r['상품명']||'')+'</td>'+
+    d += '<tr><td>'+it.cat+'</td><td>'+esc(maskName(r['고객명']))+'</td><td class="mono">'+esc(r['상품명']||'')+'</td>'+
          '<td class="mono">'+esc(r['상부점']||'')+'</td><td>'+esc(r['협력점']||'')+'</td>'+
          '<td>'+esc(r['개통상태']||'')+'</td><td>'+m(num(r['정산금액']))+'</td>'+
          '<td style="text-align:left;">'+esc(r['정산 비고']||'')+'</td></tr>';
@@ -1198,7 +1205,7 @@ function hwansuSheetRows() {
   out.push(['구분','고객명','상품명','상부점','협력점','개통상태','개통일','정산금액','정산 비고']);
   H.list.forEach(function(it) {
     var r = it.row;
-    out.push([it.cat, r['고객명'], r['상품명'], r['상부점'], r['협력점'], r['개통상태'], r['개통일'],
+    out.push([it.cat, maskName(r['고객명']), r['상품명'], r['상부점'], r['협력점'], r['개통상태'], r['개통일'],
               num(r['정산금액']), r['정산 비고']]);
   });
   return out;

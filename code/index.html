@@ -151,7 +151,7 @@ details.cfg[open] > summary::after { content:'▴'; }
 
 /* ===== 업체회의 웹과 같은 모양 ===== */
 body{font-family:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;background:#EEF1F5;color:#1c2230;letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
-.container{max-width:none;margin:0;padding:26px 32px 60px}
+.container{max-width:1440px;margin:0;padding:26px 32px 60px}
 h1{font-size:24px;font-weight:800;letter-spacing:-.02em}
 .subtitle{color:#7d8697}
 .section,details.cfg,.result-card,.detail-card{border:0;border-radius:20px;box-shadow:0 1px 2px rgba(20,30,50,.04),0 4px 16px rgba(20,30,50,.05)}
@@ -172,17 +172,16 @@ h1{font-size:24px;line-height:32px;font-weight:700;letter-spacing:-.02em;margin-
 details.cfg>summary{font-size:15px;font-weight:700}
 .result-card-title{font-size:16px}
 .dash-title{font-size:17px}
-details.manual{margin-bottom:16px}
-details.manual>summary{list-style:none;cursor:pointer}
-details.manual>summary::-webkit-details-marker{display:none}
-.manual-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border-radius:16px;padding:14px 18px}
-.manual-bar .mb-t{display:flex;flex-direction:column;gap:2px;font-size:13px;color:#1c2230;min-width:0}
-.manual-bar .mb-t>span{font-size:12.5px;color:#7d8697}
-.mb-btn{flex:none;border:1px solid #dfe5ee;background:#fff;color:#4c82f7;border-radius:10px;padding:7px 12px;font-size:12.5px;font-weight:600}
-.manual-bar:hover .mb-btn{background:#f1f5fe}
-details.manual .mb-c,details.manual[open] .mb-o{display:none}
-details.manual[open] .mb-c{display:inline}
-details.manual[open]>summary{margin-bottom:16px}
+.manual{margin-bottom:16px}.manual[hidden]{display:none}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:20px}
+.top h1{margin:0}.top .subtitle{margin:2px 0 0}
+.top-r{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tb{display:inline-flex;align-items:center;gap:6px;border-radius:10px;padding:8px 14px;cursor:pointer;font:inherit;font-weight:600;font-size:13.5px;white-space:nowrap;transition:background .15s,border-color .15s}
+.tb.primary{background:#4c82f7;border:1px solid #4c82f7;color:#fff}.tb.primary:hover{background:#3a6fe6}
+.tb.ghost{background:#fff;border:1px solid #dfe5ee;color:#3a4252}.tb.ghost:hover{border-color:#4c82f7;color:#3a6fe6}
+.tb.ghost.on{border-color:#4c82f7;color:#3a6fe6}
+#cDel:hover{border-color:#e5484d;color:#e5484d}
+.tb[hidden]{display:none}
 *{scrollbar-width:thin;scrollbar-color:rgba(120,130,150,.35) transparent}
 .savebar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#4c82f7;color:#fff;border-radius:18px;padding:14px 18px;margin:8px 0 14px}
 .savebar[hidden]{display:none}
@@ -198,11 +197,15 @@ details.manual[open]>summary{margin-bottom:16px}
 </head>
 <body>
 <div class="container">
-  <h1>코드실적 <span style="font-size:12px;color:#9ca3af;font-weight:400;">SKYLIFE · SKB · SK매직 · 유선기타</span></h1>
-  <p class="subtitle">전체 로우데이터를 그대로 넣어도 <b>상부점 코드</b>로 SKYLIFE / SKB / SK매직만 정확히 골라냅니다. (.xlsx / .xls 지원)</p>
+  <div class="top">
+    <div><h1 id="cTitle">코드실적</h1><p class="subtitle" id="cSub">오른쪽 <b>어드민에서 가져오기</b>로 받아오면 자동으로 계산돼요 · SKYLIFE · SKB · SK매직 · 유선기타</p></div>
+    <div class="top-r">
+      <button class="tb ghost" id="cDel" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>이 월 삭제</button>
+      <button class="tb primary" id="cUp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>정산 파일 올리기</button>
+    </div>
+  </div>
 
-  <details class="manual" id="manualBox">
-  <summary class="manual-bar"><span class="mb-t"><b>파일 직접 올려서 계산하기</b><span>평소엔 오른쪽 <b>어드민에서 가져오기</b>로 받아오면 자동으로 계산돼요</span></span><span class="mb-btn"><span class="mb-o">파일 직접 올리기</span><span class="mb-c">접기</span></span></summary>
+  <div class="manual" id="manualBox" hidden>
   <div class="section">
     <div class="section-title">1. 파일 업로드</div>
     <div class="file-grid">
@@ -289,7 +292,7 @@ details.manual[open]>summary{margin-bottom:16px}
 
   <button class="calc-btn" onclick="calculate()">계산하기</button>
   <button class="sub-btn" onclick="checkHwansuOnly()">환수만 체크 <span style="font-weight:400;color:#94a3b8;">(상부정산 파일만 있으면 가능 · 수익 계산과 별개)</span></button>
-  </details>
+  </div>
   <div class="error-msg" id="error-msg"></div>
   <div class="loading" id="loading">계산 중...</div>
 
@@ -1497,7 +1500,21 @@ function downloadExcel() {
   }
   var bar = document.getElementById('saveBar'), mIn = document.getElementById('sbMonth'), btn = document.getElementById('sbSave');
   function ml(m) { return m ? m.slice(0, 4) + '년 ' + (+m.slice(5, 7)) + '월' : ''; }
+  var cT = document.getElementById('cTitle'), cS = document.getElementById('cSub'), cUp = document.getElementById('cUp'), cDel = document.getElementById('cDel'), box = document.getElementById('manualBox');
+  var savedMonth = null;
+  function head(t, s, saved) { cT.textContent = t; cS.textContent = s; savedMonth = saved || null; cDel.hidden = !saved; }
+  function setBox(open) { box.hidden = !open; cUp.classList.toggle('on', open); cUp.classList.toggle('primary', !open); cUp.classList.toggle('ghost', open); }
+  cUp.onclick = function () { setBox(box.hidden); };
+  cDel.onclick = function () {
+    var m = savedMonth; if (!m || !confirm(ml(m) + ' 코드실적 저장을 지울까요? 되돌릴 수 없어요.')) return;
+    rpc('upche_code_delete', { p_month: m }).then(function () {
+      try { parent.postMessage({ type: 'code-deleted', month: m }, location.origin); } catch (e) {}
+      location.reload();
+    }).catch(function (e) { alert('지우기 실패: ' + e.message); });
+  };
   window.__afterCalc = function () {
+    setBox(false);
+    head((ml((lastDiag && lastDiag.month) || '') || '') + ' 코드실적', (source === '어드민' ? '어드민에서 가져온 파일로 계산 · ' : '올린 파일로 계산 · ') + '아직 저장 안 함');
     bar.hidden = false; bar.classList.remove('saved'); btn.disabled = false; btn.hidden = false; mIn.parentElement.hidden = false;
     mIn.value = (lastDiag && lastDiag.month) || '';
     document.getElementById('sbTitle').textContent = (ml(mIn.value) || '계산 결과') + ' · 아직 저장 안 함';
@@ -1513,6 +1530,7 @@ function downloadExcel() {
         bar.classList.add('saved'); btn.hidden = true; mIn.parentElement.hidden = true;
         document.getElementById('sbTitle').textContent = ml(m) + ' 저장했어요';
         document.getElementById('sbSub').textContent = (r && r.savedBy ? r.savedBy + ' · ' + r.savedAt : '') + ' · 같은 달을 다시 저장하면 덮어써요';
+        head(ml(m) + ' 코드실적', '저장 ' + (r && r.savedAt ? r.savedAt + ' · ' + r.savedBy : ''), m);
         try { parent.postMessage({ type: 'code-saved', month: m }, location.origin); } catch (e) {}
       })
       .catch(function (e) { btn.disabled = false; alert('저장 실패: ' + e.message); });
@@ -1554,7 +1572,8 @@ function downloadExcel() {
         document.getElementById('hw-rows').innerHTML = '<tbody><tr><td colspan="8" style="color:#94a3b8;">저장된 결과에는 환수 상세 목록(고객 정보)을 남기지 않아요 · 합계만 보여요</td></tr></tbody>'; }
     } catch (e) { console.error(e); }
     document.getElementById('results').style.display = 'block';
-    bar.hidden = false; bar.classList.add('saved'); btn.hidden = true; mIn.parentElement.hidden = true;
+    bar.hidden = true; setBox(false);
+    head(ml(run.month) + ' 코드실적', '저장 ' + (run.savedAt || '') + ' · ' + (run.savedBy || '') + (run.source ? ' · ' + run.source + '에서 가져옴' : ''), run.month);
     document.getElementById('sbTitle').textContent = ml(run.month) + ' · 저장된 결과';
     document.getElementById('sbSub').textContent = (run.source ? run.source + ' · ' : '') + (run.savedBy || '') + ' · ' + (run.savedAt || '') + ' 저장';
     window.scrollTo(0, 0);

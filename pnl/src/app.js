@@ -1,7 +1,7 @@
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611031449';
-import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611031449';
-import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611031449';
-import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611031449';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=202611031456';
+import { RULES, SEGMENTS, LEGACY_SEGMENTS, DIST_VIEWS, CODE_VIEWS, STATUS_KEYS, statusKeyOf } from './rules.js?v=202611031456';
+import { parseWorkbook, compute, summarize, byUpper } from './calc.js?v=202611031456';
+import { computeEval, evalForSave, EVAL_COLS, EVAL_ROWS } from './eval.js?v=202611031456';
 
 // ---------- 서버 (업체회의 웹과 같은 로그인 · 같은 Supabase) ----------
 // 업체회의 웹에서 로그인한 토큰을 그대로 씀 (같은 주소라 브라우저 저장소를 같이 봄)
@@ -65,10 +65,12 @@ function show(view) {
   $('evalLink').hidden = view !== 'viewApp';
   if (view === 'viewLogin') setTitle('유통 손익매출 계산기', '로그인하면 계산·저장할 수 있어요');
   if (view === 'viewApp') setTitle(...PAGE.calc);
+  $('topActions').hidden = view !== 'viewApp';
 }
 const PAGE = {
   calc: ['유통사업부 코드매출·외부유통매출', ''],
 };
+const stamp = t => { const d = new Date(t), z = n => String(n).padStart(2, '0'); return isNaN(d) ? '' : `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; };
 function setTitle(t, sub) { $('pageTitle').textContent = t; $('pageSub').textContent = sub; $('pageSub').hidden = !sub; }
 
 // ---------- 로그인 ----------
@@ -118,7 +120,20 @@ drop.ondragleave = () => drop.classList.remove('over');
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); };
 $('fileInput').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
 $('btnClear').onclick = () => { state.files = []; state.result = null; renderFiles(); refresh(); };
-$('btnManual').onclick = () => { state.manual = true; refresh(); };
+// 위쪽 버튼 (유통마진 화면과 같은 자리): 정산 파일 올리기 · 이 달 저장 · 이 월 삭제
+$('tUp').onclick = () => {
+  if (state.mode === 'calc') state.showFiles = !state.showFiles;
+  else if (state.mode === 'saved') { state.mode = 'upload'; state.manual = true; }
+  else state.manual = !state.manual;
+  refresh();
+};
+$('tSave').onclick = () => $('btnSave').click();
+$('tDel').onclick = async () => {
+  const run = state.view && state.view.run; if (!run) return;
+  if (!await ask(`${monthLabel(state.period)} ${new Date(run.created_at).toLocaleString('ko-KR')}에 저장한 결과를 삭제할까요? 되돌릴 수 없습니다.`)) return;
+  try { await rpc('upche_pnl_delete', { p_run: run.id }); } catch (e) { toast('삭제 실패: ' + e.message); return; }
+  toast('삭제했습니다'); state.selRun = null; await loadRuns(); openMonth(state.period);
+};
 $('btnManualClose').onclick = () => { state.manual = false; refresh(); };
 $('btnToggleFiles').onclick = () => { state.showFiles = !state.showFiles; refresh(); };
 $('btnNew').onclick = async () => {
@@ -211,7 +226,7 @@ function acceptAdminFiles(data) {
 window.__pnlImport = acceptAdminFiles;   // 업체회의 웹(바깥 화면)이 부르는 입구
 // 따로 연 유통매출 창: 열린 업체회의 웹이 없을 때 중계 창이 보내는 유통매출 데이터를 여기서 받음
 if (!EMBED) {
-  import('./import-bus.js?v=202611031449').then(({ channel, takePending }) => {
+  import('./import-bus.js?v=202611031456').then(({ channel, takePending }) => {
     const ch = channel(), me = Math.random().toString(36).slice(2);
     ch.onmessage = async (m) => {
       const d = m.data || {};
@@ -634,8 +649,18 @@ function refreshInner() {
   const manualOpen = m === 'upload' && (state.manual || state.files.length > 0);
   const showUpload = manualOpen || state.showFiles;
   $('uploadCard').hidden = !showUpload;
-  $('manualBar').hidden = !(m === 'upload' && !manualOpen);
+  // 제목·버튼
+  const tUpOpen = showUpload;
+  $('tUp').classList.toggle('primary', !tUpOpen && !(m === 'calc' && !state.resultSaved)); $('tUp').classList.toggle('ghost', tUpOpen || (m === 'calc' && !state.resultSaved)); $('tUp').classList.toggle('on', tUpOpen);
+  $('tSave').hidden = !(m === 'calc' && r && !state.resultSaved);
+  $('tDel').hidden = !(m === 'saved' && state.view && state.view.run);
+  const runNow = m === 'saved' && state.view && state.view.run;
+  setTitle(`${monthLabel(state.period)} 유통매출`,
+    m === 'upload' ? '저장된 결과가 없어요 · 오른쪽 어드민에서 가져오기로 받아오면 자동으로 계산돼요'
+    : m === 'calc' ? (state.resultSaved ? '저장했어요' : (r && r.pulledAt ? '어드민에서 가져온 파일로 계산 · ' : '올린 파일로 계산 · ') + '아직 저장 안 함')
+    : runNow ? `저장 ${stamp(runNow.created_at)} · ${runNow.created_by || ''}` : '');
   $('btnManualClose').hidden = !(m === 'upload' && !state.files.length);
+  $('topActions').hidden = false;
   $('uploadTitle').textContent = m === 'upload' ? `${monthLabel(state.period)} · 엑셀로 계산하기` : '계산에 쓴 파일';
   $('uploadSub').textContent = m === 'upload' ? '어드민 가져오기 버튼을 쓰면 자동으로 계산돼요. 엑셀을 직접 받았다면 여기에 올리세요.' : '파일을 빼거나 더 올린 뒤 다시 계산할 수 있어요.';
   if (m === 'calc' && r) {
@@ -675,7 +700,7 @@ function renderRail() {
   if (m === 'saved') $('btnToggleFiles').hidden = true;
   let html = '';
   if (m === 'upload') {
-    html = `<h3>${monthLabel(state.period)}</h3><p class="muted small">저장된 결과가 없어요.<br>어드민에서 <b>업체회의 가져오기</b>를 누르거나 오른쪽에 엑셀을 올려 계산하세요.</p>`;
+    html = `<h3>${monthLabel(state.period)}</h3><p class="muted small">저장된 결과가 없어요.<br>어드민에서 <b>업체회의 가져오기</b>를 누르거나 위 [정산 파일 올리기]로 엑셀을 올려 계산하세요.</p>`;
   } else if (m === 'calc' && r) {
     const c = r.checks, allOk = c.files.every(f => f.totalOk);
     html = `<h3>${monthLabel(r.period)}</h3><div class="ri-sub">계산에 쓴 파일 ${state.files.length}개</div>
@@ -690,7 +715,7 @@ function renderRail() {
       ${legacy ? '<div class="ri-state warn">이전 기준으로 저장된 결과예요 — 다시 계산해서 저장하세요</div>' : ''}
       <div class="ri-line muted">${new Date(run.created_at).toLocaleString('ko-KR')} 저장<br>${esc(run.created_by || '')}</div>
       ${list.length > 1 ? `<div class="ri-runs"><div class="small muted">저장 기록</div>${list.map(x => `<button type="button" class="ri-run${x.id === run.id ? ' on' : ''}" data-run="${x.id}"><span>${new Date(x.created_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>${x.id === list[0].id ? '<small>최근</small>' : ''}</button>`).join('')}</div>` : ''}
-      <button type="button" class="link danger small" id="btnDelRun">이 저장 기록 삭제</button>`;
+`;
   }
   $('railInfo').innerHTML = html;
   const del = $('btnDelRun');

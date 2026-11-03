@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>유통매출 · 업체회의 누적분석</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="src/styles.css?v=202611031449">
+<link rel="stylesheet" href="src/styles.css?v=202611031456">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -74,7 +74,11 @@
   <main class="main">
     <div class="top">
       <div><h1 id="pageTitle">유통 손익매출 계산기</h1><p id="pageSub">매출 = 상부(B) − 전체(A) − 자점운영비 − 직접지급사은품</p></div>
-      <div class="actions" id="topActions"></div>
+      <div class="actions" id="topActions" hidden>
+        <button class="tb ghost" id="tDel" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>이 월 삭제</button>
+        <button class="tb primary" id="tSave" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>이 달 저장</button>
+        <button class="tb primary" id="tUp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>정산 파일 올리기</button>
+      </div>
     </div>
 
     <!-- 어드민 가져오기로 열렸을 때 진행 상황 -->
@@ -97,10 +101,6 @@
     <section id="viewApp" class="workspace" hidden>
 
       <div class="stage stack-lg">
-        <div class="manual-bar" id="manualBar" hidden>
-          <span class="mb-t"><b id="manualTitle">이 달 결과가 아직 없어요</b><span class="muted">오른쪽 <b>어드민에서 가져오기</b>로 받아오면 자동으로 계산돼요</span></span>
-          <button id="btnManual" class="mb-btn">파일 직접 올리기</button>
-        </div>
         <div class="panel" id="uploadCard">
           <div class="panel-head"><div><h2 id="uploadTitle">엑셀로 계산하기</h2><p id="uploadSub">어드민 가져오기 버튼을 쓰면 이 단계는 자동이에요. 엑셀을 직접 받았다면 여기에 올리세요.</p></div><button id="btnManualClose" class="mb-close" hidden>접기</button></div>
           <div id="uploadBody" class="stack-md">
@@ -140,6 +140,6 @@
   });
 })();
 </script>
-<script type="module" src="src/app.js?v=202611031449"></script>
+<script type="module" src="src/app.js?v=202611031456"></script>
 </body>
 </html>

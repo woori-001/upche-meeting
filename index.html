@@ -2842,27 +2842,46 @@ async function onDataFiles(files, skippedNames = []) {
       }
       const { units, rawRows } = buildUnits(rows);
       const cnt = {};
-      for (const u of units) { const m = u[2].slice(0, 7); (byMonth[m] = byMonth[m] || { units: [], files: new Set(), raw: 0 }).units.push(u); byMonth[m].files.add(f.name); cnt[m] = (cnt[m] || 0) + 1; }
+      for (const u of units) { const m = u[2].slice(0, 7); const b = byMonth[m] = byMonth[m] || { batches: [], files: new Set() }; if (!b.files.has(f.name)) { b.batches.push([]); b.files.add(f.name); } b.batches[b.batches.length - 1].push(u); cnt[m] = (cnt[m] || 0) + 1; }
       log.push(`${esc(f.name)}: ${fmtN(rawRows)}행 → ${Object.keys(cnt).sort().map(m => `${monthLabel(m)} ${fmtN(cnt[m])}건`).join(", ")}`);
     }
-    const replaced = [];
+    // 같은 달에 이미 있는 데이터는 지우지 않고 합침 (최초등록일로 받은 파일엔 다른 달 접수 건이 조금씩 섞여 있어서,
+    // 통째로 바꾸면 그 달 데이터가 몇 건만 남고 사라짐). 같은 건(협력점·구분·접수일·고객·통신사)은 새 파일 것으로 덮어씀.
+    const merged = [];
     const todo = Object.keys(byMonth).sort();
     let done = 0;
     for (const m of todo) {
       busy(true, `서버에 저장 중... ${monthLabel(m)} (${++done}/${todo.length})`);
-      const file = [...byMonth[m].files].join(", ");
-      const r = await gs("saveMonth", m, unitsToTsv(byMonth[m].units), file);
-      if (r.replaced) replaced.push(monthLabel(m));
-      S.months[m] = { units: byMonth[m].units, file };
+      const old = S.months[m] ? S.months[m].units : [];
+      const { units: mu, added, updated } = mergeUnits(old, byMonth[m].batches);
+      const file = [...new Set([...(S.months[m] && S.months[m].file ? String(S.months[m].file).split(", ") : []), ...byMonth[m].files])].join(", ");
+      await gs("saveMonth", m, unitsToTsv(mu), file.slice(0, 500));
+      if (old.length) merged.push(`${monthLabel(m)} ${fmtN(old.length)}→${fmtN(mu.length)}건 (새로 ${fmtN(added)} · 갱신 ${fmtN(updated)})`);
+      S.months[m] = { units: mu, file };
     }
     derive();
     const ms = Object.keys(byMonth).sort();
     if (ms.length) S.month = D.months[D.months.length - 1];
     render();
-    toast(`<b>업로드 완료</b><br>${log.join("<br>")}${replaced.length ? `<br>교체된 월: ${replaced.join(", ")} (같은 달은 새 파일로 통째로 바뀝니다)` : ""}${skippedNames.length ? `<br>엑셀이 아니라서 건너뛴 파일: ${skippedNames.map(esc).join(", ")}` : ""}`, 12000);
+    toast(`<b>업로드 완료</b><br>${log.join("<br>")}${merged.length ? `<br>기존 데이터에 합친 달: ${merged.join(", ")}` : ""}${skippedNames.length ? `<br>엑셀이 아니라서 건너뛴 파일: ${skippedNames.map(esc).join(", ")}` : ""}`, 12000);
   } catch (e) {
     toast(`<b>오류</b> ${esc(e.message)}`, 0);
   } finally { busy(false); }
+}
+// 같은 접수 건 판별: 협력점·구분·접수일·고객·통신사 (개통상태는 바뀔 수 있으니 빼고 비교)
+const unitId = (u) => [u[0], u[1], u[2], u[5], u[6]].join("\u0001");
+function mergeUnits(oldUnits, batches) {
+  const map = new Map();
+  const put = (list, mark) => {
+    const g = new Map();
+    for (const u of list) { const k = unitId(u); let a = g.get(k); if (!a) g.set(k, a = []); a.push(u); }
+    for (const [k, a] of g) { const had = map.has(k); map.set(k, a); if (mark) mark(had); }
+  };
+  let added = 0, updated = 0;
+  put(oldUnits);
+  for (const b of batches) put(b, (had) => had ? updated++ : added++);
+  const units = []; for (const a of map.values()) units.push(...a);
+  return { units, added, updated };
 }
 async function applyMaster(rows, fileName) {
   const mrows = buildMaster(rows);

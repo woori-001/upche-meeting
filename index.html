@@ -1271,7 +1271,7 @@ function findHeader(rows, must) {
 }
 
 // 접수 데이터 → 월별 접수 단위(unit) 목록
-// unit = [협력점, 구분(W/M/R), 접수일(YYYY-MM-DD), 상태(O/H/C/P), 제외유형(0/1), 고객키, 통신사]
+// unit = [협력점, 구분(W/M/R), 최초등록일(YYYY-MM-DD, 옛 데이터는 접수일), 상태(O/H/C/P), 제외유형(0/1), 고객키, 통신사]
 function buildUnits(rows) {
   const h = findHeader(rows, ["상품명", "협력점"]);
   if (!h) throw new Error("필수 컬럼(상품명, 협력점)을 찾을 수 없습니다. 첫 줄: " + (rows[0] || []).slice(0, 10).join(", "));
@@ -1279,9 +1279,10 @@ function buildUnits(rows) {
   const C = {
     kind: col("정산종류"), name: col("고객명"), phone: col("명의자연락처", "명의자 연락처"),
     prod: col("상품명"), opt: col("상품옵션"), partner: col("협력점"),
-    date: col("접수일", "최초등록일"), stat: col("개통상태"),
+    date: col("최초등록일", "접수일"), stat: col("개통상태"),   // 2026-11: 최초등록일 기준 (없으면 접수일)
   };
-  if (C.date < 0) throw new Error("접수일(또는 최초등록일) 컬럼이 없습니다.");
+  if (C.date < 0) throw new Error("최초등록일(또는 접수일) 컬럼이 없습니다.");
+  const basis = h.names[C.date] === "최초등록일" ? "reg" : "rcv";
   const g = (r, i) => i >= 0 ? String(r[i] == null ? "" : r[i]).trim() : "";
   const units = [];
   const wired = new Map();
@@ -1323,7 +1324,7 @@ function buildUnits(rows) {
       units.push([o.partner, "W", o.t.slice(0, 10), st, ex, o.key, base[0].tel]);
     }
   }
-  return { units, rawRows, skipped };
+  return { units, rawRows, skipped, basis };
 }
 
 // 원장 → 행 [상호명, 정산그룹, 거래유무, 협력점, 등록일]
@@ -1876,7 +1877,7 @@ function emptyHtml() {
     <p class="sub">올린 데이터는 서버(Supabase)에 월별로 쌓여서 팀원 모두가 같이 봐요.</p>
     <ol class="stepl">
       <li class="${hasMaster ? "done" : ""}"><span>1</span><div><b>협력점정보(원장) 올리기</b><small>판매점 · 협력점 · 제휴 구분과 등급, 등록일을 읽어요</small></div>${hasMaster ? `<em>완료</em>` : `<button class="ghost" id="bMaster2">올리기</button>`}</li>
-      <li><span>2</span><div><b>접수 데이터 올리기</b><small>전체정산관리 엑셀(접수일 기준). 여러 파일을 한 번에 올려도 월별로 나눠요</small></div><button class="primary" id="bData2">${ic("upload")}올리기</button></li>
+      <li><span>2</span><div><b>접수 데이터 올리기</b><small>전체정산관리 엑셀(최초등록일 기준). 여러 파일을 한 번에 올려도 월별로 나눠요</small></div><button class="primary" id="bData2">${ic("upload")}올리기</button></li>
     </ol></div>`;
 }
 function mainHtml() {
@@ -1887,7 +1888,7 @@ function mainHtml() {
 }
 function headerHtml(M) {
   return `<div class="top">
-    <div><h1>${esc(S.seg)} 현황</h1><p class="sub">${M.replace("-", "년 ")}월 · 접수일 기준 · 자점·상부점 제외</p></div>
+    <div><h1>${esc(S.seg)} 현황</h1><p class="sub">${M.replace("-", "년 ")}월 · 최초등록일 기준 · 자점·상부점 제외</p></div>
     <div class="top-r">
       <label class="field">${ic("search")}<input id="search" type="search" placeholder="업체명 검색" value="${esc(S.search)}"></label>
       <button class="ghost del" id="bDel">${ic("trash")}월 데이터 삭제</button>
@@ -2842,7 +2843,7 @@ async function onDataFiles(files, skippedNames = []) {
   // 협력점정보가 섞여 있으면 먼저 처리되도록 파일명에 "협력점"이 들어간 파일을 앞으로
   files = files.slice().sort((a, b) => (/협력점|원장/.test(b.name) ? 1 : 0) - (/협력점|원장/.test(a.name) ? 1 : 0));
   busy(true, "파일 읽는 중...");
-  const byMonth = {}; const log = [];
+  const byMonth = {}; const log = []; let anyReg = false;
   try {
     for (const f of files) {
       busy(true, `${f.name} 읽는 중... (큰 파일은 10초 정도 걸립니다)`);
@@ -2851,13 +2852,26 @@ async function onDataFiles(files, skippedNames = []) {
       if (findHeader(rows, ["상호명", "정산그룹"]) && !findHeader(rows, ["상품명", "협력점"])) {
         await applyMaster(rows, f.name); log.push(`${esc(f.name)}: 협력점정보로 인식해 원장을 갱신했습니다.`); continue;
       }
-      const { units, rawRows } = buildUnits(rows);
+      const { units, rawRows, basis } = buildUnits(rows);
+      if (basis === "reg") anyReg = true;
       const cnt = {};
       for (const u of units) { const m = u[2].slice(0, 7); const b = byMonth[m] = byMonth[m] || { batches: [], files: new Set() }; if (!b.files.has(f.name)) { b.batches.push([]); b.files.add(f.name); } b.batches[b.batches.length - 1].push(u); cnt[m] = (cnt[m] || 0) + 1; }
       log.push(`${esc(f.name)}: ${fmtN(rawRows)}행 → ${Object.keys(cnt).sort().map(m => `${monthLabel(m)} ${fmtN(cnt[m])}건`).join(", ")}`);
     }
     // 같은 달에 이미 있는 데이터는 지우지 않고 합침 (최초등록일로 받은 파일엔 다른 달 접수 건이 조금씩 섞여 있어서,
     // 통째로 바꾸면 그 달 데이터가 몇 건만 남고 사라짐). 같은 건(협력점·구분·접수일·고객·통신사)은 새 파일 것으로 덮어씀.
+    // 날짜 기준이 접수일 → 최초등록일로 바뀜. 접수일 기준으로 쌓인 옛 달이 남아 있으면 같은 건이 두 달에 겹치므로 먼저 비움
+    if (anyReg) {
+      const oldRcv = Object.keys(S.months).filter(m => !isRegMonth(S.months[m])).sort();
+      if (oldRcv.length) {
+        busy(false);
+        const ok = confirm(`날짜 기준이 '최초등록일'로 바뀌었어요.\n\n예전에 '접수일' 기준으로 올린 달(${oldRcv.map(monthLabel).join(", ")})이 남아 있으면 같은 건이 두 달에 겹쳐 보여요.\n\n예전 달 데이터를 모두 지우고 이번 파일로 새로 쌓을까요?\n(지운 달은 최초등록일 기준 파일로 다시 올리면 돼요)`);
+        if (!ok) { toast("올리기를 취소했어요. 예전 달 데이터는 그대로예요.", 6000); return; }
+        busy(true, "예전(접수일 기준) 데이터 지우는 중...");
+        for (const m of oldRcv) { await gs("deleteMonth", m); delete S.months[m]; }
+        log.push(`예전 접수일 기준 데이터 지움: ${oldRcv.map(monthLabel).join(", ")}`);
+      }
+    }
     const merged = [];
     const todo = Object.keys(byMonth).sort();
     let done = 0;
@@ -2865,7 +2879,8 @@ async function onDataFiles(files, skippedNames = []) {
       busy(true, `서버에 저장 중... ${monthLabel(m)} (${++done}/${todo.length})`);
       const old = S.months[m] ? S.months[m].units : [];
       const { units: mu, added, updated } = mergeUnits(old, byMonth[m].batches);
-      const file = [...new Set([...(S.months[m] && S.months[m].file ? String(S.months[m].file).split(", ") : []), ...byMonth[m].files])].join(", ");
+      const prevFiles = S.months[m] && S.months[m].file ? String(S.months[m].file).replace(REG_MARK, "").split(", ").filter(Boolean) : [];
+      const file = (anyReg ? REG_MARK : "") + [...new Set([...prevFiles, ...byMonth[m].files])].join(", ");
       await gs("saveMonth", m, unitsToTsv(mu), file.slice(0, 500));
       if (old.length) merged.push(`${monthLabel(m)} ${fmtN(old.length)}→${fmtN(mu.length)}건 (새로 ${fmtN(added)} · 갱신 ${fmtN(updated)})`);
       S.months[m] = { units: mu, file };
@@ -2879,6 +2894,9 @@ async function onDataFiles(files, skippedNames = []) {
     toast(`<b>오류</b> ${esc(e.message)}`, 0);
   } finally { busy(false); }
 }
+// 최초등록일 기준으로 쌓인 달 표시 (파일 이름 앞에 붙여 서버에 저장)
+const REG_MARK = "[최초등록일] ";
+const isRegMonth = (mo) => String(mo && mo.file || "").startsWith(REG_MARK);
 // 같은 접수 건 판별: 협력점·구분·접수일·고객·통신사 (개통상태는 바뀔 수 있으니 빼고 비교)
 const unitId = (u) => [u[0], u[1], u[2], u[5], u[6]].join("\u0001");
 function mergeUnits(oldUnits, batches) {
@@ -3884,9 +3902,10 @@ async function loadAll() {
     S.user = info.user || null; if (S.user) lsSet(LS_KEY.user, JSON.stringify(S.user));
     S.master = info.master.length ? { rows: info.master.map(r => r.map(x => String(x).trim())), note: info.masterNote } : null;
     let done = 0;
+    const fileOf = Object.fromEntries(info.months.map(x => [x.m, x.file || ""]));
     await pool(info.months.map(x => x.m), 2, async (m) => {
       const tsv = await gs("getMonth", m);
-      S.months[m] = { units: tsvToUnits(tsv) };
+      S.months[m] = { units: tsvToUnits(tsv), file: fileOf[m] };
       busy(true, `데이터 불러오는 중... ${++done}/${info.months.length}개월`);
     });
     await loadDecisions();

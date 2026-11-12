@@ -1490,6 +1490,21 @@ function derive() {
   // 1) 모든 unit 펼치기
   const all = [];
   for (const m of months) for (const u of S.months[m].units) all.push(u);
+  // 1-1) 같은 협력점인데 접수 데이터 이름만 다른 경우(예: ★세웅통신● → ★세웅통신○) 하나로 합침
+  //      협력점정보(원장)에서 같은 업체로 찾아지면, 원장 이름과 같은 것 → 없으면 가장 최근에 쓴 이름으로 모음
+  const alias = new Map(), aliasOf = new Map();
+  {
+    const lastM = new Map();
+    for (const u of all) { const m = u[2].slice(0, 7); if (!lastM.has(u[0]) || lastM.get(u[0]) < m) lastM.set(u[0], m); }
+    const byMaster = new Map();
+    for (const p of lastM.keys()) { const info = MI.lookup(p); if (!info) continue; let g = byMaster.get(info.name); if (!g) byMaster.set(info.name, g = []); g.push(p); }
+    for (const [mn, g] of byMaster) {
+      if (g.length < 2) continue;
+      const main = g.includes(mn) ? mn : g.slice().sort((x, y) => lastM.get(y).localeCompare(lastM.get(x)))[0];
+      for (const p of g) if (p !== main) alias.set(p, main);
+      aliasOf.set(main, g.filter(p => p !== main));
+    }
+  }
   // 2) 재접수 판정 (월 경계를 넘어서도 판정)
   const okDates = new Map();
   for (const u of all) {
@@ -1514,7 +1529,8 @@ function derive() {
     if (st === "O") c.O++; else if (st === "H") c.H++; else if (st === "C") { c.C++; if (re) c.RE++; }
   };
   for (const u of all) {
-    const [p, g, d, st, ex, key, tel] = u;
+    const [p0, g, d, st, ex, key, tel] = u;
+    const p = alias.get(p0) || p0;
     const m = d.slice(0, 7);
     if (tel === "?") noTelco++;
     let aa = activeAll.get(p); if (!aa) activeAll.set(p, aa = new Set()); aa.add(m);
@@ -1547,7 +1563,7 @@ function derive() {
     if (!info) { unknown.set(p, lastAny.get(p)); excludedNames.미등록++; continue; }
     if (!info.seg) { excludedNames.자점상부++; continue; }
     if (isDorm(info.name) || isDorm(p)) continue;
-    partners.set(p, { ...info, dataName: p });
+    partners.set(p, { ...info, dataName: p, aliases: aliasOf.get(p) || [] });
   }
   // 원장에 있지만 접수 이력이 없는 곳도 등록 업체로 포함
   const registered = [], dormant = [], stopped = [];   // stopped: 협력점정보에서 거래유무가 거래중이 아닌 곳 (검색용)
@@ -1637,7 +1653,9 @@ function dispName(n) {
 }
 function nameHtml(name, grade) {
   const dn = dispName(name);
-  return `<a class="pn" data-p="${esc(name)}"${dn !== name ? ` title="접수 데이터 이름: ${esc(name)}"` : ""}>${esc(dn)}</a>${grade ? `<span class="tag">${esc(grade)}</span>` : ""}`;
+  const al = (D && D.partners.get(name) || {}).aliases || [];
+  const tt = [dn !== name ? `접수 데이터 이름: ${name}` : "", al.length ? `예전 접수 이름도 합쳐서 보여줌: ${al.join(", ")}` : ""].filter(Boolean).join("\n");
+  return `<a class="pn" data-p="${esc(name)}"${tt ? ` title="${esc(tt)}"` : ""}>${esc(dn)}</a>${grade ? `<span class="tag">${esc(grade)}</span>` : ""}`;
 }
 function pill(k, cur, opts, small) {
   return `<div class="pills${small ? " sm" : ""}" data-k="${k}">${opts.map(([v, l]) => `<button class="${String(cur) === String(v) ? "on" : ""}" data-v="${v}">${l}</button>`).join("")}</div>`;

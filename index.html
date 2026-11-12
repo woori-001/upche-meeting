@@ -1797,7 +1797,7 @@ function render() {
     const wy = window.scrollY, sy = (document.querySelector(".side-mid") || {}).scrollTop || 0, helpEl = document.querySelector(".side-help");
     if (helpEl) S.helpOpen = helpEl.open;
     showPnl(S.mode === "pnl");
-    showRail(S.mode !== "meet");
+    showRail(true);
     if (S.mode === "pnl") return;
     const cd = S.mode === "code";
     document.body.classList.toggle("mode-code", cd);
@@ -2637,7 +2637,7 @@ function showPnl(on) {
 const CS = { runs: null, loading: false, month: null, mpYear: 0, pending: null };
 function showCode(on) {
   let w = $("#codeWrap");
-  if (on && !w) { w = document.createElement("div"); w.id = "codeWrap"; w.innerHTML = `<iframe src="code/index.html?v=202611031618" title="코드실적"></iframe>`; document.body.appendChild(w); }
+  if (on && !w) { w = document.createElement("div"); w.id = "codeWrap"; w.innerHTML = `<iframe src="code/index.html?v=202611120948" title="코드실적"></iframe>`; document.body.appendChild(w); }
   if (w) w.hidden = !on;
   if (on && CS.runs === null && !CS.loading) codeLoad();
 }
@@ -2703,6 +2703,7 @@ window.addEventListener("message", (e) => { if (e.origin === location.origin && 
 window.addEventListener("message", (e) => { if (e.origin === location.origin && e.data && e.data.type === "code-deleted") { toast(`${mLabel(e.data.month)} 코드실적 저장을 지웠어요.`); CS.month = null; codeLoad(); } });
 
 // ---------- 오른쪽 바: 어드민 가져오기 (유통마진 · 유통매출 · 코드실적 공통) ----------
+const railKey = () => "upche_rail_closed_" + (S.mode || "meet");
 function showRail(on) {
   document.body.classList.toggle("has-rail", on);
   let r = $("#importRail");
@@ -2712,7 +2713,7 @@ function showRail(on) {
       <p class="ir-p">어드민(workline.kr)에 로그인한 화면에서 이 버튼을 누르면 정산 엑셀을 받아 <b>지금 열린 이 화면</b>으로 바로 넘겨요.</p>
       <a class="ir-bm" id="irBm" draggable="true">⭳ 업체회의 가져오기</a>
       <p class="ir-tip">처음 한 번, 위 버튼을 <b>즐겨찾기 막대로 끌어다</b> 놓으세요. 누르지 말고 끌어다 놓기!</p>
-      <ul class="ir-list"><li><b>유통매출</b> 엑셀 10개 · 일반=개통일, 추가·환수=정산예정일</li><li><b>코드실적</b> 유통매출과 같은 10개</li><li><b>유통마진</b> 일반(개통일) 2개만</li></ul>
+      <ul class="ir-list"><li><b>업체회의</b> 전체정산 일반 1개 · 최초등록일 기준 (기존 데이터에 합쳐 저장)</li><li><b>유통매출</b> 엑셀 10개 · 일반=개통일, 추가·환수=정산예정일</li><li><b>코드실적</b> 유통매출과 같은 10개</li><li><b>유통마진</b> 일반(개통일) 2개만</li></ul>
       <p class="ir-tip">작은 창이 잠깐 떴다가 닫혀요. 안 뜨면 workline.kr 팝업을 허용해 주세요.</p></div>`;
     document.body.appendChild(r);
     setupBookmarklet();
@@ -2722,16 +2723,17 @@ function showRail(on) {
   let t = $("#irTab");
   if (on && !t) {
     t = document.createElement("button"); t.id = "irTab"; t.title = "어드민 가져오기 접기/펼치기";
-    t.onclick = () => { const c = !document.body.classList.contains("rail-closed"); document.body.classList.toggle("rail-closed", c); lsSet("upche_rail_closed", c ? "1" : null); };
+    t.onclick = () => { const c = !document.body.classList.contains("rail-closed"); document.body.classList.toggle("rail-closed", c); lsSet(railKey(), c ? "1" : "0"); };
     document.body.appendChild(t);
-    document.body.classList.toggle("rail-closed", lsGet("upche_rail_closed") === "1");
   }
+  // 접힘 상태는 메뉴별로 기억 (업체회의는 화면이 넓어야 해서 처음엔 접힌 채로)
+  if (on) { const v = lsGet(railKey()); document.body.classList.toggle("rail-closed", v ? v === "1" : (S.mode === "meet" || lsGet("upche_rail_closed") === "1")); }
   if (t) t.hidden = !on;
 }
 async function setupBookmarklet() {
   try {
     const base = location.origin + location.pathname.replace(/[^/]*$/, "");
-    let code = await fetch("pnl/src/admin-pull.js?v=202611031618", { cache: "no-cache" }).then(r => r.text());
+    let code = await fetch("pnl/src/admin-pull.js?v=202611120948", { cache: "no-cache" }).then(r => r.text());
     code = code.replace(/^\/\*[\s\S]*?\*\/\s*/, "").replace("__CALC_URL__", base + "pnl/");
     $("#irBm").href = "javascript:" + encodeURIComponent(code);
   } catch (e) { $("#irBm").removeAttribute("href"); }
@@ -2739,7 +2741,7 @@ async function setupBookmarklet() {
 
 // ---------- 어드민에서 가져오기 (즐겨찾기 버튼 → 작은 중계 창 → 이 탭) ----------
 let importBus = null;
-const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611031618"));
+const bus = async () => importBus || (importBus = await import("./pnl/src/import-bus.js?v=202611120948"));
 async function listenImports() {
   try {
     const { channel, takePending } = await bus();
@@ -2753,9 +2755,18 @@ async function listenImports() {
     if (location.hash.includes("admin-import")) { history.replaceState(null, "", location.pathname); const p = await takePending(); if (p) applyImport(p); }
   } catch (e) { console.warn("가져오기 통로를 열지 못했어요", e); }
 }
-async function applyImport(p) {
-  const ts = String(p.target || "pnl").replace("both", "pnl,margin").split(",").filter(Boolean);
+async function applyImport(p0) {
+  const ts0 = String(p0.target || "pnl").replace("both", "pnl,margin").split(",").filter(Boolean);
   try { window.focus(); } catch (e) {}
+  // 업체회의: 최초등록일로 받은 접수 파일을 서버 데이터에 합쳐 저장
+  if (ts0.includes("meet")) {
+    const mf = (p0.files || []).filter(f => f.use === "meet");
+    if (!mf.length) toast("업체회의에 쓸 접수 파일이 없어요.", 6000);
+    else { setMode("meet"); await onDataFiles(mf.map(f => new File([f.buffer], (f.name || "어드민 접수").replace(/[\\/:*?"<>|]/g, "_") + (/\.xlsx?$/i.test(f.name || "") ? "" : ".xlsx")))); }
+  }
+  const p = { ...p0, files: (p0.files || []).filter(f => f.use !== "meet") };
+  const ts = ts0.filter(t => t !== "meet");
+  if (!ts.length) return;
   if (ts.includes("margin")) {
     const pick = (side) => (p.files || []).find(f => f.side === side && !f.old && /일반/.test(f.label || f.name || ""));
     const sf = pick("상부"), jf = pick("전체");
